@@ -123,6 +123,63 @@
     <canvas id="canvas"></canvas>
 
     <script>
+        // --- 1. Google API 設定値 ---
+    const CLIENT_ID = '341523960931-58ltfdmmi1l6m2ksjf5s4kga5mlu9sct.apps.googleusercontent.com';
+    const SCOPE = 'https://www.googleapis.com/auth/photoslibrary.appendonly';
+    let accessToken = null;
+
+    // --- 2. ページ読み込み時の処理 (トークン回収) ---
+    window.addEventListener('load', () => {
+        const hash = window.location.hash.substring(1);
+        const params = new URLSearchParams(hash);
+        accessToken = params.get('access_token');
+        if (accessToken) {
+            // URLを綺麗にする
+            history.replaceState(null, null, window.location.pathname);
+            alert("Googleフォト連携中！");
+        }
+        initCamera(); // カメラ起動
+    });
+
+    // --- 3. Googleログイン関数 ---
+    function loginToGoogle() {
+        const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${CLIENT_ID}&redirect_uri=${encodeURIComponent(window.location.href)}&response_type=token&scope=${encodeURIComponent(SCOPE)}`;
+        window.location.href = authUrl;
+    }
+
+    // --- 4. アップロード関数 (非同期) ---
+    async function uploadToGoogle(blob) {
+        if (!accessToken) return;
+        try {
+            // A. アップロードトークンの取得
+            const res1 = await fetch('https://photoslibrary.googleapis.com/v1/uploads', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${accessToken}`,
+                    'Content-type': 'application/octet-stream',
+                    'X-Goog-Upload-Protocol': 'raw'
+                },
+                body: blob
+            });
+            const uploadToken = await res1.text();
+
+            // B. ライブラリへの登録
+            await fetch('https://photoslibrary.googleapis.com/v1/mediaItems:batchCreate', {
+                method: 'POST',
+                headers: {
+                    'Content-type': 'application/json',
+                    'Authorization': `Bearer ${accessToken}`
+                },
+                body: JSON.stringify({
+                    "newMediaItems": [{
+                        "description": "Retro Cam Photo",
+                        "simpleMediaItem": { "uploadToken": uploadToken }
+                    }]
+                })
+            });
+            console.log("Google Photos Upload Success!");
+        } catch (e) { console.error(e); }
+    }
         const video = document.getElementById('video');
         const canvas = document.getElementById('canvas');
         const shutterBtn = document.getElementById('shutter');
