@@ -3,92 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Retro Cam - Infinite Mode</title>
+    <title>Retro Cam - Fixed</title>
     <style>
-        :root {
-            --body-bg: #1a1a1a;
-            --accent: #ffae00;
-        }
-
-        body {
-            margin: 0;
-            padding: 0;
-            background-color: var(--body-bg);
-            color: white;
-            font-family: 'Courier New', Courier, monospace;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            height: 100dvh;
-            overflow: hidden;
-        }
-
-        .viewfinder-container {
-            width: 150px;
-            height: 150px;
-            border: 3px solid #555;
-            border-radius: 4px;
-            overflow: hidden;
-            background: #000;
-        }
-
-        video {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-
-        .controls {
-            margin-top: 20px;
-            text-align: center;
-            width: 100%;
-        }
-
-        /* 制限なしなので「TOTAL」表示に変更 */
-        .counter {
-            font-size: 1.5rem;
-            color: var(--accent);
-            margin-bottom: 5px;
-        }
-        .counter-label {
-            font-size: 10px;
-            color: #888;
-            margin-bottom: 15px;
-        }
-
-        #auth-btn {
-            background-color: #4285f4;
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 20px;
-            font-size: 11px;
-            margin-bottom: 20px;
-            cursor: pointer;
-        }
-        #auth-btn.linked { background-color: #34a853; }
-
-        #shutter {
-            width: 80px;
-            height: 80px;
-            border-radius: 50%;
-            border: 5px solid #222;
-            background: #d00;
-            box-shadow: 0 4px 0 #600;
-            cursor: pointer;
-        }
-
+        :root { --body-bg: #1a1a1a; --accent: #ffae00; }
+        body { margin: 0; padding: 0; background-color: var(--body-bg); color: white; font-family: sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100dvh; overflow: hidden; }
+        .viewfinder-container { width: 150px; height: 150px; border: 3px solid #555; border-radius: 4px; overflow: hidden; background: #000; }
+        video { width: 100%; height: 100%; object-fit: cover; }
+        .controls { margin-top: 20px; text-align: center; width: 100%; }
+        .counter { font-size: 1.5rem; color: var(--accent); }
+        #auth-btn { background-color: #4285f4; color: white; border: none; padding: 10px 20px; border-radius: 20px; font-size: 11px; margin-bottom: 20px; cursor: pointer; }
+        #shutter { width: 80px; height: 80px; border-radius: 50%; border: 5px solid #222; background: #d00; box-shadow: 0 4px 0 #600; cursor: pointer; }
         #shutter:active { transform: translateY(2px); box-shadow: none; }
-
-        #loading-msg {
-            font-size: 10px;
-            color: var(--accent);
-            height: 15px;
-            margin-top: 10px;
-            visibility: hidden;
-        }
-
+        #loading-msg { font-size: 10px; color: var(--accent); visibility: hidden; margin-top: 10px; }
         canvas { display: none; }
     </style>
 </head>
@@ -100,9 +26,9 @@
 
     <div class="controls">
         <div class="counter" id="counter">00</div>
-        <div class="counter-label">TOTAL PHOTOS</div>
+        <div style="font-size:10px; color:#888; margin-bottom:15px;">TOTAL PHOTOS</div>
         
-        <button id="auth-btn" onclick="loginToGoogle()">Googleフォトと連携する</button>
+        <button id="auth-btn">Googleフォトと連携する</button>
         <br>
         <button id="shutter"></button>
         <div id="loading-msg">SYNCING TO CLOUD...</div>
@@ -111,21 +37,49 @@
     <canvas id="canvas"></canvas>
 
     <script>
-        // --- 設定：クライアントIDを入れてください ---
-        const CLIENT_ID = '341523960931-58ltfdmmi1l6m2ksjf5s4kga5mlu9sct.apps.googleusercontent.com';
+        // --- 設定 ---
+        const CLIENT_ID = '341523960931-58ltfdmmi1l6m2ksjf5s4kga5mlu9sct.apps.googleusercontent.com'; 
         const SCOPE = 'https://www.googleapis.com/auth/photoslibrary.appendonly';
 
+        // --- 要素の取得 ---
         const video = document.getElementById('video');
         const canvas = document.getElementById('canvas');
         const shutterBtn = document.getElementById('shutter');
+        const authBtn = document.getElementById('auth-btn');
         const counterDisplay = document.getElementById('counter');
         const loadingMsg = document.getElementById('loading-msg');
-        const authBtn = document.getElementById('auth-btn');
 
         let accessToken = null;
         let shotCount = localStorage.getItem('retro_shot_count_inf') ? parseInt(localStorage.getItem('retro_shot_count_inf')) : 0;
 
-        window.addEventListener('load', () => {
+        // --- 1. Googleログイン関数 (先に定義する) ---
+        function loginToGoogle() {
+            const redirectUri = window.location.origin + window.location.pathname;
+            const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${CLIENT_ID}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=token&scope=${encodeURIComponent(SCOPE)}`;
+            window.location.href = authUrl;
+        }
+
+        // ボタンにクリックイベントを紐付け
+        authBtn.addEventListener('click', loginToGoogle);
+
+        // --- 2. カメラ起動関数 ---
+        async function initCamera() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({
+                    video: { facingMode: "environment" },
+                    audio: false
+                });
+                video.srcObject = stream;
+            } catch (err) {
+                console.error("Camera Error:", err);
+                alert("カメラを起動できませんでした。ブラウザの設定でカメラを許可してください。");
+            }
+        }
+
+        // --- 3. 初期化処理 ---
+        window.onload = async () => {
+            await initCamera();
+
             const hash = window.location.hash.substring(1);
             const params = new URLSearchParams(hash);
             accessToken = params.get('access_token');
@@ -133,102 +87,51 @@
             if (accessToken) {
                 history.replaceState(null, null, window.location.pathname);
                 authBtn.innerText = "✓ 連携済み";
-                authBtn.classList.add("linked");
+                authBtn.style.backgroundColor = "#34a853";
             }
-            initCamera();
-            updateUI();
-        });
+            counterDisplay.innerText = shotCount.toString().padStart(2, '0');
+        };
 
-        async function initCamera() {
-            try {
-                const stream = await navigator.mediaDevices.getUserMedia({
-                    video: { facingMode: "environment", width: { ideal: 4096 }, height: { ideal: 2160 } },
-                    audio: false
-                });
-                video.srcObject = stream;
-            } catch (err) {
-                alert("カメラ起動エラー");
-            }
-        }
-
-        function loginToGoogle() {
-            const redirectUri = window.location.href.split('#')[0];
-            const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${CLIENT_ID}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=token&scope=${encodeURIComponent(SCOPE)}`;
-            window.location.href = authUrl;
-        }
-
+        // --- 4. シャッター処理 ---
         shutterBtn.addEventListener('click', () => {
-            // 枚数制限のチェック（if文）を削除しました
-            
             const ctx = canvas.getContext('2d');
-            const w = video.videoWidth;
-            const h = video.videoHeight;
-            canvas.width = w;
-            canvas.height = h;
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-            ctx.drawImage(video, 0, 0, w, h);
-            
-            // 加工エフェクト
+            // エフェクト（簡易版）
             ctx.globalCompositeOperation = 'multiply';
             ctx.fillStyle = 'rgba(255, 200, 150, 0.2)';
-            ctx.fillRect(0, 0, w, h);
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
             ctx.globalCompositeOperation = 'source-over';
-
-            // 日付
-            const now = new Date();
-            const dateStr = `${now.getFullYear().toString().slice(-2)}.${(now.getMonth()+1).toString().padStart(2,'0')}.${now.getDate().toString().padStart(2,'0')}`;
-            ctx.font = `italic bold ${Math.floor(w * 0.05)}px sans-serif`;
-            ctx.fillStyle = '#ff8c00';
-            ctx.textAlign = 'right';
-            ctx.fillText(dateStr, w * 0.95, h * 0.95);
 
             canvas.toBlob(async (blob) => {
                 if (accessToken) {
                     loadingMsg.style.visibility = "visible";
-                    await uploadToGooglePhotos(blob);
+                    await uploadPhoto(blob);
                     loadingMsg.style.visibility = "hidden";
                 }
             }, 'image/jpeg', 0.9);
 
             shotCount++;
             localStorage.setItem('retro_shot_count_inf', shotCount);
-            updateUI();
+            counterDisplay.innerText = shotCount.toString().padStart(2, '0');
         });
 
-        async function uploadToGooglePhotos(blob) {
+        async function uploadPhoto(blob) {
             try {
-                const uploadRes = await fetch('https://photoslibrary.googleapis.com/v1/uploads', {
+                const res = await fetch('https://photoslibrary.googleapis.com/v1/uploads', {
                     method: 'POST',
-                    headers: {
-                        'Authorization': `Bearer ${accessToken}`,
-                        'Content-type': 'application/octet-stream',
-                        'X-Goog-Upload-Protocol': 'raw'
-                    },
+                    headers: { 'Authorization': `Bearer ${accessToken}`, 'Content-type': 'application/octet-stream', 'X-Goog-Upload-Protocol': 'raw' },
                     body: blob
                 });
-                const uploadToken = await uploadRes.text();
-
+                const token = await res.text();
                 await fetch('https://photoslibrary.googleapis.com/v1/mediaItems:batchCreate', {
                     method: 'POST',
-                    headers: {
-                        'Content-type': 'application/json',
-                        'Authorization': `Bearer ${accessToken}`
-                    },
-                    body: JSON.stringify({
-                        "newMediaItems": [{
-                            "description": "Infinite Mode Photo",
-                            "simpleMediaItem": { "uploadToken": uploadToken }
-                        }]
-                    })
+                    headers: { 'Content-type': 'application/json', 'Authorization': `Bearer ${accessToken}` },
+                    body: JSON.stringify({ "newMediaItems": [{ "simpleMediaItem": { "uploadToken": token } }] })
                 });
-            } catch (err) {
-                console.error(err);
-            }
-        }
-
-        function updateUI() {
-            // 累計枚数を表示
-            counterDisplay.innerText = shotCount.toString().padStart(2, '0');
+            } catch (e) { console.error(e); }
         }
     </script>
 </body>
