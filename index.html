@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Retro Cam - Pro</title>
+    <title>Retro Cam - Stable Switch</title>
     <style>
         :root { --body-bg: #1a1a1a; --accent: #ffae00; }
         body { 
@@ -37,7 +37,7 @@
         
         .switch-btn {
             background: #444; color: #eee; border: 1px solid #666;
-            padding: 5px 15px; border-radius: 4px; font-size: 10px; cursor: pointer;
+            padding: 8px 15px; border-radius: 4px; font-size: 11px; cursor: pointer;
         }
 
         #shutter { 
@@ -67,7 +67,7 @@
                 <label style="font-size:10px; color:#888;">ZOOM</label><br>
                 <input type="range" id="zoomRange" min="1" max="3" step="0.1" value="1">
             </div>
-            <button class="switch-btn" id="switchBtn">CAMERA SWITCH</button>
+            <button class="switch-btn" id="switchBtn">カメラ切り替え</button>
         </div>
 
         <button id="shutter"></button>
@@ -77,7 +77,7 @@
     <canvas id="canvas"></canvas>
 
     <script>
-        const CLIENT_ID = '341523960931-58ltfdmmi1l6m2ksjf5s4kga5mlu9sct.apps.googleusercontent.com'; 
+        const CLIENT_ID = 'ここにあなたのクライアントIDを貼り付け'; 
         const SCOPE = 'https://www.googleapis.com/auth/photoslibrary.appendonly';
         const MAX_SHOTS = 30;
         const CHARGE_TIME = 5000;
@@ -93,7 +93,8 @@
 
         let accessToken = null;
         let shotCount = localStorage.getItem('retro_used_count') ? parseInt(localStorage.getItem('retro_used_count')) : 0;
-        let currentFacingMode = "environment"; // 初期値は外カメラ
+        let currentFacingMode = "environment";
+        let currentStream = null;
 
         window.onload = async () => {
             await initCamera(currentFacingMode);
@@ -102,17 +103,32 @@
         };
 
         async function initCamera(facingMode) {
-            if (video.srcObject) {
-                video.srcObject.getTracks().forEach(track => track.stop());
+            // 現在のストリームを確実に停止させる（重要！）
+            if (currentStream) {
+                currentStream.getTracks().forEach(track => track.stop());
             }
+
             try {
-                const stream = await navigator.mediaDevices.getUserMedia({
-                    video: { facingMode: facingMode, width: { ideal: 4096 }, height: { ideal: 2160 } },
+                const constraints = {
+                    video: { 
+                        facingMode: facingMode, 
+                        width: { ideal: 4096 }, 
+                        height: { ideal: 2160 } 
+                    },
                     audio: false
-                });
-                video.srcObject = stream;
+                };
+                
+                currentStream = await navigator.mediaDevices.getUserMedia(constraints);
+                video.srcObject = currentStream;
             } catch (err) {
-                alert("カメラを起動できません");
+                console.error("Camera Init Error:", err);
+                // エラーが出た場合、解像度を落として再試行
+                try {
+                    currentStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: facingMode } });
+                    video.srcObject = currentStream;
+                } catch (e) {
+                    alert("カメラを起動できませんでした。ブラウザの設定で許可されているか確認してください。");
+                }
             }
         }
 
@@ -171,7 +187,6 @@
 
             ctx.drawImage(video, sx, sy, sw, sh, 0, 0, targetW, targetH);
 
-            // インカメラの場合は左右反転させる（鏡合わせ対策）
             if (currentFacingMode === "user") {
                 const tempCanvas = document.createElement('canvas');
                 tempCanvas.width = targetW; tempCanvas.height = targetH;
@@ -192,7 +207,7 @@
                     await uploadToGoogle(blob);
                     loadingMsg.style.visibility = "hidden";
                 }
-            }, 'image/jpeg', 1.0); // 画質を1.0(最高)に保持
+            }, 'image/jpeg', 1.0);
 
             shotCount++;
             localStorage.setItem('retro_used_count', shotCount);
@@ -200,19 +215,16 @@
         });
 
         function applyRetroEffects(ctx, w, h) {
-            // 焼き付け（オーバーレイで色味のみ変更）
             ctx.globalCompositeOperation = 'overlay';
             ctx.fillStyle = 'rgba(255, 160, 50, 0.1)';
             ctx.fillRect(0, 0, w, h);
 
-            // 粒子感（高解像度に合わせて密度調整）
             ctx.globalCompositeOperation = 'source-over';
             ctx.fillStyle = 'rgba(255, 255, 255, 0.03)';
             for (let i = 0; i < (w * h) / 2000; i++) {
                 ctx.fillRect(Math.random() * w, Math.random() * h, 1, 1);
             }
 
-            // ヴィネット
             const grad = ctx.createRadialGradient(w/2, h/2, w/3, w/2, h/2, w/0.9);
             grad.addColorStop(0, 'transparent');
             grad.addColorStop(1, 'rgba(0,0,0,0.3)');
@@ -222,40 +234,4 @@
 
         function addTimestamp(ctx, w, h) {
             const now = new Date();
-            const timeStr = `${now.getFullYear().toString().slice(-2)}.${(now.getMonth()+1).toString().padStart(2, '0')}.${now.getDate().toString().padStart(2, '0')}  ${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
-            const fontSize = Math.floor(w * 0.04);
-            ctx.font = `bold ${fontSize}px "Courier New", monospace`;
-            ctx.textAlign = 'right';
-            ctx.fillStyle = '#ff7b00';
-            ctx.shadowColor = 'rgba(255, 100, 0, 0.5)';
-            ctx.shadowBlur = 5;
-            ctx.fillText(timeStr, w * 0.95, h * 0.95);
-        }
-
-        async function uploadToGoogle(blob) {
-            try {
-                const res = await fetch('https://photoslibrary.googleapis.com/v1/uploads', {
-                    method: 'POST',
-                    headers: { 'Authorization': `Bearer ${accessToken}`, 'Content-type': 'application/octet-stream', 'X-Goog-Upload-Protocol': 'raw' },
-                    body: blob
-                });
-                const token = await res.text();
-                await fetch('https://photoslibrary.googleapis.com/v1/mediaItems:batchCreate', {
-                    method: 'POST',
-                    headers: { 'Content-type': 'application/json', 'Authorization': `Bearer ${accessToken}` },
-                    body: JSON.stringify({ "newMediaItems": [{ "simpleMediaItem": { "uploadToken": token } }] })
-                });
-            } catch (e) { console.error(e); }
-        }
-
-        function updateUI() {
-            const remaining = MAX_SHOTS - shotCount;
-            counterDisplay.innerText = remaining > 0 ? remaining : 0;
-            if (remaining <= 0) {
-                shutterBtn.disabled = true;
-                counterDisplay.style.color = "red";
-            }
-        }
-    </script>
-</body>
-</html>
+            const timeStr = `${now.getFullYear().toString().slice(-2)}.${(now.getMonth()+1).toString().padStart(2, '0')}.${now.getDate().toString().padStart(2, '0')}  ${now.getHours().toString
