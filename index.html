@@ -89,30 +89,38 @@
 
         // カメラ初期化関数（エラー対策強化版）
         async function initCamera(facingMode) {
-            // 1. 現在のストリームを完全に停止
+        // 1. ストリームを完全にクリア
             if (currentStream) {
                 currentStream.getTracks().forEach(track => track.stop());
                 video.srcObject = null;
-                // 停止後にわずかな待ち時間を設ける（ブラウザの解放待ち）
-                await new Promise(resolve => setTimeout(resolve, 500));
             }
-
-            // 2. 新しいカメラの取得
+            
+            // 2. 0.8秒待機（iOS Chrome用に少し長めに確保）
+            await new Promise(resolve => setTimeout(resolve, 800));
+        
+            // 3. 最小限の制約でリクエスト
             try {
                 const stream = await navigator.mediaDevices.getUserMedia({
-                    video: { facingMode: facingMode },
+                    video: { facingMode: { exact: (facingMode === "environment" ? "environment" : "user") } },
                     audio: false
                 });
                 currentStream = stream;
                 video.srcObject = stream;
                 
-                // インカメラなら反転クラスを付与
                 if (facingMode === "user") video.classList.add('selfie');
                 else video.classList.remove('selfie');
-
+        
             } catch (err) {
-                console.error(err);
-                alert("カメラ切り替えに失敗しました。ページを再読み込みしてください。");
+                // 'exact'で失敗した場合は、制約をさらに緩めて再試行
+                console.warn("Retrying with loose constraints...");
+                try {
+                    const fallbackStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: facingMode } });
+                    currentStream = fallbackStream;
+                    video.srcObject = fallbackStream;
+                } catch (e) {
+                    console.error("Critical Camera Error:", e);
+                    alert("カメラの切り替えが拒否されました。一度ブラウザを完全に閉じて再試行してください。");
+                }
             }
         }
 
