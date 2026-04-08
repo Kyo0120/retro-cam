@@ -3,13 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Retro Cam - Google Photos Link</title>
+    <title>Retro Cam - Auto Sync</title>
     <style>
         :root {
             --body-bg: #1a1a1a;
             --panel-bg: #333;
             --accent: #ffae00;
-            --google-blue: #4285f4;
         }
 
         body {
@@ -26,7 +25,6 @@
             overflow: hidden;
         }
 
-        /* 150x150の小さなファインダー */
         .viewfinder-container {
             width: 150px;
             height: 150px;
@@ -46,7 +44,7 @@
         }
 
         .controls {
-            margin-top: 15px;
+            margin-top: 20px;
             text-align: center;
             width: 100%;
         }
@@ -54,75 +52,44 @@
         .counter {
             font-size: 1.5rem;
             color: var(--accent);
-            margin-bottom: 5px;
+            margin-bottom: 10px;
         }
 
-        /* Google連携ボタン */
+        /* 連携ボタンのデザイン */
         #auth-btn {
-            background-color: var(--google-blue);
+            background-color: #4285f4;
             color: white;
             border: none;
-            padding: 8px 12px;
-            border-radius: 4px;
-            font-size: 11px;
+            padding: 10px 20px;
+            border-radius: 20px;
+            font-size: 12px;
+            margin-bottom: 20px;
             cursor: pointer;
-            margin-bottom: 15px;
-            font-family: sans-serif;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.3);
         }
         #auth-btn.linked {
-            background-color: #34a853; /* 緑色：連携済み */
+            background-color: #34a853;
         }
 
-        .zoom-control {
-            margin-bottom: 20px;
-            width: 200px;
-            display: inline-block;
-        }
-
-        input[type=range] {
-            width: 100%;
-            accent-color: var(--accent);
-        }
-
-        /* シャッターボタン */
         #shutter {
-            width: 70px;
-            height: 70px;
+            width: 80px;
+            height: 80px;
             border-radius: 50%;
-            border: 4px solid #222;
+            border: 5px solid #222;
             background: #d00;
             box-shadow: 0 4px 0 #600;
-            cursor: pointer;
-            display: inline-block;
         }
 
-        #shutter:active {
-            transform: translateY(2px);
-            box-shadow: none;
-        }
+        #shutter:active { transform: translateY(2px); box-shadow: none; }
+        #shutter:disabled { background: #444; box-shadow: none; }
 
-        #shutter:disabled {
-            background: #444;
-            box-shadow: none;
-            cursor: not-allowed;
-        }
-
-        #preview-container {
-            margin-top: 15px;
-            width: 150px;
-            height: auto;
-        }
-
-        img {
-            width: 100%;
-            border: 2px solid #fff;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.5);
-        }
-
-        .info {
+        /* アップロード中インジケーター */
+        #loading-msg {
             font-size: 10px;
-            color: #888;
+            color: var(--accent);
+            height: 15px;
             margin-top: 5px;
+            visibility: hidden;
         }
 
         canvas { display: none; }
@@ -138,58 +105,48 @@
         <div class="counter" id="counter">0 / 30</div>
         
         <button id="auth-btn" onclick="loginToGoogle()">Googleフォトと連携する</button>
-        <br>
         
-        <div class="zoom-control">
-            <label style="font-size: 10px;">ZOOM</label><br>
-            <input type="range" id="zoomRange" min="1" max="3" step="0.1" value="1">
-        </div>
-
         <br>
         <button id="shutter"></button>
-        <div class="info">SHUTTER</div>
+        <div id="loading-msg">SAVING TO GOOGLE PHOTOS...</div>
     </div>
 
-    <div id="preview-container"></div>
     <canvas id="canvas"></canvas>
 
     <script>
-        // --- 設定エリア ---
+        // --- 設定：ここにあなたのクライアントIDを入れてください ---
         const CLIENT_ID = '341523960931-58ltfdmmi1l6m2ksjf5s4kga5mlu9sct.apps.googleusercontent.com';
         const SCOPE = 'https://www.googleapis.com/auth/photoslibrary.appendonly';
         const MAX_SHOTS = 30;
 
-        // --- 変数管理 ---
         const video = document.getElementById('video');
         const canvas = document.getElementById('canvas');
         const shutterBtn = document.getElementById('shutter');
         const counterDisplay = document.getElementById('counter');
-        const zoomRange = document.getElementById('zoomRange');
-        const previewContainer = document.getElementById('preview-container');
+        const loadingMsg = document.getElementById('loading-msg');
         const authBtn = document.getElementById('auth-btn');
 
         let accessToken = null;
         let shotCount = localStorage.getItem('retro_shot_count') ? parseInt(localStorage.getItem('retro_shot_count')) : 0;
-        let videoTrack = null;
 
-        // --- 1. 初期化と認証チェック ---
+        // 1. ページ読み込み時の処理
         window.addEventListener('load', () => {
-            // URLからアクセストークンを抽出 (Googleリダイレクト後)
             const hash = window.location.hash.substring(1);
             const params = new URLSearchParams(hash);
             accessToken = params.get('access_token');
 
             if (accessToken) {
+                // 認証成功後の処理
                 history.replaceState(null, null, window.location.pathname);
-                authBtn.innerText = "✓ Googleフォト連携済み";
+                authBtn.innerText = "✓ 連携済み（自動保存有効）";
                 authBtn.classList.add("linked");
+                authBtn.onclick = null; // 二度押し防止
             }
-
             initCamera();
             updateUI();
         });
 
-        // --- 2. カメラ起動 ---
+        // 2. カメラ起動
         async function initCamera() {
             try {
                 const stream = await navigator.mediaDevices.getUserMedia({
@@ -197,37 +154,19 @@
                     audio: false
                 });
                 video.srcObject = stream;
-                videoTrack = stream.getVideoTracks()[0];
-                
-                // ネイティブズーム対応
-                const cap = videoTrack.getCapabilities();
-                if (cap.zoom) {
-                    zoomRange.min = cap.zoom.min;
-                    zoomRange.max = cap.zoom.max;
-                    zoomRange.step = cap.zoom.step;
-                }
             } catch (err) {
-                console.error(err);
                 alert("カメラを起動できません。HTTPS環境で試してください。");
             }
         }
 
-        // --- 3. Google認証リダイレクト ---
+        // 3. Google認証
         function loginToGoogle() {
-            const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${CLIENT_ID}&redirect_uri=${encodeURIComponent(window.location.href.split('#')[0])}&response_type=token&scope=${encodeURIComponent(SCOPE)}`;
+            const redirectUri = window.location.href.split('#')[0];
+            const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${CLIENT_ID}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=token&scope=${encodeURIComponent(SCOPE)}`;
             window.location.href = authUrl;
         }
 
-        // --- 4. ズーム処理 ---
-        zoomRange.addEventListener('input', (e) => {
-            const z = e.target.value;
-            video.style.setProperty('--zoom-level', z);
-            if (videoTrack && videoTrack.applyConstraints) {
-                videoTrack.applyConstraints({ advanced: [{ zoom: z }] });
-            }
-        });
-
-        // --- 5. シャッター処理 ---
+        // 4. シャッターボタン
         shutterBtn.addEventListener('click', () => {
             if (shotCount >= MAX_SHOTS) return;
 
@@ -237,30 +176,32 @@
             canvas.width = w;
             canvas.height = h;
 
-            // デジタルズーム計算
-            const z = zoomRange.value;
-            const sw = w / z;
-            const sh = h / z;
-            const sx = (w - sw) / 2;
-            const sy = (h - sh) / 2;
-
-            // 描画
-            ctx.drawImage(video, sx, sy, sw, sh, 0, 0, w, h);
+            // キャプチャ
+            ctx.drawImage(video, 0, 0, w, h);
             
-            // 加工
-            applyFilmEffects(ctx, w, h);
-            addTimestamp(ctx, w, h);
+            // 加工エフェクト（セピア・ノイズ）
+            ctx.globalCompositeOperation = 'multiply';
+            ctx.fillStyle = 'rgba(255, 200, 150, 0.2)';
+            ctx.fillRect(0, 0, w, h);
+            ctx.globalCompositeOperation = 'source-over';
 
-            // Blob（バイナリ）変換
+            // 日付合成
+            const now = new Date();
+            const dateStr = `${now.getFullYear().toString().slice(-2)}.${(now.getMonth()+1).toString().padStart(2,'0')}.${now.getDate().toString().padStart(2,'0')}`;
+            ctx.font = `italic bold ${Math.floor(w * 0.05)}px sans-serif`;
+            ctx.fillStyle = '#ff8c00';
+            ctx.textAlign = 'right';
+            ctx.fillText(dateStr, w * 0.95, h * 0.95);
+
+            // 自動保存処理
             canvas.toBlob(async (blob) => {
-                // Googleフォトへアップロード（トークンがある場合のみ）
                 if (accessToken) {
-                    uploadToGooglePhotos(blob);
+                    loadingMsg.style.visibility = "visible";
+                    await uploadToGooglePhotos(blob);
+                    loadingMsg.style.visibility = "hidden";
+                } else {
+                    alert("Google連携がされていません。画像は保存されませんでした。");
                 }
-
-                // プレビュー表示
-                const url = URL.createObjectURL(blob);
-                displayPreview(url);
             }, 'image/jpeg', 0.9);
 
             shotCount++;
@@ -268,10 +209,10 @@
             updateUI();
         });
 
-        // --- 6. Googleフォトアップロード関数 ---
+        // 5. Googleフォトへの完全自動アップロード関数
         async function uploadToGooglePhotos(blob) {
             try {
-                // ステップA: データのアップロード
+                // Step A: バイナリデータのアップロード
                 const uploadRes = await fetch('https://photoslibrary.googleapis.com/v1/uploads', {
                     method: 'POST',
                     headers: {
@@ -281,61 +222,6 @@
                     },
                     body: blob
                 });
-                const uploadToken = await uploadRes.text();
-
-                // ステップB: ライブラリへの登録
-                await fetch('https://photoslibrary.googleapis.com/v1/mediaItems:batchCreate', {
-                    method: 'POST',
-                    headers: {
-                        'Authorization': `Bearer ${accessToken}`,
-                        'Content-type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        "newMediaItems": [{
-                            "description": "Retro Cam Photo",
-                            "simpleMediaItem": { "uploadToken": uploadToken }
-                        }]
-                    })
-                });
-                console.log("Googleフォトへ保存完了");
-            } catch (err) {
-                console.error("Upload failed", err);
-            }
-        }
-
-        // --- 7. その他補助関数 ---
-        function applyFilmEffects(ctx, w, h) {
-            ctx.fillStyle = 'rgba(255, 255, 255, 0.05)';
-            for (let i = 0; i < (w * h) / 2000; i++) {
-                ctx.fillRect(Math.random() * w, Math.random() * h, 1, 1);
-            }
-            ctx.globalCompositeOperation = 'multiply';
-            ctx.fillStyle = 'rgba(255, 220, 180, 0.2)';
-            ctx.fillRect(0, 0, w, h);
-            ctx.globalCompositeOperation = 'source-over';
-        }
-
-        function addTimestamp(ctx, w, h) {
-            const now = new Date();
-            const dateStr = `${now.getFullYear().toString().slice(-2)}.${(now.getMonth()+1).toString().padStart(2,'0')}.${now.getDate().toString().padStart(2,'0')}`;
-            const fontSize = Math.floor(w * 0.05);
-            ctx.font = `italic bold ${fontSize}px sans-serif`;
-            ctx.fillStyle = '#ff8c00';
-            ctx.textAlign = 'right';
-            ctx.fillText(dateStr, w * 0.95, h * 0.95);
-        }
-
-        function displayPreview(url) {
-            previewContainer.innerHTML = `<img src="${url}"><br><a href="${url}" download="photo.jpg" style="color:white; font-size:10px;">SAVE TO DEVICE</a>`;
-        }
-
-        function updateUI() {
-            counterDisplay.innerText = `${shotCount} / ${MAX_SHOTS}`;
-            if (shotCount >= MAX_SHOTS) {
-                shutterBtn.disabled = true;
-                counterDisplay.style.color = "red";
-            }
-        }
-    </script>
-</body>
-</html>
+                
+                if (!uploadRes.ok) throw new Error('Upload failed');
+                const uploadToken =
