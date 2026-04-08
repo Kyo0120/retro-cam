@@ -3,11 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Retro Cam - Auto Sync</title>
+    <title>Retro Cam - Infinite Mode</title>
     <style>
         :root {
             --body-bg: #1a1a1a;
-            --panel-bg: #333;
             --accent: #ffae00;
         }
 
@@ -32,15 +31,12 @@
             border-radius: 4px;
             overflow: hidden;
             background: #000;
-            position: relative;
         }
 
         video {
             width: 100%;
             height: 100%;
             object-fit: cover;
-            transform: scale(var(--zoom-level, 1));
-            transform-origin: center;
         }
 
         .controls {
@@ -49,27 +45,29 @@
             width: 100%;
         }
 
+        /* 制限なしなので「TOTAL」表示に変更 */
         .counter {
             font-size: 1.5rem;
             color: var(--accent);
-            margin-bottom: 10px;
+            margin-bottom: 5px;
+        }
+        .counter-label {
+            font-size: 10px;
+            color: #888;
+            margin-bottom: 15px;
         }
 
-        /* 連携ボタンのデザイン */
         #auth-btn {
             background-color: #4285f4;
             color: white;
             border: none;
             padding: 10px 20px;
             border-radius: 20px;
-            font-size: 12px;
+            font-size: 11px;
             margin-bottom: 20px;
             cursor: pointer;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.3);
         }
-        #auth-btn.linked {
-            background-color: #34a853;
-        }
+        #auth-btn.linked { background-color: #34a853; }
 
         #shutter {
             width: 80px;
@@ -78,17 +76,16 @@
             border: 5px solid #222;
             background: #d00;
             box-shadow: 0 4px 0 #600;
+            cursor: pointer;
         }
 
         #shutter:active { transform: translateY(2px); box-shadow: none; }
-        #shutter:disabled { background: #444; box-shadow: none; }
 
-        /* アップロード中インジケーター */
         #loading-msg {
             font-size: 10px;
             color: var(--accent);
             height: 15px;
-            margin-top: 5px;
+            margin-top: 10px;
             visibility: hidden;
         }
 
@@ -102,22 +99,21 @@
     </div>
 
     <div class="controls">
-        <div class="counter" id="counter">0 / 30</div>
+        <div class="counter" id="counter">00</div>
+        <div class="counter-label">TOTAL PHOTOS</div>
         
         <button id="auth-btn" onclick="loginToGoogle()">Googleフォトと連携する</button>
-        
         <br>
         <button id="shutter"></button>
-        <div id="loading-msg">SAVING TO GOOGLE PHOTOS...</div>
+        <div id="loading-msg">SYNCING TO CLOUD...</div>
     </div>
 
     <canvas id="canvas"></canvas>
 
     <script>
-        // --- 設定：ここにあなたのクライアントIDを入れてください ---
-        const CLIENT_ID = '341523960931-58ltfdmmi1l6m2ksjf5s4kga5mlu9sct.apps.googleusercontent.com';
+        // --- 設定：クライアントIDを入れてください ---
+        const CLIENT_ID = 'ここに取得したクライアントIDを貼り付け';
         const SCOPE = 'https://www.googleapis.com/auth/photoslibrary.appendonly';
-        const MAX_SHOTS = 30;
 
         const video = document.getElementById('video');
         const canvas = document.getElementById('canvas');
@@ -127,26 +123,22 @@
         const authBtn = document.getElementById('auth-btn');
 
         let accessToken = null;
-        let shotCount = localStorage.getItem('retro_shot_count') ? parseInt(localStorage.getItem('retro_shot_count')) : 0;
+        let shotCount = localStorage.getItem('retro_shot_count_inf') ? parseInt(localStorage.getItem('retro_shot_count_inf')) : 0;
 
-        // 1. ページ読み込み時の処理
         window.addEventListener('load', () => {
             const hash = window.location.hash.substring(1);
             const params = new URLSearchParams(hash);
             accessToken = params.get('access_token');
 
             if (accessToken) {
-                // 認証成功後の処理
                 history.replaceState(null, null, window.location.pathname);
-                authBtn.innerText = "✓ 連携済み（自動保存有効）";
+                authBtn.innerText = "✓ 連携済み";
                 authBtn.classList.add("linked");
-                authBtn.onclick = null; // 二度押し防止
             }
             initCamera();
             updateUI();
         });
 
-        // 2. カメラ起動
         async function initCamera() {
             try {
                 const stream = await navigator.mediaDevices.getUserMedia({
@@ -155,37 +147,34 @@
                 });
                 video.srcObject = stream;
             } catch (err) {
-                alert("カメラを起動できません。HTTPS環境で試してください。");
+                alert("カメラ起動エラー");
             }
         }
 
-        // 3. Google認証
         function loginToGoogle() {
             const redirectUri = window.location.href.split('#')[0];
             const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${CLIENT_ID}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=token&scope=${encodeURIComponent(SCOPE)}`;
             window.location.href = authUrl;
         }
 
-        // 4. シャッターボタン
         shutterBtn.addEventListener('click', () => {
-            if (shotCount >= MAX_SHOTS) return;
-
+            // 枚数制限のチェック（if文）を削除しました
+            
             const ctx = canvas.getContext('2d');
             const w = video.videoWidth;
             const h = video.videoHeight;
             canvas.width = w;
             canvas.height = h;
 
-            // キャプチャ
             ctx.drawImage(video, 0, 0, w, h);
             
-            // 加工エフェクト（セピア・ノイズ）
+            // 加工エフェクト
             ctx.globalCompositeOperation = 'multiply';
             ctx.fillStyle = 'rgba(255, 200, 150, 0.2)';
             ctx.fillRect(0, 0, w, h);
             ctx.globalCompositeOperation = 'source-over';
 
-            // 日付合成
+            // 日付
             const now = new Date();
             const dateStr = `${now.getFullYear().toString().slice(-2)}.${(now.getMonth()+1).toString().padStart(2,'0')}.${now.getDate().toString().padStart(2,'0')}`;
             ctx.font = `italic bold ${Math.floor(w * 0.05)}px sans-serif`;
@@ -193,26 +182,21 @@
             ctx.textAlign = 'right';
             ctx.fillText(dateStr, w * 0.95, h * 0.95);
 
-            // 自動保存処理
             canvas.toBlob(async (blob) => {
                 if (accessToken) {
                     loadingMsg.style.visibility = "visible";
                     await uploadToGooglePhotos(blob);
                     loadingMsg.style.visibility = "hidden";
-                } else {
-                    alert("Google連携がされていません。画像は保存されませんでした。");
                 }
             }, 'image/jpeg', 0.9);
 
             shotCount++;
-            localStorage.setItem('retro_shot_count', shotCount);
+            localStorage.setItem('retro_shot_count_inf', shotCount);
             updateUI();
         });
 
-        // 5. Googleフォトへの完全自動アップロード関数
         async function uploadToGooglePhotos(blob) {
             try {
-                // Step A: バイナリデータのアップロード
                 const uploadRes = await fetch('https://photoslibrary.googleapis.com/v1/uploads', {
                     method: 'POST',
                     headers: {
@@ -222,6 +206,25 @@
                     },
                     body: blob
                 });
-                
-                if (!uploadRes.ok) throw new Error('Upload failed');
-                const uploadToken =
+                const uploadToken = await uploadRes.text();
+
+                await fetch('https://photoslibrary.googleapis.com/v1/mediaItems:batchCreate', {
+                    method: 'POST',
+                    headers: {
+                        'Content-type': 'application/json',
+                        'Authorization': `Bearer ${accessToken}`
+                    },
+                    body: JSON.stringify({
+                        "newMediaItems": [{
+                            "description": "Infinite Mode Photo",
+                            "simpleMediaItem": { "uploadToken": uploadToken }
+                        }]
+                    })
+                });
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        function updateUI() {
+            // 累
