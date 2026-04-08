@@ -112,7 +112,7 @@
 
     <script>
         // --- 設定：クライアントIDを入れてください ---
-        const CLIENT_ID = 'ここに取得したクライアントIDを貼り付け';
+        const CLIENT_ID = '341523960931-58ltfdmmi1l6m2ksjf5s4kga5mlu9sct.apps.googleusercontent.com';
         const SCOPE = 'https://www.googleapis.com/auth/photoslibrary.appendonly';
 
         const video = document.getElementById('video');
@@ -227,4 +227,9 @@
         }
 
         function updateUI() {
-            // 累
+            // 累計枚数を表示
+            counterDisplay.innerText = shotCount.toString().padStart(2, '0');
+        }
+    </script>
+</body>
+</html>
