@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Retro Cam - Charge Mode</title>
+    <title>Retro Cam - Aspect Ratio Sync</title>
     <style>
         :root { --body-bg: #1a1a1a; --accent: #ffae00; }
         body { 
@@ -13,10 +13,11 @@
             height: 100dvh; overflow: hidden; 
         }
         
-        /* ファインダー */
+        /* 3:2比率のファインダー (210px : 140px) */
         .viewfinder-container { 
-            width: 150px; height: 150px; border: 3px solid #555; border-radius: 4px; 
+            width: 210px; height: 140px; border: 3px solid #555; border-radius: 4px; 
             overflow: hidden; background: #000; position: relative;
+            box-shadow: 0 0 20px rgba(0,0,0,0.5);
         }
         video { 
             width: 100%; height: 100%; object-fit: cover; 
@@ -24,31 +25,24 @@
         }
 
         .controls { margin-top: 15px; text-align: center; width: 100%; }
-        
-        /* 枚数カウンター */
         .counter { font-size: 1.8rem; color: var(--accent); font-weight: bold; }
         .counter-label { font-size: 10px; color: #888; margin-bottom: 10px; }
 
-        /* 連携ボタン */
         #auth-btn { 
             background-color: #4285f4; color: white; border: none; 
             padding: 8px 15px; border-radius: 20px; font-size: 11px; 
             margin-bottom: 15px; cursor: pointer; 
         }
         
-        /* ズーム */
         .zoom-box { margin-bottom: 15px; }
         input[type=range] { width: 150px; accent-color: var(--accent); }
 
-        /* シャッター */
         #shutter { 
             width: 70px; height: 70px; border-radius: 50%; border: 4px solid #222; 
             background: #d00; box-shadow: 0 4px 0 #600; cursor: pointer; 
             transition: all 0.2s;
         }
         #shutter:active { transform: translateY(2px); box-shadow: none; }
-        
-        /* チャージ中（無効化）のスタイル */
         #shutter:disabled { 
             background: #444; box-shadow: none; cursor: not-allowed; 
             filter: grayscale(100%) opacity(0.6);
@@ -83,11 +77,10 @@
     <canvas id="canvas"></canvas>
 
     <script>
-        // --- 設定エリア ---
-        const CLIENT_ID = '341523960931-58ltfdmmi1l6m2ksjf5s4kga5mlu9sct.apps.googleusercontent.com'; 
+        const CLIENT_ID = 'ここにあなたのクライアントIDを貼り付け'; 
         const SCOPE = 'https://www.googleapis.com/auth/photoslibrary.appendonly';
         const MAX_SHOTS = 30;
-        const CHARGE_TIME = 5000; // チャージ時間（5秒）
+        const CHARGE_TIME = 5000;
 
         const video = document.getElementById('video');
         const canvas = document.getElementById('canvas');
@@ -138,39 +131,45 @@
             video.style.setProperty('--zoom-level', e.target.value);
         });
 
-        // --- シャッター処理 ---
         shutterBtn.addEventListener('click', () => {
             if (shotCount >= MAX_SHOTS) return;
 
-            // ボタンを5秒間無効化（チャージ演出）
             shutterBtn.disabled = true;
             setTimeout(() => {
-                const remaining = MAX_SHOTS - shotCount;
-                if (remaining > 0) {
-                    shutterBtn.disabled = false;
-                }
+                if ((MAX_SHOTS - shotCount) > 0) shutterBtn.disabled = false;
             }, CHARGE_TIME);
 
             const ctx = canvas.getContext('2d');
-            const w = video.videoWidth;
-            const h = video.videoHeight;
-            canvas.width = w;
-            canvas.height = h;
+            const vW = video.videoWidth;
+            const vH = video.videoHeight;
 
-            // ズーム切り出し
+            // --- 3:2 切り出しロジック ---
+            let targetW, targetH;
+            if (vW / vH > 3/2) {
+                targetH = vH;
+                targetW = vH * (3/2);
+            } else {
+                targetW = vW;
+                targetH = vW / (3/2);
+            }
+
+            // キャンバスサイズを3:2で固定（高画質維持）
+            canvas.width = targetW;
+            canvas.height = targetH;
+
+            // ズーム倍率を考慮
             const z = parseFloat(zoomRange.value);
-            const sw = w / z;
-            const sh = h / z;
-            const sx = (w - sw) / 2;
-            const sy = (h - sh) / 2;
+            const sw = targetW / z;
+            const sh = targetH / z;
+            const sx = (vW - sw) / 2;
+            const sy = (vH - sh) / 2;
 
-            ctx.drawImage(video, sx, sy, sw, sh, 0, 0, w, h);
+            // 描画
+            ctx.drawImage(video, sx, sy, sw, sh, 0, 0, targetW, targetH);
 
-            // 加工
-            applyRetroEffects(ctx, w, h);
-            addTimestamp(ctx, w, h);
+            applyRetroEffects(ctx, targetW, targetH);
+            addTimestamp(ctx, targetW, targetH);
 
-            // 送信
             canvas.toBlob(async (blob) => {
                 if (accessToken) {
                     loadingMsg.style.visibility = "visible";
