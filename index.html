@@ -84,7 +84,7 @@
 
     <script>
         // --- 設定エリア ---
-        const CLIENT_ID = '341523960931-58ltfdmmi1l6m2ksjf5s4kga5mlu9sct.apps.googleusercontent.com'; 
+        const CLIENT_ID = 'ここにあなたのクライアントIDを貼り付け'; 
         const SCOPE = 'https://www.googleapis.com/auth/photoslibrary.appendonly';
         const MAX_SHOTS = 30;
         const CHARGE_TIME = 5000; // チャージ時間（5秒）
@@ -155,4 +155,96 @@
             const w = video.videoWidth;
             const h = video.videoHeight;
             canvas.width = w;
-            canvas.height = h
+            canvas.height = h;
+
+            // ズーム切り出し
+            const z = parseFloat(zoomRange.value);
+            const sw = w / z;
+            const sh = h / z;
+            const sx = (w - sw) / 2;
+            const sy = (h - sh) / 2;
+
+            ctx.drawImage(video, sx, sy, sw, sh, 0, 0, w, h);
+
+            // 加工
+            applyRetroEffects(ctx, w, h);
+            addTimestamp(ctx, w, h);
+
+            // 送信
+            canvas.toBlob(async (blob) => {
+                if (accessToken) {
+                    loadingMsg.style.visibility = "visible";
+                    await uploadToGoogle(blob);
+                    loadingMsg.style.visibility = "hidden";
+                }
+            }, 'image/jpeg', 0.9);
+
+            shotCount++;
+            localStorage.setItem('retro_used_count', shotCount);
+            updateUI();
+        });
+
+        function applyRetroEffects(ctx, w, h) {
+            ctx.globalCompositeOperation = 'multiply';
+            ctx.fillStyle = 'rgba(255, 210, 150, 0.25)';
+            ctx.fillRect(0, 0, w, h);
+
+            ctx.globalCompositeOperation = 'source-over';
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.04)';
+            for (let i = 0; i < (w * h) / 1500; i++) {
+                ctx.fillRect(Math.random() * w, Math.random() * h, 1, 1);
+            }
+
+            const grad = ctx.createRadialGradient(w/2, h/2, w/4, w/2, h/2, w/1.1);
+            grad.addColorStop(0, 'transparent');
+            grad.addColorStop(1, 'rgba(0,0,0,0.4)');
+            ctx.fillStyle = grad;
+            ctx.fillRect(0, 0, w, h);
+        }
+
+        function addTimestamp(ctx, w, h) {
+            const now = new Date();
+            const YY = now.getFullYear().toString().slice(-2);
+            const MM = (now.getMonth()+1).toString().padStart(2, '0');
+            const DD = now.getDate().toString().padStart(2, '0');
+            const hh = now.getHours().toString().padStart(2, '0');
+            const mm = now.getMinutes().toString().padStart(2, '0');
+            
+            const timeStr = `${YY}.${MM}.${DD}  ${hh}:${mm}`;
+            const fontSize = Math.floor(w * 0.045);
+            
+            ctx.font = `bold ${fontSize}px "Courier New", monospace`;
+            ctx.textAlign = 'right';
+            ctx.shadowColor = 'rgba(255, 100, 0, 0.8)';
+            ctx.shadowBlur = fontSize / 4;
+            ctx.fillStyle = '#ff7b00';
+            ctx.fillText(timeStr, w * 0.94, h * 0.94);
+        }
+
+        async function uploadToGoogle(blob) {
+            try {
+                const res = await fetch('https://photoslibrary.googleapis.com/v1/uploads', {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${accessToken}`, 'Content-type': 'application/octet-stream', 'X-Goog-Upload-Protocol': 'raw' },
+                    body: blob
+                });
+                const token = await res.text();
+                await fetch('https://photoslibrary.googleapis.com/v1/mediaItems:batchCreate', {
+                    method: 'POST',
+                    headers: { 'Content-type': 'application/json', 'Authorization': `Bearer ${accessToken}` },
+                    body: JSON.stringify({ "newMediaItems": [{ "simpleMediaItem": { "uploadToken": token } }] })
+                });
+            } catch (e) { console.error(e); }
+        }
+
+        function updateUI() {
+            const remaining = MAX_SHOTS - shotCount;
+            counterDisplay.innerText = remaining > 0 ? remaining : 0;
+            if (remaining <= 0) {
+                shutterBtn.disabled = true;
+                counterDisplay.style.color = "red";
+            }
+        }
+    </script>
+</body>
+</html>
