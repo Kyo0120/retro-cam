@@ -77,7 +77,7 @@
     <canvas id="canvas"></canvas>
 
     <script>
-        const CLIENT_ID = 'ここにあなたのクライアントIDを貼り付け'; 
+        const CLIENT_ID = '341523960931-58ltfdmmi1l6m2ksjf5s4kga5mlu9sct.apps.googleusercontent.com'; 
         const SCOPE = 'https://www.googleapis.com/auth/photoslibrary.appendonly';
         const MAX_SHOTS = 30;
         const CHARGE_TIME = 5000;
@@ -234,4 +234,40 @@
 
         function addTimestamp(ctx, w, h) {
             const now = new Date();
-            const timeStr = `${now.getFullYear().toString().slice(-2)}.${(now.getMonth()+1).toString().padStart(2, '0')}.${now.getDate().toString().padStart(2, '0')}  ${now.getHours().toString
+            const timeStr = `${now.getFullYear().toString().slice(-2)}.${(now.getMonth()+1).toString().padStart(2, '0')}.${now.getDate().toString().padStart(2, '0')}  ${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
+            const fontSize = Math.floor(w * 0.04);
+            ctx.font = `bold ${fontSize}px "Courier New", monospace`;
+            ctx.textAlign = 'right';
+            ctx.fillStyle = '#ff7b00';
+            ctx.shadowColor = 'rgba(255, 100, 0, 0.5)';
+            ctx.shadowBlur = 5;
+            ctx.fillText(timeStr, w * 0.95, h * 0.95);
+        }
+
+        async function uploadToGoogle(blob) {
+            try {
+                const res = await fetch('https://photoslibrary.googleapis.com/v1/uploads', {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${accessToken}`, 'Content-type': 'application/octet-stream', 'X-Goog-Upload-Protocol': 'raw' },
+                    body: blob
+                });
+                const token = await res.text();
+                await fetch('https://photoslibrary.googleapis.com/v1/mediaItems:batchCreate', {
+                    method: 'POST',
+                    headers: { 'Content-type': 'application/json', 'Authorization': `Bearer ${accessToken}` },
+                    body: JSON.stringify({ "newMediaItems": [{ "simpleMediaItem": { "uploadToken": token } }] })
+                });
+            } catch (e) { console.error(e); }
+        }
+
+        function updateUI() {
+            const remaining = MAX_SHOTS - shotCount;
+            counterDisplay.innerText = remaining > 0 ? remaining : 0;
+            if (remaining <= 0) {
+                shutterBtn.disabled = true;
+                counterDisplay.style.color = "red";
+            }
+        }
+    </script>
+</body>
+</html>
