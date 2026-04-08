@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Retro Cam - Stable Switch</title>
+    <title>Retro Cam - Final Fix</title>
     <style>
         :root { --body-bg: #1a1a1a; --accent: #ffae00; }
         body { 
@@ -21,31 +21,20 @@
             width: 100%; height: 100%; object-fit: cover; 
             transform: scale(var(--zoom-level, 1)); transform-origin: center;
         }
+        /* インカメラ（自撮り）の時だけ鏡のように反転させる */
+        video.selfie { transform: scale(var(--zoom-level, 1)) scaleX(-1); }
 
         .controls { margin-top: 10px; text-align: center; width: 100%; }
         .counter { font-size: 1.8rem; color: var(--accent); font-weight: bold; }
         .counter-label { font-size: 10px; color: #888; margin-bottom: 5px; }
 
-        #auth-btn { 
-            background-color: #4285f4; color: white; border: none; 
-            padding: 6px 12px; border-radius: 20px; font-size: 10px; 
-            margin-bottom: 10px; cursor: pointer; 
-        }
-        
-        .tool-box { margin-bottom: 25px; display: flex; flex-direction: column; align-items: center; gap: 10px; }
+        #auth-btn { background-color: #4285f4; color: white; border: none; padding: 8px 15px; border-radius: 20px; font-size: 10px; margin-bottom: 10px; cursor: pointer; }
+        .tool-box { margin-bottom: 40px; display: flex; flex-direction: column; align-items: center; gap: 15px; }
         input[type=range] { width: 180px; accent-color: var(--accent); }
-        
-        .switch-btn {
-            background: #444; color: #eee; border: 1px solid #666;
-            padding: 8px 15px; border-radius: 4px; font-size: 11px; cursor: pointer;
-        }
+        .switch-btn { background: #444; color: #eee; border: 1px solid #666; padding: 10px 20px; border-radius: 4px; font-size: 11px; cursor: pointer; }
 
-        #shutter { 
-            width: 80px; height: 80px; border-radius: 50%; border: 5px solid #222; 
-            background: #d00; box-shadow: 0 4px 0 #600; cursor: pointer; 
-        }
+        #shutter { width: 80px; height: 80px; border-radius: 50%; border: 5px solid #222; background: #d00; box-shadow: 0 4px 0 #600; cursor: pointer; }
         #shutter:disabled { background: #444; box-shadow: none; filter: grayscale(100%); opacity: 0.5; }
-
         #loading-msg { font-size: 10px; color: var(--accent); visibility: hidden; margin-top: 10px; height: 12px; }
         canvas { display: none; }
     </style>
@@ -59,7 +48,6 @@
     <div class="controls">
         <div class="counter" id="counter">30</div>
         <div class="counter-label">REMAINING</div>
-        
         <button id="auth-btn">Googleフォトと連携</button>
         
         <div class="tool-box">
@@ -71,7 +59,7 @@
         </div>
 
         <button id="shutter"></button>
-        <div id="loading-msg">HIGH-RES SYNCING...</div>
+        <div id="loading-msg">SYNCING...</div>
     </div>
 
     <canvas id="canvas"></canvas>
@@ -80,16 +68,13 @@
         const CLIENT_ID = '341523960931-58ltfdmmi1l6m2ksjf5s4kga5mlu9sct.apps.googleusercontent.com'; 
         const SCOPE = 'https://www.googleapis.com/auth/photoslibrary.appendonly';
         const MAX_SHOTS = 30;
-        const CHARGE_TIME = 5000;
 
         const video = document.getElementById('video');
         const canvas = document.getElementById('canvas');
         const shutterBtn = document.getElementById('shutter');
-        const authBtn = document.getElementById('auth-btn');
         const switchBtn = document.getElementById('switchBtn');
         const counterDisplay = document.getElementById('counter');
         const zoomRange = document.getElementById('zoomRange');
-        const loadingMsg = document.getElementById('loading-msg');
 
         let accessToken = null;
         let shotCount = localStorage.getItem('retro_used_count') ? parseInt(localStorage.getItem('retro_used_count')) : 0;
@@ -97,38 +82,37 @@
         let currentStream = null;
 
         window.onload = async () => {
-            await initCamera(currentFacingMode);
+            await initCamera("environment");
             checkAuth();
             updateUI();
         };
 
+        // カメラ初期化関数（エラー対策強化版）
         async function initCamera(facingMode) {
-            // 現在のストリームを確実に停止させる（重要！）
+            // 1. 現在のストリームを完全に停止
             if (currentStream) {
                 currentStream.getTracks().forEach(track => track.stop());
+                video.srcObject = null;
+                // 停止後にわずかな待ち時間を設ける（ブラウザの解放待ち）
+                await new Promise(resolve => setTimeout(resolve, 500));
             }
 
+            // 2. 新しいカメラの取得
             try {
-                const constraints = {
-                    video: { 
-                        facingMode: facingMode, 
-                        width: { ideal: 4096 }, 
-                        height: { ideal: 2160 } 
-                    },
+                const stream = await navigator.mediaDevices.getUserMedia({
+                    video: { facingMode: facingMode },
                     audio: false
-                };
+                });
+                currentStream = stream;
+                video.srcObject = stream;
                 
-                currentStream = await navigator.mediaDevices.getUserMedia(constraints);
-                video.srcObject = currentStream;
+                // インカメラなら反転クラスを付与
+                if (facingMode === "user") video.classList.add('selfie');
+                else video.classList.remove('selfie');
+
             } catch (err) {
-                console.error("Camera Init Error:", err);
-                // エラーが出た場合、解像度を落として再試行
-                try {
-                    currentStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: facingMode } });
-                    video.srcObject = currentStream;
-                } catch (e) {
-                    alert("カメラを起動できませんでした。ブラウザの設定で許可されているか確認してください。");
-                }
+                console.error(err);
+                alert("カメラ切り替えに失敗しました。ページを再読み込みしてください。");
             }
         }
 
@@ -137,75 +121,61 @@
             await initCamera(currentFacingMode);
         });
 
+        // --- 以下、Google連携・撮影ロジック（そのまま） ---
         function checkAuth() {
             const params = new URLSearchParams(window.location.hash.substring(1));
             accessToken = params.get('access_token');
             if (accessToken) {
                 history.replaceState(null, null, window.location.pathname);
-                authBtn.innerText = "✓ 連携済み";
-                authBtn.style.backgroundColor = "#34a853";
+                document.getElementById('auth-btn').innerText = "✓ 連携済み";
+                document.getElementById('auth-btn').style.backgroundColor = "#34a853";
             }
         }
 
-        authBtn.addEventListener('click', () => {
+        document.getElementById('auth-btn').addEventListener('click', () => {
             const redirectUri = window.location.origin + window.location.pathname;
-            const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${CLIENT_ID}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=token&scope=${encodeURIComponent(SCOPE)}`;
-            window.location.href = authUrl;
+            window.location.href = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${CLIENT_ID}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=token&scope=${encodeURIComponent(SCOPE)}`;
         });
 
-        zoomRange.addEventListener('input', (e) => {
-            video.style.setProperty('--zoom-level', e.target.value);
-        });
+        zoomRange.addEventListener('input', (e) => video.style.setProperty('--zoom-level', e.target.value));
 
         shutterBtn.addEventListener('click', () => {
             if (shotCount >= MAX_SHOTS) return;
-
             shutterBtn.disabled = true;
-            setTimeout(() => {
-                if ((MAX_SHOTS - shotCount) > 0) shutterBtn.disabled = false;
-            }, CHARGE_TIME);
+            setTimeout(() => { if (MAX_SHOTS - shotCount > 0) shutterBtn.disabled = false; }, 5000);
 
             const ctx = canvas.getContext('2d');
             const vW = video.videoWidth;
             const vH = video.videoHeight;
-
-            let targetW, targetH;
-            if (vW / vH > 3/2) {
-                targetH = vH; targetW = vH * (3/2);
-            } else {
-                targetW = vW; targetH = vW / (3/2);
-            }
-
-            canvas.width = targetW;
-            canvas.height = targetH;
+            let tw, th;
+            if (vW / vH > 1.5) { th = vH; tw = vH * 1.5; } else { tw = vW; th = vW / 1.5; }
+            canvas.width = tw; canvas.height = th;
 
             const z = parseFloat(zoomRange.value);
-            const sw = targetW / z;
-            const sh = targetH / z;
-            const sx = (vW - sw) / 2;
-            const sy = (vH - sh) / 2;
+            const sw = tw / z; const sh = th / z;
+            const sx = (vW - sw) / 2; const sy = (vH - sh) / 2;
 
-            ctx.drawImage(video, sx, sy, sw, sh, 0, 0, targetW, targetH);
+            ctx.drawImage(video, sx, sy, sw, sh, 0, 0, tw, th);
 
+            // インカメラの保存画像反転処理
             if (currentFacingMode === "user") {
-                const tempCanvas = document.createElement('canvas');
-                tempCanvas.width = targetW; tempCanvas.height = targetH;
-                const tempCtx = tempCanvas.getContext('2d');
-                tempCtx.translate(targetW, 0);
-                tempCtx.scale(-1, 1);
-                tempCtx.drawImage(canvas, 0, 0);
-                ctx.clearRect(0, 0, targetW, targetH);
-                ctx.drawImage(tempCanvas, 0, 0);
+                const temp = document.createElement('canvas');
+                temp.width = tw; temp.height = th;
+                const tctx = temp.getContext('2d');
+                tctx.translate(tw, 0); tctx.scale(-1, 1);
+                tctx.drawImage(canvas, 0, 0);
+                ctx.clearRect(0, 0, tw, th);
+                ctx.drawImage(temp, 0, 0);
             }
 
-            applyRetroEffects(ctx, targetW, targetH);
-            addTimestamp(ctx, targetW, targetH);
+            applyRetroEffects(ctx, tw, th);
+            addTimestamp(ctx, tw, th);
 
             canvas.toBlob(async (blob) => {
                 if (accessToken) {
-                    loadingMsg.style.visibility = "visible";
+                    document.getElementById('loading-msg').style.visibility = "visible";
                     await uploadToGoogle(blob);
-                    loadingMsg.style.visibility = "hidden";
+                    document.getElementById('loading-msg').style.visibility = "hidden";
                 }
             }, 'image/jpeg', 1.0);
 
@@ -218,29 +188,20 @@
             ctx.globalCompositeOperation = 'overlay';
             ctx.fillStyle = 'rgba(255, 160, 50, 0.1)';
             ctx.fillRect(0, 0, w, h);
-
             ctx.globalCompositeOperation = 'source-over';
             ctx.fillStyle = 'rgba(255, 255, 255, 0.03)';
-            for (let i = 0; i < (w * h) / 2000; i++) {
-                ctx.fillRect(Math.random() * w, Math.random() * h, 1, 1);
-            }
-
+            for (let i = 0; i < (w * h) / 2000; i++) ctx.fillRect(Math.random() * w, Math.random() * h, 1, 1);
             const grad = ctx.createRadialGradient(w/2, h/2, w/3, w/2, h/2, w/0.9);
-            grad.addColorStop(0, 'transparent');
-            grad.addColorStop(1, 'rgba(0,0,0,0.3)');
-            ctx.fillStyle = grad;
-            ctx.fillRect(0, 0, w, h);
+            grad.addColorStop(0, 'transparent'); grad.addColorStop(1, 'rgba(0,0,0,0.3)');
+            ctx.fillStyle = grad; ctx.fillRect(0, 0, w, h);
         }
 
         function addTimestamp(ctx, w, h) {
             const now = new Date();
             const timeStr = `${now.getFullYear().toString().slice(-2)}.${(now.getMonth()+1).toString().padStart(2, '0')}.${now.getDate().toString().padStart(2, '0')}  ${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
-            const fontSize = Math.floor(w * 0.04);
-            ctx.font = `bold ${fontSize}px "Courier New", monospace`;
-            ctx.textAlign = 'right';
-            ctx.fillStyle = '#ff7b00';
-            ctx.shadowColor = 'rgba(255, 100, 0, 0.5)';
-            ctx.shadowBlur = 5;
+            ctx.font = `bold ${Math.floor(w * 0.04)}px "Courier New", monospace`;
+            ctx.textAlign = 'right'; ctx.fillStyle = '#ff7b00';
+            ctx.shadowColor = 'rgba(255, 100, 0, 0.5)'; ctx.shadowBlur = 5;
             ctx.fillText(timeStr, w * 0.95, h * 0.95);
         }
 
@@ -261,12 +222,9 @@
         }
 
         function updateUI() {
-            const remaining = MAX_SHOTS - shotCount;
-            counterDisplay.innerText = remaining > 0 ? remaining : 0;
-            if (remaining <= 0) {
-                shutterBtn.disabled = true;
-                counterDisplay.style.color = "red";
-            }
+            const rem = MAX_SHOTS - shotCount;
+            counterDisplay.innerText = rem > 0 ? rem : 0;
+            if (rem <= 0) { shutterBtn.disabled = true; counterDisplay.style.color = "red"; }
         }
     </script>
 </body>
