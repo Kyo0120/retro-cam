@@ -3,18 +3,58 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Retro Cam - Fixed</title>
+    <title>Retro Cam - Charge Mode</title>
     <style>
         :root { --body-bg: #1a1a1a; --accent: #ffae00; }
-        body { margin: 0; padding: 0; background-color: var(--body-bg); color: white; font-family: sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100dvh; overflow: hidden; }
-        .viewfinder-container { width: 150px; height: 150px; border: 3px solid #555; border-radius: 4px; overflow: hidden; background: #000; }
-        video { width: 100%; height: 100%; object-fit: cover; }
-        .controls { margin-top: 20px; text-align: center; width: 100%; }
-        .counter { font-size: 1.5rem; color: var(--accent); }
-        #auth-btn { background-color: #4285f4; color: white; border: none; padding: 10px 20px; border-radius: 20px; font-size: 11px; margin-bottom: 20px; cursor: pointer; }
-        #shutter { width: 80px; height: 80px; border-radius: 50%; border: 5px solid #222; background: #d00; box-shadow: 0 4px 0 #600; cursor: pointer; }
+        body { 
+            margin: 0; padding: 0; background-color: var(--body-bg); color: white; 
+            font-family: 'Courier New', Courier, monospace; display: flex; 
+            flex-direction: column; align-items: center; justify-content: center; 
+            height: 100dvh; overflow: hidden; 
+        }
+        
+        /* ファインダー */
+        .viewfinder-container { 
+            width: 150px; height: 150px; border: 3px solid #555; border-radius: 4px; 
+            overflow: hidden; background: #000; position: relative;
+        }
+        video { 
+            width: 100%; height: 100%; object-fit: cover; 
+            transform: scale(var(--zoom-level, 1)); transform-origin: center;
+        }
+
+        .controls { margin-top: 15px; text-align: center; width: 100%; }
+        
+        /* 枚数カウンター */
+        .counter { font-size: 1.8rem; color: var(--accent); font-weight: bold; }
+        .counter-label { font-size: 10px; color: #888; margin-bottom: 10px; }
+
+        /* 連携ボタン */
+        #auth-btn { 
+            background-color: #4285f4; color: white; border: none; 
+            padding: 8px 15px; border-radius: 20px; font-size: 11px; 
+            margin-bottom: 15px; cursor: pointer; 
+        }
+        
+        /* ズーム */
+        .zoom-box { margin-bottom: 15px; }
+        input[type=range] { width: 150px; accent-color: var(--accent); }
+
+        /* シャッター */
+        #shutter { 
+            width: 70px; height: 70px; border-radius: 50%; border: 4px solid #222; 
+            background: #d00; box-shadow: 0 4px 0 #600; cursor: pointer; 
+            transition: all 0.2s;
+        }
         #shutter:active { transform: translateY(2px); box-shadow: none; }
-        #loading-msg { font-size: 10px; color: var(--accent); visibility: hidden; margin-top: 10px; }
+        
+        /* チャージ中（無効化）のスタイル */
+        #shutter:disabled { 
+            background: #444; box-shadow: none; cursor: not-allowed; 
+            filter: grayscale(100%) opacity(0.6);
+        }
+
+        #loading-msg { font-size: 10px; color: var(--accent); visibility: hidden; margin-top: 10px; height: 12px; }
         canvas { display: none; }
     </style>
 </head>
@@ -25,11 +65,17 @@
     </div>
 
     <div class="controls">
-        <div class="counter" id="counter">00</div>
-        <div style="font-size:10px; color:#888; margin-bottom:15px;">TOTAL PHOTOS</div>
+        <div class="counter" id="counter">30</div>
+        <div class="counter-label">REMAINING</div>
         
         <button id="auth-btn">Googleフォトと連携する</button>
         <br>
+        
+        <div class="zoom-box">
+            <label style="font-size:10px;">ZOOM</label><br>
+            <input type="range" id="zoomRange" min="1" max="3" step="0.1" value="1">
+        </div>
+
         <button id="shutter"></button>
         <div id="loading-msg">SYNCING TO CLOUD...</div>
     </div>
@@ -37,102 +83,76 @@
     <canvas id="canvas"></canvas>
 
     <script>
-        // --- 設定 ---
+        // --- 設定エリア ---
         const CLIENT_ID = '341523960931-58ltfdmmi1l6m2ksjf5s4kga5mlu9sct.apps.googleusercontent.com'; 
         const SCOPE = 'https://www.googleapis.com/auth/photoslibrary.appendonly';
+        const MAX_SHOTS = 30;
+        const CHARGE_TIME = 5000; // チャージ時間（5秒）
 
-        // --- 要素の取得 ---
         const video = document.getElementById('video');
         const canvas = document.getElementById('canvas');
         const shutterBtn = document.getElementById('shutter');
         const authBtn = document.getElementById('auth-btn');
         const counterDisplay = document.getElementById('counter');
+        const zoomRange = document.getElementById('zoomRange');
         const loadingMsg = document.getElementById('loading-msg');
 
         let accessToken = null;
-        let shotCount = localStorage.getItem('retro_shot_count_inf') ? parseInt(localStorage.getItem('retro_shot_count_inf')) : 0;
+        let shotCount = localStorage.getItem('retro_used_count') ? parseInt(localStorage.getItem('retro_used_count')) : 0;
 
-        // --- 1. Googleログイン関数 (先に定義する) ---
-        function loginToGoogle() {
-            const redirectUri = window.location.origin + window.location.pathname;
-            const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${CLIENT_ID}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=token&scope=${encodeURIComponent(SCOPE)}`;
-            window.location.href = authUrl;
-        }
+        window.onload = async () => {
+            await initCamera();
+            checkAuth();
+            updateUI();
+        };
 
-        // ボタンにクリックイベントを紐付け
-        authBtn.addEventListener('click', loginToGoogle);
-
-        // --- 2. カメラ起動関数 ---
         async function initCamera() {
             try {
                 const stream = await navigator.mediaDevices.getUserMedia({
-                    video: { facingMode: "environment" },
+                    video: { facingMode: "environment", width: { ideal: 4096 }, height: { ideal: 2160 } },
                     audio: false
                 });
                 video.srcObject = stream;
             } catch (err) {
-                console.error("Camera Error:", err);
-                alert("カメラを起動できませんでした。ブラウザの設定でカメラを許可してください。");
+                alert("カメラを起動できません");
             }
         }
 
-        // --- 3. 初期化処理 ---
-        window.onload = async () => {
-            await initCamera();
-
-            const hash = window.location.hash.substring(1);
-            const params = new URLSearchParams(hash);
+        function checkAuth() {
+            const params = new URLSearchParams(window.location.hash.substring(1));
             accessToken = params.get('access_token');
-
             if (accessToken) {
                 history.replaceState(null, null, window.location.pathname);
                 authBtn.innerText = "✓ 連携済み";
                 authBtn.style.backgroundColor = "#34a853";
             }
-            counterDisplay.innerText = shotCount.toString().padStart(2, '0');
-        };
+        }
 
-        // --- 4. シャッター処理 ---
-        shutterBtn.addEventListener('click', () => {
-            const ctx = canvas.getContext('2d');
-            canvas.width = video.videoWidth;
-            canvas.height = video.videoHeight;
-            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-
-            // エフェクト（簡易版）
-            ctx.globalCompositeOperation = 'multiply';
-            ctx.fillStyle = 'rgba(255, 200, 150, 0.2)';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-            ctx.globalCompositeOperation = 'source-over';
-
-            canvas.toBlob(async (blob) => {
-                if (accessToken) {
-                    loadingMsg.style.visibility = "visible";
-                    await uploadPhoto(blob);
-                    loadingMsg.style.visibility = "hidden";
-                }
-            }, 'image/jpeg', 0.9);
-
-            shotCount++;
-            localStorage.setItem('retro_shot_count_inf', shotCount);
-            counterDisplay.innerText = shotCount.toString().padStart(2, '0');
+        authBtn.addEventListener('click', () => {
+            const redirectUri = window.location.origin + window.location.pathname;
+            const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${CLIENT_ID}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=token&scope=${encodeURIComponent(SCOPE)}`;
+            window.location.href = authUrl;
         });
 
-        async function uploadPhoto(blob) {
-            try {
-                const res = await fetch('https://photoslibrary.googleapis.com/v1/uploads', {
-                    method: 'POST',
-                    headers: { 'Authorization': `Bearer ${accessToken}`, 'Content-type': 'application/octet-stream', 'X-Goog-Upload-Protocol': 'raw' },
-                    body: blob
-                });
-                const token = await res.text();
-                await fetch('https://photoslibrary.googleapis.com/v1/mediaItems:batchCreate', {
-                    method: 'POST',
-                    headers: { 'Content-type': 'application/json', 'Authorization': `Bearer ${accessToken}` },
-                    body: JSON.stringify({ "newMediaItems": [{ "simpleMediaItem": { "uploadToken": token } }] })
-                });
-            } catch (e) { console.error(e); }
-        }
-    </script>
-</body>
-</html>
+        zoomRange.addEventListener('input', (e) => {
+            video.style.setProperty('--zoom-level', e.target.value);
+        });
+
+        // --- シャッター処理 ---
+        shutterBtn.addEventListener('click', () => {
+            if (shotCount >= MAX_SHOTS) return;
+
+            // ボタンを5秒間無効化（チャージ演出）
+            shutterBtn.disabled = true;
+            setTimeout(() => {
+                const remaining = MAX_SHOTS - shotCount;
+                if (remaining > 0) {
+                    shutterBtn.disabled = false;
+                }
+            }, CHARGE_TIME);
+
+            const ctx = canvas.getContext('2d');
+            const w = video.videoWidth;
+            const h = video.videoHeight;
+            canvas.width = w;
+            canvas.height = h
