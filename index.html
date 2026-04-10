@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Retro Cam - Final Fix</title>
+    <title>Retro Cam - Timer Edition</title>
     <style>
         :root { --body-bg: #1a1a1a; --accent: #ffae00; }
         body { 
@@ -13,6 +13,7 @@
             height: 100dvh; overflow: hidden; 
         }
         
+        /* ファインダー */
         .viewfinder-container { 
             width: 240px; height: 160px; border: 3px solid #555; border-radius: 4px; 
             overflow: hidden; background: #000; position: relative;
@@ -21,20 +22,35 @@
             width: 100%; height: 100%; object-fit: cover; 
             transform: scale(var(--zoom-level, 1)); transform-origin: center;
         }
-        /* インカメラ（自撮り）の時だけ鏡のように反転させる */
         video.selfie { transform: scale(var(--zoom-level, 1)) scaleX(-1); }
+
+        /* タイマーカウントダウン表示 */
+        #timer-display {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            font-size: 3rem; color: var(--accent); font-weight: bold;
+            text-shadow: 2px 2px 10px rgba(0,0,0,0.8); pointer-events: none;
+            visibility: hidden;
+        }
 
         .controls { margin-top: 10px; text-align: center; width: 100%; }
         .counter { font-size: 1.8rem; color: var(--accent); font-weight: bold; }
         .counter-label { font-size: 10px; color: #888; margin-bottom: 5px; }
 
-        #auth-btn { background-color: #4285f4; color: white; border: none; padding: 8px 15px; border-radius: 20px; font-size: 10px; margin-bottom: 10px; cursor: pointer; }
-        .tool-box { margin-bottom: 40px; display: flex; flex-direction: column; align-items: center; gap: 15px; }
+        #auth-btn { background-color: #4285f4; color: white; border: none; padding: 6px 12px; border-radius: 20px; font-size: 10px; margin-bottom: 10px; cursor: pointer; }
+        
+        .tool-box { margin-bottom: 25px; display: flex; flex-direction: column; align-items: center; gap: 12px; }
         input[type=range] { width: 180px; accent-color: var(--accent); }
-        .switch-btn { background: #444; color: #eee; border: 1px solid #666; padding: 10px 20px; border-radius: 4px; font-size: 11px; cursor: pointer; }
+        .switch-btn { background: #444; color: #eee; border: 1px solid #666; padding: 8px 15px; border-radius: 4px; font-size: 11px; cursor: pointer; }
 
-        #shutter { width: 80px; height: 80px; border-radius: 50%; border: 5px solid #222; background: #d00; box-shadow: 0 4px 0 #600; cursor: pointer; }
+        /* 撮影ボタンエリア */
+        .shutter-area { display: flex; align-items: center; justify-content: center; gap: 20px; }
+        
+        #shutter { width: 70px; height: 70px; border-radius: 50%; border: 4px solid #222; background: #d00; box-shadow: 0 4px 0 #600; cursor: pointer; }
         #shutter:disabled { background: #444; box-shadow: none; filter: grayscale(100%); opacity: 0.5; }
+
+        .timer-btn { background: #555; color: white; border: 2px solid #777; padding: 10px; border-radius: 8px; font-size: 10px; cursor: pointer; }
+        .timer-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
         #loading-msg { font-size: 10px; color: var(--accent); visibility: hidden; margin-top: 10px; height: 12px; }
         canvas { display: none; }
     </style>
@@ -43,11 +59,13 @@
 
     <div class="viewfinder-container">
         <video id="video" autoplay playsinline></video>
+        <div id="timer-display">5</div>
     </div>
 
     <div class="controls">
         <div class="counter" id="counter">30</div>
         <div class="counter-label">REMAINING</div>
+        
         <button id="auth-btn">Googleフォトと連携</button>
         
         <div class="tool-box">
@@ -58,23 +76,34 @@
             <button class="switch-btn" id="switchBtn">カメラ切り替え</button>
         </div>
 
-        <button id="shutter"></button>
+        <div class="shutter-area">
+            <button class="timer-btn" id="timerBtn">5s TIMER</button>
+            <button id="shutter"></button>
+            <div style="width: 50px;"></div>
+        </div>
+        
         <div id="loading-msg">SYNCING...</div>
     </div>
 
     <canvas id="canvas"></canvas>
 
     <script>
-        const CLIENT_ID = '341523960931-58ltfdmmi1l6m2ksjf5s4kga5mlu9sct.apps.googleusercontent.com'; 
+        // --- 設定：クライアントIDを入れてください ---
+        const CLIENT_ID = 'ここにあなたのクライアントIDを貼り付け'; 
         const SCOPE = 'https://www.googleapis.com/auth/photoslibrary.appendonly';
         const MAX_SHOTS = 30;
+        const CHARGE_TIME = 5000;
 
         const video = document.getElementById('video');
         const canvas = document.getElementById('canvas');
         const shutterBtn = document.getElementById('shutter');
+        const timerBtn = document.getElementById('timerBtn');
+        const authBtn = document.getElementById('auth-btn');
         const switchBtn = document.getElementById('switchBtn');
         const counterDisplay = document.getElementById('counter');
         const zoomRange = document.getElementById('zoomRange');
+        const timerDisplay = document.getElementById('timer-display');
+        const loadingMsg = document.getElementById('loading-msg');
 
         let accessToken = null;
         let shotCount = localStorage.getItem('retro_used_count') ? parseInt(localStorage.getItem('retro_used_count')) : 0;
@@ -87,41 +116,23 @@
             updateUI();
         };
 
-        // カメラ初期化関数（エラー対策強化版）
+        // カメラ初期化
         async function initCamera(facingMode) {
-        // 1. ストリームを完全にクリア
             if (currentStream) {
                 currentStream.getTracks().forEach(track => track.stop());
                 video.srcObject = null;
+                await new Promise(r => setTimeout(r, 800));
             }
-            
-            // 2. 0.8秒待機（iOS Chrome用に少し長めに確保）
-            await new Promise(resolve => setTimeout(resolve, 800));
-        
-            // 3. 最小限の制約でリクエスト
             try {
                 const stream = await navigator.mediaDevices.getUserMedia({
-                    video: { facingMode: { exact: (facingMode === "environment" ? "environment" : "user") } },
+                    video: { facingMode: facingMode },
                     audio: false
                 });
                 currentStream = stream;
                 video.srcObject = stream;
-                
                 if (facingMode === "user") video.classList.add('selfie');
                 else video.classList.remove('selfie');
-        
-            } catch (err) {
-                // 'exact'で失敗した場合は、制約をさらに緩めて再試行
-                console.warn("Retrying with loose constraints...");
-                try {
-                    const fallbackStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: facingMode } });
-                    currentStream = fallbackStream;
-                    video.srcObject = fallbackStream;
-                } catch (e) {
-                    console.error("Critical Camera Error:", e);
-                    alert("カメラの切り替えが拒否されました。一度ブラウザを完全に閉じて再試行してください。");
-                }
-            }
+            } catch (err) { alert("カメラ起動エラー"); }
         }
 
         switchBtn.addEventListener('click', async () => {
@@ -129,28 +140,42 @@
             await initCamera(currentFacingMode);
         });
 
-        // --- 以下、Google連携・撮影ロジック（そのまま） ---
-        function checkAuth() {
-            const params = new URLSearchParams(window.location.hash.substring(1));
-            accessToken = params.get('access_token');
-            if (accessToken) {
-                history.replaceState(null, null, window.location.pathname);
-                document.getElementById('auth-btn').innerText = "✓ 連携済み";
-                document.getElementById('auth-btn').style.backgroundColor = "#34a853";
-            }
-        }
+        // タイマーボタン処理
+        timerBtn.addEventListener('click', () => {
+            if (shotCount >= MAX_SHOTS || shutterBtn.disabled) return;
+            
+            let timeLeft = 5;
+            timerBtn.disabled = true;
+            shutterBtn.disabled = true;
+            timerDisplay.innerText = timeLeft;
+            timerDisplay.style.visibility = "visible";
 
-        document.getElementById('auth-btn').addEventListener('click', () => {
-            const redirectUri = window.location.origin + window.location.pathname;
-            window.location.href = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${CLIENT_ID}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=token&scope=${encodeURIComponent(SCOPE)}`;
+            const countdown = setInterval(() => {
+                timeLeft--;
+                timerDisplay.innerText = timeLeft;
+                if (timeLeft <= 0) {
+                    clearInterval(countdown);
+                    timerDisplay.style.visibility = "hidden";
+                    takePicture(); // 撮影実行
+                }
+            }, 1000);
         });
 
-        zoomRange.addEventListener('input', (e) => video.style.setProperty('--zoom-level', e.target.value));
+        // 撮影ボタン処理
+        shutterBtn.addEventListener('click', takePicture);
 
-        shutterBtn.addEventListener('click', () => {
+        function takePicture() {
             if (shotCount >= MAX_SHOTS) return;
+
+            // 連打防止（5秒チャージ）
             shutterBtn.disabled = true;
-            setTimeout(() => { if (MAX_SHOTS - shotCount > 0) shutterBtn.disabled = false; }, 5000);
+            timerBtn.disabled = true;
+            setTimeout(() => {
+                if (MAX_SHOTS - shotCount > 0) {
+                    shutterBtn.disabled = false;
+                    timerBtn.disabled = false;
+                }
+            }, CHARGE_TIME);
 
             const ctx = canvas.getContext('2d');
             const vW = video.videoWidth;
@@ -165,7 +190,6 @@
 
             ctx.drawImage(video, sx, sy, sw, sh, 0, 0, tw, th);
 
-            // インカメラの保存画像反転処理
             if (currentFacingMode === "user") {
                 const temp = document.createElement('canvas');
                 temp.width = tw; temp.height = th;
@@ -181,17 +205,18 @@
 
             canvas.toBlob(async (blob) => {
                 if (accessToken) {
-                    document.getElementById('loading-msg').style.visibility = "visible";
+                    loadingMsg.style.visibility = "visible";
                     await uploadToGoogle(blob);
-                    document.getElementById('loading-msg').style.visibility = "hidden";
+                    loadingMsg.style.visibility = "hidden";
                 }
             }, 'image/jpeg', 1.0);
 
             shotCount++;
             localStorage.setItem('retro_used_count', shotCount);
             updateUI();
-        });
+        }
 
+        // 以下、共通機能（エフェクト・アップロード等）
         function applyRetroEffects(ctx, w, h) {
             ctx.globalCompositeOperation = 'overlay';
             ctx.fillStyle = 'rgba(255, 160, 50, 0.1)';
@@ -229,10 +254,31 @@
             } catch (e) { console.error(e); }
         }
 
+        function checkAuth() {
+            const params = new URLSearchParams(window.location.hash.substring(1));
+            accessToken = params.get('access_token');
+            if (accessToken) {
+                history.replaceState(null, null, window.location.pathname);
+                authBtn.innerText = "✓ 連携済み";
+                authBtn.style.backgroundColor = "#34a853";
+            }
+        }
+
+        authBtn.addEventListener('click', () => {
+            const redirectUri = window.location.origin + window.location.pathname;
+            window.location.href = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${CLIENT_ID}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=token&scope=${encodeURIComponent(SCOPE)}`;
+        });
+
+        zoomRange.addEventListener('input', (e) => video.style.setProperty('--zoom-level', e.target.value));
+
         function updateUI() {
             const rem = MAX_SHOTS - shotCount;
             counterDisplay.innerText = rem > 0 ? rem : 0;
-            if (rem <= 0) { shutterBtn.disabled = true; counterDisplay.style.color = "red"; }
+            if (rem <= 0) { 
+                shutterBtn.disabled = true; 
+                timerBtn.disabled = true;
+                counterDisplay.style.color = "red"; 
+            }
         }
     </script>
 </body>
