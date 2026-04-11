@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Retro Cam - Fast Start</title>
+    <title>Retro Cam - Power Sync</title>
     <style>
         :root { --body-bg: #1a1a1a; --accent: #ffae00; }
         body { 
@@ -31,7 +31,7 @@
         #shutter { width: 70px; height: 70px; border-radius: 50%; border: 4px solid #222; background: #d00; box-shadow: 0 4px 0 #600; cursor: pointer; }
         #shutter:disabled { background: #444; box-shadow: none; filter: grayscale(100%); opacity: 0.5; }
         .timer-btn { background: #555; color: white; border: 2px solid #777; padding: 10px; border-radius: 8px; font-size: 10px; cursor: pointer; }
-        #status-msg { font-size: 10px; color: #aaa; margin-top: 15px; height: 12px; }
+        #status-msg { font-size: 10px; color: #aaa; margin-top: 15px; height: 12px; width: 90%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         canvas { display: none; }
     </style>
 </head>
@@ -71,16 +71,16 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getStorage, ref, uploadBytes } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
-        import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
-        // --- Firebase Config（ここを差し替えてください） ---
+        // --- Firebase Config ---
         const firebaseConfig = {
-            apiKey: "AIzaSyDHqQDeEMrFV09YI0n_ARr1Tzta5aqmE2U",
-            authDomain: "my-retro-cam.firebaseapp.com",
-            projectId: "my-retro-cam",
-            storageBucket: "my-retro-cam.firebasestorage.app",
-            messagingSenderId: "700098109654",
-            appId: "1:700098109654:web:9d679cbd092c1376642977"
+            apiKey: "YOUR_API_KEY",
+            authDomain: "YOUR_PROJECT.firebaseapp.com",
+            projectId: "YOUR_PROJECT",
+            storageBucket: "YOUR_PROJECT.appspot.com",
+            messagingSenderId: "YOUR_ID",
+            appId: "YOUR_APP_ID"
         };
 
         const app = initializeApp(firebaseConfig);
@@ -88,7 +88,6 @@
         const auth = getAuth(app);
 
         const MAX_SHOTS = 30;
-        const CHARGE_TIME = 5000;
         const video = document.getElementById('video');
         const canvas = document.getElementById('canvas');
         const shutterBtn = document.getElementById('shutter');
@@ -104,43 +103,40 @@
         let isFlashOn = false;
         let currentStream = null;
         let db;
+        let isAuthReady = false;
 
-        // --- IndexedDB ---
+        // IndexedDB
         const dbRequest = indexedDB.open("RetroCamDB", 1);
-        dbRequest.onsuccess = (e) => { db = e.target.result; syncOfflineData(); };
+        dbRequest.onsuccess = (e) => { db = e.target.result; };
         dbRequest.onupgradeneeded = (e) => {
             db = e.target.result;
             if (!db.objectStoreNames.contains("pendingUploads")) db.createObjectStore("pendingUploads", { keyPath: "id", autoIncrement: true });
         };
 
-        // --- 起動シーケンス ---
-        window.onload = () => {
-            // 1. カメラを即座に起動（最優先）
-            initCamera("environment");
-            
-            // 2. 認証をバックグラウンドで開始
-            statusMsg.innerText = "AUTHENTICATING...";
-            signInAnonymously(auth).then(() => {
-                statusMsg.innerText = "AUTH OK";
-                checkOnlineStatus();
+        // 起動・認証監視
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                isAuthReady = true;
+                statusMsg.innerText = "AUTH OK - READY";
                 syncOfflineData();
-            }).catch(err => {
-                console.error("Auth Error:", err);
-                statusMsg.innerText = "AUTH ERROR - LOCAL ONLY";
-            });
+            } else {
+                signInAnonymously(auth).catch(e => statusMsg.innerText = "AUTH ERR: " + e.code);
+            }
+        });
 
+        window.onload = () => {
+            initCamera("environment");
             updateUI();
         };
 
         async function initCamera(facingMode) {
-            statusMsg.innerText = "CAMERA STARTING...";
+            statusMsg.innerText = "STARTING CAMERA...";
             if (currentStream) {
                 currentStream.getTracks().forEach(track => track.stop());
                 video.srcObject = null;
                 await new Promise(r => setTimeout(r, 800));
             }
             try {
-                // iPhoneの限界を考慮し、1920x1080をターゲットにする
                 const stream = await navigator.mediaDevices.getUserMedia({
                     video: { facingMode: facingMode, width: { ideal: 1920 }, height: { ideal: 1080 } },
                     audio: false
@@ -149,17 +145,37 @@
                 video.srcObject = stream;
                 video.classList.toggle('selfie', facingMode === "user");
                 if (isFlashOn && facingMode === "environment") toggleTorch(true);
-                statusMsg.innerText = "READY";
+                statusMsg.innerText = isAuthReady ? "READY" : "AUTH PENDING...";
             } catch (err) {
-                console.warn("Retrying camera...", err);
-                try {
-                    const fallback = await navigator.mediaDevices.getUserMedia({ video: true });
-                    currentStream = fallback;
-                    video.srcObject = fallback;
-                    statusMsg.innerText = "READY (LOW-RES)";
-                } catch (e) {
-                    statusMsg.innerText = "CAMERA ERROR";
-                }
+                statusMsg.innerText = "CAMERA ERROR";
+            }
+        }
+
+        // --- 強力なアップロード関数 ---
+        async function uploadImage(blob) {
+            if (!navigator.onLine) {
+                statusMsg.innerText = "OFFLINE - SAVED LOCALLY";
+                return;
+            }
+
+            // 認証がまだの場合は少し待つ
+            if (!isAuthReady) {
+                statusMsg.innerText = "WAITING FOR AUTH...";
+                setTimeout(() => uploadImage(blob), 2000);
+                return;
+            }
+
+            try {
+                const fileName = `photos/${Date.now()}_${Math.floor(Math.random()*1000)}.jpg`;
+                const fileRef = ref(storage, fileName);
+                statusMsg.innerText = "UPLOADING...";
+                await uploadBytes(fileRef, blob);
+                statusMsg.innerText = "UPLOAD SUCCESS!";
+                return true;
+            } catch (e) {
+                statusMsg.innerText = "UPLOAD ERROR: " + e.code;
+                console.error(e);
+                return false;
             }
         }
 
@@ -167,7 +183,7 @@
             if (shotCount >= MAX_SHOTS) return;
             shutterBtn.disabled = true;
             timerBtn.disabled = true;
-            setTimeout(() => { if (MAX_SHOTS - shotCount > 0) { shutterBtn.disabled = false; timerBtn.disabled = false; } }, CHARGE_TIME);
+            setTimeout(() => { if (MAX_SHOTS - shotCount > 0) { shutterBtn.disabled = false; timerBtn.disabled = false; } }, 5000);
 
             const ctx = canvas.getContext('2d');
             const vW = video.videoWidth;
@@ -189,10 +205,18 @@
             applyRetroEffects(ctx, tw, th, isFlashOn);
             addTimestamp(ctx, tw, th);
 
-            canvas.toBlob((blob) => {
+            canvas.toBlob(async (blob) => {
+                // 1. ローカル(IndexedDB)に保存
                 const transaction = db.transaction(["pendingUploads"], "readwrite");
                 transaction.objectStore("pendingUploads").add({ blob: blob, timestamp: Date.now() });
-                syncOfflineData();
+                
+                // 2. 即座にアップロード試行
+                const success = await uploadImage(blob);
+                
+                // 3. 成功したらIndexedDBから削除（同期処理の役割）
+                if (success) {
+                    syncOfflineData(); 
+                }
             }, 'image/jpeg', 1.0);
 
             shotCount++;
@@ -201,21 +225,18 @@
         }
 
         async function syncOfflineData() {
-            if (!navigator.onLine || !db || !auth.currentUser) return;
+            if (!navigator.onLine || !db || !isAuthReady) return;
             const store = db.transaction(["pendingUploads"], "readwrite").objectStore("pendingUploads");
             const request = store.getAll();
             request.onsuccess = async () => {
                 const items = request.result;
-                if (items.length === 0) { statusMsg.innerText = "READY"; return; }
-                statusMsg.innerText = `SYNCING ${items.length}...`;
+                if (items.length === 0) return;
                 for (const item of items) {
-                    try {
-                        const fileRef = ref(storage, `photos/${Date.now()}.jpg`);
-                        await uploadBytes(fileRef, item.blob);
+                    const success = await uploadImage(item.blob);
+                    if (success) {
                         db.transaction(["pendingUploads"], "readwrite").objectStore("pendingUploads").delete(item.id);
-                    } catch (e) { break; }
+                    }
                 }
-                syncOfflineData();
             };
         }
 
@@ -255,7 +276,6 @@
 
         function checkOnlineStatus() {
             window.addEventListener('online', syncOfflineData);
-            window.addEventListener('offline', () => { statusMsg.innerText = "OFFLINE - QUEUED"; });
         }
 
         shutterBtn.addEventListener('click', takePicture);
