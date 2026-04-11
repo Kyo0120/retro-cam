@@ -133,6 +133,7 @@
 
         // --- 初期化処理 ---
         window.onload = async () => {
+            alert("初期化開始！"); // これが出るか確認
             try {
                 await signInAnonymously(auth);
                 await initCamera("environment");
