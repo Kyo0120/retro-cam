@@ -3,36 +3,28 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Retro Cam - Rotated Portrait</title>
+    <title>Retro Cam - Landscape Pro</title>
     <style>
-        :root { --body-bg: #1a1a1a; --accent: #ffae00; --panel-bg: #2a2a2a; }
+        :root { --body-bg: #1a1a1a; --accent: #ffae00; --panel-bg: #252525; }
         body { 
             margin: 0; padding: 0; background-color: var(--body-bg); color: white; 
             font-family: 'Courier New', Courier, monospace; 
-            display: flex; flex-direction: column; height: 100dvh; overflow: hidden; 
-            align-items: center; justify-content: center;
+            display: flex; height: 100dvh; width: 100dvw; overflow: hidden; 
+            flex-direction: row; align-items: stretch;
         }
 
-        /* --- 全体を90度回転させるコンテナ --- */
-        .rotated-wrapper {
-            display: flex; flex-direction: row; /* 横向きの構成 */
-            width: 100dvh; height: 100dvw; /* 縦横を入れ替える */
-            transform: rotate(90deg); transform-origin: center center;
-            position: absolute;
-        }
-
-        /* --- 左側：ファインダーエリア --- */
-        .viewfinder-section {
-            flex: 1; display: flex; flex-direction: column;
+        /* --- 左：プレビューエリア --- */
+        .left-section {
+            flex: 1.2; display: flex; flex-direction: column;
             align-items: center; justify-content: center;
-            position: relative; padding: 20px;
+            background-color: var(--body-bg);
+            padding-left: env(safe-area-inset-left);
+            position: relative;
         }
         .viewfinder-container { 
-            /* 1. プレビュー画面を以前のさらに半分サイズに (120x80) */
-            width: 120px; height: 80px; 
-            border: 4px solid #333; border-radius: 2px; 
+            width: 140px; height: 93px; /* 小さめのプレビュー */
+            border: 4px solid #444; border-radius: 4px; 
             overflow: hidden; background: #000; position: relative;
-            box-shadow: inset 0 0 10px #000;
         }
         video { 
             width: 100%; height: 100%; object-fit: cover; 
@@ -40,83 +32,98 @@
         }
         video.selfie { transform: scale(var(--zoom-level, 1)) scaleX(-1); }
 
-        /* 2. 文字も横向きに（回転コンテナ内なので自動で横を向きます） */
+        /* タイマーカウントダウン（プレビューのすぐ下） */
         #timer-display {
-            position: absolute; top: 10px; right: 10px;
-            font-size: 2rem; color: var(--accent); font-weight: bold;
-            visibility: hidden; text-shadow: 0 0 10px rgba(0,0,0,0.8);
+            margin-top: 10px; font-size: 2rem; color: var(--accent);
+            font-weight: bold; visibility: hidden; height: 2rem;
         }
 
-        /* --- 右側：操作パネルエリア --- */
-        .controls-section {
-            width: 140px; background-color: var(--panel-bg);
+        /* --- 中：設定エリア --- */
+        .mid-section {
+            width: 180px; background-color: var(--panel-bg);
             display: flex; flex-direction: column;
-            align-items: center; justify-content: space-around;
-            padding: 20px 10px;
-            border-left: 2px solid #111;
+            align-items: center; justify-content: center;
+            gap: 20px; border-left: 1px solid #111; border-right: 1px solid #111;
         }
-
-        /* 枚数カウンター */
-        .counter-group { text-align: center; }
-        .counter { font-size: 1.8rem; color: var(--accent); font-weight: bold; line-height: 1; }
-        .counter-label { font-size: 9px; color: #aaa; }
-
-        /* ツールボタン群 */
-        .tool-box { width: 100%; display: flex; flex-direction: column; gap: 8px; align-items: center; }
-        input[type=range] { width: 90px; accent-color: var(--accent); margin-bottom: 5px;}
-        .sub-btn { background: #444; color: #eee; border: 1px solid #666; padding: 6px; border-radius: 4px; font-size: 9px; cursor: pointer; width: 85%; }
+        .tool-group { width: 100%; display: flex; flex-direction: column; align-items: center; gap: 12px; }
+        input[type=range] { width: 120px; accent-color: var(--accent); }
+        .sub-btn { 
+            background: #444; color: #eee; border: 1px solid #666; 
+            padding: 10px; border-radius: 6px; font-size: 11px; 
+            cursor: pointer; width: 85%; text-align: center;
+        }
         .flash-on { background: var(--accent) !important; color: #000 !important; font-weight: bold; }
         .power-off { background: #d00 !important; font-weight: bold; }
 
-        /* シャッターボタンエリア（タイマーをここに配置） */
-        .shutter-group { display: flex; flex-direction: column; align-items: center; gap: 15px; }
-        #shutter { width: 70px; height: 70px; border-radius: 50%; border: 4px solid #222; background: #d00; box-shadow: 0 4px 0 #600; cursor: pointer; }
-        #shutter:disabled { background: #444; box-shadow: none; filter: grayscale(100%); opacity: 0.5; }
-        
-        /* 3. タイマーボタンを独立したボタンとして復活 */
-        .timer-btn { background: #555; color: white; border: 2px solid #777; padding: 8px 12px; border-radius: 8px; font-size: 10px; cursor: pointer; }
+        /* --- 右：撮影エリア --- */
+        .right-section {
+            width: 180px; display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            gap: 30px; padding-right: env(safe-area-inset-right);
+            background-color: var(--panel-bg);
+        }
+        .counter-group { text-align: center; }
+        .counter { font-size: 2.2rem; color: var(--accent); font-weight: bold; line-height: 1; }
+        .counter-label { font-size: 10px; color: #888; margin-top: 5px; }
+
+        .shutter-box { display: flex; flex-direction: column; align-items: center; gap: 20px; }
+        #shutter { 
+            width: 85px; height: 85px; border-radius: 50%; 
+            border: 6px solid #222; background: #d00; 
+            box-shadow: 0 6px 0 #600; cursor: pointer; 
+        }
+        #shutter:active { transform: translateY(4px); box-shadow: none; }
+        #shutter:disabled { background: #444; box-shadow: none; opacity: 0.5; }
+
+        .timer-btn { 
+            background: #555; color: white; border: 2px solid #777; 
+            padding: 12px 20px; border-radius: 8px; font-size: 12px; 
+            cursor: pointer; width: 120px;
+        }
         .timer-btn.active { background: var(--accent); color: #000; font-weight: bold; border-color: #fff; }
 
-        /* ステータスバー */
-        #status-msg { font-size: 9px; color: #888; text-align: center; width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-top: auto;}
+        /* ステータスバー（最下部固定） */
+        #status-msg { 
+            position: absolute; bottom: 10px; width: 100%; 
+            text-align: center; font-size: 10px; color: #666; pointer-events: none;
+        }
         canvas { display: none; }
     </style>
 </head>
 <body>
 
-    <div class="rotated-wrapper">
-        
-        <div class="viewfinder-section">
-            <div class="viewfinder-container">
-                <video id="video" autoplay playsinline></video>
-            </div>
-            <div id="timer-display">5</div>
+    <div class="left-section">
+        <div class="viewfinder-container">
+            <video id="video" autoplay playsinline></video>
         </div>
+        <div id="timer-display">5</div>
+    </div>
 
-        <div class="controls-section">
-            <div class="counter-group">
-                <div class="counter" id="counter">30</div>
-                <div class="counter-label">REMAINING</div>
+    <div class="mid-section">
+        <div class="tool-group">
+            <div style="text-align: center;">
+                <label style="font-size:10px; color:#aaa;">ZOOM</label><br>
+                <input type="range" id="zoomRange" min="1" max="3" step="0.1" value="1">
             </div>
-            
-            <div class="tool-box">
-                <div>
-                    <label style="font-size:9px; color:#aaa;">ZOOM</label><br>
-                    <input type="range" id="zoomRange" min="1" max="3" step="0.1" value="1">
-                </div>
-                <button class="sub-btn" id="switchBtn">カメラ切り替え</button>
-                <button class="sub-btn" id="flashBtn">FLASH OFF</button>
-                <button class="sub-btn" id="powerBtn">CAMERA ON</button>
-            </div>
-
-            <div class="shutter-group">
-                <button class="timer-btn" id="timerBtn">5s TIMER</button>
-                <button id="shutter"></button>
-            </div>
-            
-            <div id="status-msg">INITIALIZING...</div>
+            <button class="sub-btn" id="switchBtn">カメラ切り替え</button>
+            <button class="sub-btn" id="flashBtn">FLASH OFF</button>
+            <button class="sub-btn" id="powerBtn">CAMERA ON</button>
         </div>
     </div>
+
+    <div class="right-section">
+        <div class="counter-group">
+            <div class="counter" id="counter">30</div>
+            <div class="counter-label">REMAINING</div>
+        </div>
+
+        <div class="shutter-box">
+            <button id="shutter"></button>
+            <button class="timer-btn" id="timerBtn">５秒タイマー</button>
+        </div>
+    </div>
+
+    <div id="status-msg">INITIALIZING...</div>
 
     <canvas id="canvas"></canvas>
 
@@ -125,7 +132,7 @@
         import { getStorage, ref, uploadBytes } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
         import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
-        // --- Firebase Config（ここを差し替えてください） ---
+        // --- Firebase Config（ここを自分のものに差し替え） ---
         const firebaseConfig = {
             apiKey: "YOUR_API_KEY",
             authDomain: "YOUR_PROJECT.firebaseapp.com",
@@ -156,12 +163,11 @@
         let currentFacingMode = "environment";
         let isFlashOn = false;
         let isCameraOn = false;
-        let isTimerActive = false; // タイマーがセットされているか
+        let isTimerActive = false;
         let currentStream = null;
         let db;
         let isAuthReady = false;
 
-        // IndexedDB
         const dbRequest = indexedDB.open("RetroCamDB", 1);
         dbRequest.onsuccess = (e) => { db = e.target.result; };
         dbRequest.onupgradeneeded = (e) => {
@@ -169,7 +175,6 @@
             if (!db.objectStoreNames.contains("pendingUploads")) db.createObjectStore("pendingUploads", { keyPath: "id", autoIncrement: true });
         };
 
-        // 認証監視
         onAuthStateChanged(auth, (user) => {
             if (user) { isAuthReady = true; statusMsg.innerText = "AUTH OK"; syncOfflineData(); }
             else { signInAnonymously(auth); }
@@ -177,9 +182,7 @@
 
         window.onload = () => { startCamera(); updateUI(); };
 
-        // カメラ制御
         async function startCamera() {
-            statusMsg.innerText = "STARTING CAMERA...";
             try {
                 const stream = await navigator.mediaDevices.getUserMedia({
                     video: { facingMode: currentFacingMode, width: { ideal: 1920 }, height: { ideal: 1080 } },
@@ -189,7 +192,7 @@
                 video.classList.toggle('selfie', currentFacingMode === "user");
                 isCameraOn = true; updatePowerBtnUI();
                 if (isFlashOn && currentFacingMode === "environment") toggleTorch(true);
-                statusMsg.innerText = isAuthReady ? "READY" : "AUTH PENDING...";
+                statusMsg.innerText = "READY";
             } catch (err) { statusMsg.innerText = "CAMERA ERROR"; isCameraOn = false; updatePowerBtnUI(); }
         }
 
@@ -208,68 +211,41 @@
             } else {
                 powerBtn.innerText = "CAMERA OFF"; powerBtn.classList.add('power-off');
                 shutterBtn.disabled = true; timerBtn.disabled = true;
-                isTimerActive = false; timerBtn.classList.remove('active'); // タイマー解除
+                isTimerActive = false; timerBtn.classList.remove('active');
             }
         }
 
         switchBtn.addEventListener('click', () => { if (!isCameraOn) return; currentFacingMode = (currentFacingMode === "environment") ? "user" : "environment"; startCamera(); });
 
-        // タイマーボタンの挙動（撮影はせず、セット/解除のみ）
         timerBtn.addEventListener('click', () => {
             if (!isCameraOn) return;
             isTimerActive = !isTimerActive;
             timerBtn.classList.toggle('active', isTimerActive);
-            statusMsg.innerText = isTimerActive ? "TIMER SET" : "TIMER CLEARED";
         });
 
-        // シャッターボタンの挙動
         shutterBtn.addEventListener('click', () => {
             if (!isCameraOn || shutterBtn.disabled) return;
-
-            if (isTimerActive) {
-                // タイマー撮影開始
-                startTimerCountdown();
-            } else {
-                // 通常撮影
-                takePicture();
-            }
+            if (isTimerActive) startTimerCountdown();
+            else takePicture();
         });
 
-        // タイマーカウントダウン処理
         function startTimerCountdown() {
             let timeLeft = 5;
-            shutterBtn.disabled = true;
-            timerBtn.disabled = true; // カウントダウン中はタイマーボタンも無効
-            timerDisplay.innerText = timeLeft;
-            timerDisplay.style.visibility = "visible";
-
+            shutterBtn.disabled = true; timerBtn.disabled = true;
+            timerDisplay.innerText = timeLeft; timerDisplay.style.visibility = "visible";
             const cd = setInterval(() => {
-                timeLeft--;
-                timerDisplay.innerText = timeLeft;
+                timeLeft--; timerDisplay.innerText = timeLeft;
                 if (timeLeft <= 0) {
-                    clearInterval(cd);
-                    timerDisplay.style.visibility = "hidden";
-                    takePicture();
-                    // 撮影後にタイマー状態をリセット
-                    isTimerActive = false;
-                    timerBtn.classList.remove('active');
+                    clearInterval(cd); timerDisplay.style.visibility = "hidden";
+                    takePicture(); isTimerActive = false; timerBtn.classList.remove('active');
                 }
             }, 1000);
         }
 
-        // 撮影実処理
         function takePicture() {
             if (shotCount >= MAX_SHOTS || !isCameraOn) return;
-            
-            // チャージ（連写防止）
-            shutterBtn.disabled = true;
-            timerBtn.disabled = true;
-            setTimeout(() => { 
-                if (MAX_SHOTS - shotCount > 0 && isCameraOn) { 
-                    shutterBtn.disabled = false; 
-                    timerBtn.disabled = false; 
-                } 
-            }, CHARGE_TIME);
+            shutterBtn.disabled = true; timerBtn.disabled = true;
+            setTimeout(() => { if (MAX_SHOTS - shotCount > 0 && isCameraOn) { shutterBtn.disabled = false; timerBtn.disabled = false; } }, CHARGE_TIME);
 
             const ctx = canvas.getContext('2d');
             const vW = video.videoWidth; const vH = video.videoHeight;
@@ -295,7 +271,6 @@
             shotCount++; localStorage.setItem('retro_used_count', shotCount); updateUI();
         }
 
-        // --- アップロード・同期 ---
         async function uploadImage(blob) {
             if (!navigator.onLine || !isAuthReady) return;
             try {
@@ -307,7 +282,23 @@
                 syncOfflineData(true); return true;
             } catch (e) { statusMsg.innerText = "UPLOAD ERR: " + e.code; return false; }
         }
-        async function syncOfflineData(deleteOnly = false) { if (!navigator.onLine || !db || !isAuthReady) return; const store = db.transaction(["pendingUploads"], "readwrite").objectStore("pendingUploads"); const request = store.getAll(); request.onsuccess = async () => { const items = request.result; if (items.length === 0) return; if (deleteOnly) { db.transaction(["pendingUploads"], "readwrite").objectStore("pendingUploads").delete(items[0].id); return; } statusMsg.innerText = `SYNCING ${items.length}...`; for (const item of items) { const success = await uploadImage(item.blob); if (success) { db.transaction(["pendingUploads"], "readwrite").objectStore("pendingUploads").delete(item.id); } else break; } statusMsg.innerText = "READY"; }; }
+
+        async function syncOfflineData(deleteOnly = false) {
+            if (!navigator.onLine || !db || !isAuthReady) return;
+            const store = db.transaction(["pendingUploads"], "readwrite").objectStore("pendingUploads");
+            const request = store.getAll();
+            request.onsuccess = async () => {
+                const items = request.result;
+                if (items.length === 0) return;
+                if (deleteOnly) { db.transaction(["pendingUploads"], "readwrite").objectStore("pendingUploads").delete(items[0].id); return; }
+                for (const item of items) {
+                    const success = await uploadImage(item.blob);
+                    if (success) { db.transaction(["pendingUploads"], "readwrite").objectStore("pendingUploads").delete(item.id); }
+                    else break;
+                }
+            };
+        }
+
         async function toggleTorch(on) { if (!currentStream || currentFacingMode === "user") return; const track = currentStream.getVideoTracks()[0]; const caps = track.getCapabilities(); if (caps.torch) await track.applyConstraints({ advanced: [{ torch: on }] }); }
         flashBtn.addEventListener('click', async () => { if (!isCameraOn) return; isFlashOn = !isFlashOn; flashBtn.innerText = isFlashOn ? "FLASH ON" : "FLASH OFF"; flashBtn.classList.toggle('flash-on', isFlashOn); toggleTorch(isFlashOn); });
         function applyRetroEffects(ctx, w, h, flash) { ctx.globalCompositeOperation = 'overlay'; ctx.fillStyle = flash ? 'rgba(255, 255, 255, 0.2)' : 'rgba(255, 160, 50, 0.1)'; ctx.fillRect(0, 0, w, h); ctx.globalCompositeOperation = 'source-over'; ctx.fillStyle = 'rgba(255, 255, 255, 0.03)'; for (let i = 0; i < (w * h) / 1500; i++) ctx.fillRect(Math.random() * w, Math.random() * h, 1, 1); const grad = ctx.createRadialGradient(w/2, h/2, w/3, w/2, h/2, w/0.9); grad.addColorStop(0, 'transparent'); grad.addColorStop(1, 'rgba(0,0,0,0.4)'); ctx.fillStyle = grad; ctx.fillRect(0, 0, w, h); }
