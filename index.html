@@ -154,33 +154,36 @@
         }
 
         // カメラ起動（高解像度指定）
-        async function initCamera(facingMode) {
-            if (currentStream) {
-                currentStream.getTracks().forEach(track => track.stop());
-                video.srcObject = null;
-                await new Promise(r => setTimeout(r, 800));
-            }
-            try {
-                const stream = await navigator.mediaDevices.getUserMedia({
-                    video: { 
-                        facingMode: facingMode,
-                        width: { ideal: 4096 }, // 高解像度要求
-                        height: { ideal: 2160 }
-                    }, audio: false
-                });
-                currentStream = stream;
-                video.srcObject = stream;
-                if (facingMode === "user") video.classList.add('selfie');
-                else video.classList.remove('selfie');
-                
-                if (isFlashOn && facingMode === "environment") toggleTorch(true);
-            } catch (err) {
-                // 失敗時は標準画質でリトライ
-                const fallback = await navigator.mediaDevices.getUserMedia({ video: { facingMode: facingMode } });
-                currentStream = fallback;
-                video.srcObject = fallback;
-            }
-        }
+       async function initCamera(facingMode) {
+           if (currentStream) {
+               currentStream.getTracks().forEach(track => track.stop());
+               video.srcObject = null;
+               await new Promise(r => setTimeout(r, 800));
+           }
+           try {
+               const stream = await navigator.mediaDevices.getUserMedia({
+                   video: { 
+                       facingMode: facingMode,
+                       // 4096(4K)から1920(フルHD)に落とすことで、起動の成功率を劇的に上げます
+                       width: { ideal: 1920 }, 
+                       height: { ideal: 1080 }
+                   }, audio: false
+               });
+               currentStream = stream;
+               video.srcObject = stream;
+               
+               if (facingMode === "user") video.classList.add('selfie');
+               else video.classList.remove('selfie');
+               
+               if (isFlashOn && facingMode === "environment") toggleTorch(true);
+           } catch (err) {
+               // ここでエラーが出た場合、最低限の画質でリトライ
+               console.error("Camera error:", err);
+               const fallback = await navigator.mediaDevices.getUserMedia({ video: true });
+               currentStream = fallback;
+               video.srcObject = fallback;
+           }
+       }
 
         // 撮影処理
         function takePicture() {
