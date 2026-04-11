@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Retro Cam - Ultimate Edition</title>
+    <title>Retro Cam - Reliable High-Res</title>
     <style>
         :root { --body-bg: #1a1a1a; --accent: #ffae00; }
         body { 
@@ -90,7 +90,7 @@
         import { getStorage, ref, uploadBytes } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
         import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
-        // --- 重要：Firebaseコンソールから取得した情報をここに貼り付けてください ---
+        // --- Firebase 設定（必ず自分のものに書き換えてください） ---
         const firebaseConfig = {
             apiKey: "AIzaSyDHqQDeEMrFV09YI0n_ARr1Tzta5aqmE2U",
             authDomain: "my-retro-cam.firebaseapp.com",
@@ -104,9 +104,9 @@
         const storage = getStorage(app);
         const auth = getAuth(app);
 
-        // --- 設定値 ---
+        // --- 定数と変数 ---
         const MAX_SHOTS = 30;
-        const CHARGE_TIME = 5000; // 撮影後のチャージ時間
+        const CHARGE_TIME = 5000;
         const video = document.getElementById('video');
         const canvas = document.getElementById('canvas');
         const shutterBtn = document.getElementById('shutter');
@@ -123,7 +123,7 @@
         let currentStream = null;
         let db;
 
-        // --- IndexedDBの初期化 ---
+        // --- IndexedDB ---
         const dbRequest = indexedDB.open("RetroCamDB", 1);
         dbRequest.onsuccess = (e) => { db = e.target.result; syncOfflineData(); };
         dbRequest.onupgradeneeded = (e) => {
@@ -131,74 +131,81 @@
             if (!db.objectStoreNames.contains("pendingUploads")) db.createObjectStore("pendingUploads", { keyPath: "id", autoIncrement: true });
         };
 
-        // --- 初期化処理 ---
+        // --- 初期化 ---
         window.onload = async () => {
-            alert("初期化開始！"); // これが出るか確認
             try {
+                statusMsg.innerText = "AUTHENTICATING...";
                 await signInAnonymously(auth);
+                statusMsg.innerText = "STARTING CAMERA...";
                 await initCamera("environment");
                 updateUI();
                 checkOnlineStatus();
             } catch (err) {
-                console.error("Init error:", err);
+                console.error("Init Error:", err);
+                statusMsg.innerText = "ERROR: CHECK FIREBASE/AUTH";
             }
         };
 
-        // フラッシュ制御
-        async function toggleTorch(on) {
-            if (!currentStream || currentFacingMode === "user") return;
-            const track = currentStream.getVideoTracks()[0];
-            const caps = track.getCapabilities();
-            if (caps.torch) {
-                try { await track.applyConstraints({ advanced: [{ torch: on }] }); } catch (e) {}
+        // カメラ起動（解像度要求を現実的なフルHDへ調整）
+        async function initCamera(facingMode) {
+            if (currentStream) {
+                currentStream.getTracks().forEach(track => track.stop());
+                video.srcObject = null;
+                await new Promise(r => setTimeout(r, 800));
+            }
+            try {
+                // iPhoneのブラウザでも安定する解像度設定
+                const constraints = {
+                    video: { 
+                        facingMode: facingMode,
+                        width: { ideal: 1920 },
+                        height: { ideal: 1080 }
+                    },
+                    audio: false
+                };
+                const stream = await navigator.mediaDevices.getUserMedia(constraints);
+                currentStream = stream;
+                video.srcObject = stream;
+                
+                if (facingMode === "user") video.classList.add('selfie');
+                else video.classList.remove('selfie');
+                
+                // フラッシュ（ライト）点灯
+                if (isFlashOn && facingMode === "environment") {
+                    const track = stream.getVideoTracks()[0];
+                    if (track.getCapabilities().torch) {
+                        await track.applyConstraints({ advanced: [{ torch: true }] });
+                    }
+                }
+                statusMsg.innerText = "READY";
+                statusMsg.style.color = "#34a853";
+            } catch (err) {
+                console.warn("Retrying with simple constraints...", err);
+                try {
+                    // 解像度指定を外してリトライ
+                    const fallback = await navigator.mediaDevices.getUserMedia({ video: { facingMode: facingMode } });
+                    currentStream = fallback;
+                    video.srcObject = fallback;
+                    statusMsg.innerText = "READY (SD MODE)";
+                } catch (e) {
+                    statusMsg.innerText = "CAMERA BLOCKED";
+                    alert("カメラが使用できません。ブラウザの設定を確認してください。");
+                }
             }
         }
 
-        // カメラ起動（高解像度指定）
-       async function initCamera(facingMode) {
-           if (currentStream) {
-               currentStream.getTracks().forEach(track => track.stop());
-               video.srcObject = null;
-               await new Promise(r => setTimeout(r, 800));
-           }
-           try {
-               const stream = await navigator.mediaDevices.getUserMedia({
-                   video: { 
-                       facingMode: facingMode,
-                       // 4096(4K)から1920(フルHD)に落とすことで、起動の成功率を劇的に上げます
-                       width: { ideal: 1920 }, 
-                       height: { ideal: 1080 }
-                   }, audio: false
-               });
-               currentStream = stream;
-               video.srcObject = stream;
-               
-               if (facingMode === "user") video.classList.add('selfie');
-               else video.classList.remove('selfie');
-               
-               if (isFlashOn && facingMode === "environment") toggleTorch(true);
-           } catch (err) {
-               // ここでエラーが出た場合、最低限の画質でリトライ
-               console.error("Camera error:", err);
-               const fallback = await navigator.mediaDevices.getUserMedia({ video: true });
-               currentStream = fallback;
-               video.srcObject = fallback;
-           }
-       }
-
-        // 撮影処理
+        // 撮影
         function takePicture() {
             if (shotCount >= MAX_SHOTS) return;
-
             shutterBtn.disabled = true;
             timerBtn.disabled = true;
+            
             setTimeout(() => { if (MAX_SHOTS - shotCount > 0) { shutterBtn.disabled = false; timerBtn.disabled = false; } }, CHARGE_TIME);
 
             const ctx = canvas.getContext('2d');
             const vW = video.videoWidth;
             const vH = video.videoHeight;
             
-            // 3:2比率の計算
             let tw, th;
             if (vW / vH > 1.5) { th = vH; tw = vH * 1.5; } else { tw = vW; th = vW / 1.5; }
             canvas.width = tw; canvas.height = th;
@@ -226,14 +233,14 @@
                 const transaction = db.transaction(["pendingUploads"], "readwrite");
                 transaction.objectStore("pendingUploads").add({ blob: blob, timestamp: Date.now() });
                 syncOfflineData();
-            }, 'image/jpeg', 1.0); // 最高画質
+            }, 'image/jpeg', 1.0);
 
             shotCount++;
             localStorage.setItem('retro_used_count', shotCount);
             updateUI();
         }
 
-        // 同期処理
+        // 同期
         async function syncOfflineData() {
             if (!navigator.onLine || !db) return;
             const transaction = db.transaction(["pendingUploads"], "readwrite");
@@ -246,7 +253,7 @@
                     statusMsg.style.color = "#34a853"; 
                     return; 
                 }
-                statusMsg.innerText = `SYNCING ${items.length} PHOTOS...`;
+                statusMsg.innerText = `SYNCING ${items.length}...`;
                 statusMsg.style.color = var(--accent);
                 for (const item of items) {
                     try {
@@ -259,16 +266,13 @@
             };
         }
 
-        // 使い捨てカメラエフェクト
         function applyRetroEffects(ctx, w, h, flash) {
             ctx.globalCompositeOperation = 'overlay';
             ctx.fillStyle = flash ? 'rgba(255, 255, 255, 0.2)' : 'rgba(255, 160, 50, 0.1)';
             ctx.fillRect(0, 0, w, h);
-            
             ctx.globalCompositeOperation = 'source-over';
             ctx.fillStyle = 'rgba(255, 255, 255, 0.03)';
             for (let i = 0; i < (w * h) / 1500; i++) ctx.fillRect(Math.random() * w, Math.random() * h, 1, 1);
-            
             const grad = ctx.createRadialGradient(w/2, h/2, w/3, w/2, h/2, w/0.9);
             grad.addColorStop(0, 'transparent'); grad.addColorStop(1, 'rgba(0,0,0,0.4)');
             ctx.fillStyle = grad; ctx.fillRect(0, 0, w, h);
@@ -283,7 +287,6 @@
             ctx.fillText(timeStr, w * 0.95, h * 0.95);
         }
 
-        // UI更新
         function updateUI() {
             const rem = MAX_SHOTS - shotCount;
             counterDisplay.innerText = rem > 0 ? rem : 0;
@@ -292,23 +295,25 @@
 
         function checkOnlineStatus() {
             window.addEventListener('online', syncOfflineData);
-            window.addEventListener('offline', () => { 
-                statusMsg.innerText = "OFFLINE - SAVING TO DEVICE"; 
-                statusMsg.style.color = "#aaa"; 
-            });
+            window.addEventListener('offline', () => { statusMsg.innerText = "OFFLINE - QUEUED"; statusMsg.style.color = "#aaa"; });
         }
 
-        // ボタンイベント
+        // イベント
         shutterBtn.addEventListener('click', takePicture);
         switchBtn.addEventListener('click', () => {
             currentFacingMode = (currentFacingMode === "environment") ? "user" : "environment";
             initCamera(currentFacingMode);
         });
-        flashBtn.addEventListener('click', () => {
+        flashBtn.addEventListener('click', async () => {
             isFlashOn = !isFlashOn;
             flashBtn.innerText = isFlashOn ? "FLASH ON" : "FLASH OFF";
             flashBtn.classList.toggle('flash-on', isFlashOn);
-            if (currentFacingMode === "environment") toggleTorch(isFlashOn);
+            if (currentFacingMode === "environment" && currentStream) {
+                const track = currentStream.getVideoTracks()[0];
+                if (track.getCapabilities().torch) {
+                    await track.applyConstraints({ advanced: [{ torch: isFlashOn }] });
+                }
+            }
         });
         timerBtn.addEventListener('click', () => {
             let timeLeft = 5;
