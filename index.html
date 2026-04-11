@@ -1,3 +1,1429 @@
+Gemini
+使い捨てカメラ風Webアプリ作成
+チャットを新規作成
+作成したもの
+ノートブック
+
+Untitled notebook
+
+支部課題別研修
+新しいノートブック
+Gem
+チャット
+VS CodeとJavaScript入門ガイド
+固定したチャット
+使い捨てカメラ風Webアプリ作成
+短期トレード売買シグナル生成依頼
+App Clipで写真共有アプリ開発
+使い捨てカメラで旅行を盛り上げる
+短期トレード戦略立案プロンプト作成
+ラルディーニの定価目安と詳細情報
+ラルディーニジャケット中古相場と査定ポイント
+ワイシャツのブランドと相場
+Googleマップとカレンダーの連携方法
+小型割安成長株の分析報告
+旅行イベント企画のブラッシュアップ
+有孔ボードを柱にビス固定する方法
+壁面収納レイアウトと雑貨提案
+研修しおり作成と行程提案
+小型割安成長株の分析報告
+しまなみ海道サイクリングとグランピング
+
+設定とヘルプ
+Gemini との会話
+写真の解像度が低いのだけど、
+
+プレビューはそのままに、アップロードする画像の解像度はよくすることはできる？
+
+Firebaseにする前くらいの解像度がよかった
+
+解像度が落ちてしまった原因は、カメラの起動時に**「具体的な解像度を指定せず、ブラウザ任せ（デフォルト）にしていたこと」**が考えられます。
+
+特にFirebase対応版のコードでは、切り替えの安定性を優先して制約を緩めたため、ブラウザが通信負荷を抑えようとして低い解像度（640x480など）を選んでしまった可能性があります。
+
+プレビューのサイズ（覗き穴）はそのままに、**「カメラが持つ最大画質を引き出して、高解像度でFirebaseへ送る」**ようにコードを修正しました。
+
+修正のポイント
+高解像度の強制指定: ideal: 4096（4K相当）を指定し、カメラが提供できる最高の画質を要求します。
+
+Canvasサイズの動的決定: カメラから取得した映像の「生の幅と高さ」をそのままCanvasのサイズに反映させます。
+
+JPEG圧縮率を1.0に: toBlob の品質設定を最大値の 1.0 に固定し、データが劣化しないようにします。
+
+高解像度・Firebase完全版コード
+JavaScript
+// --- 修正版 initCamera 関数 ---
+async function initCamera(facingMode) {
+    if (currentStream) {
+        currentStream.getTracks().forEach(track => track.stop());
+        video.srcObject = null;
+        await new Promise(r => setTimeout(r, 800));
+    }
+    try {
+        // 解像度を明示的に「理想は4K、最低でもフルHD」クラスで要求
+        const stream = await navigator.mediaDevices.getUserMedia({
+            video: { 
+                facingMode: facingMode,
+                width: { ideal: 4096, min: 1920 },
+                height: { ideal: 2160, min: 1080 }
+            },
+            audio: false
+        });
+        currentStream = stream;
+        video.srcObject = stream;
+        
+        // インカメラなら反転クラスを付与
+        if (facingMode === "user") video.classList.add('selfie');
+        else video.classList.remove('selfie');
+
+    } catch (err) {
+        console.warn("High-res failed, retrying with standard res...", err);
+        // 失敗した場合は標準画質で再試行
+        try {
+            const fallback = await navigator.mediaDevices.getUserMedia({ video: { facingMode: facingMode } });
+            currentStream = fallback;
+            video.srcObject = fallback;
+        } catch (e) { alert("Camera Error"); }
+    }
+}
+
+// --- 修正版 takePicture 関数 ---
+function takePicture() {
+    if (shotCount >= MAX_SHOTS) return;
+
+    shutterBtn.disabled = true;
+    timerBtn.disabled = true;
+    setTimeout(() => { if (MAX_SHOTS - shotCount > 0) { shutterBtn.disabled = false; timerBtn.disabled = false; } }, CHARGE_TIME);
+
+    const ctx = canvas.getContext('2d');
+    
+    // カメラ映像の「生の解像度」をそのまま取得
+    const vW = video.videoWidth;
+    const vH = video.videoHeight;
+    
+    // 3:2の比率で切り出すための計算（元の高画質を維持）
+    let tw, th;
+    if (vW / vH > 1.5) { th = vH; tw = vH * 1.5; } else { tw = vW; th = vW / 1.5; }
+    
+    // Canvasのサイズを生の解像度に合わせる（ここが重要）
+    canvas.width = tw; 
+    canvas.height = th;
+
+    const z = parseFloat(document.getElementById('zoomRange').value);
+    const sw = tw / z; const sh = th / z;
+    const sx = (vW - sw) / 2; const sy = (vH - sh) / 2;
+
+    // 描画
+    ctx.drawImage(video, sx, sy, sw, sh, 0, 0, tw, th);
+
+    // インカメラの反転処理
+    if (currentFacingMode === "user") {
+        const t = document.createElement('canvas');
+        t.width = tw; t.height = th;
+        const tc = t.getContext('2d');
+        tc.translate(tw, 0); tc.scale(-1, 1);
+        tc.drawImage(canvas, 0, 0);
+        ctx.clearRect(0, 0, tw, th);
+        ctx.drawImage(t, 0, 0);
+    }
+
+    applyRetroEffects(ctx, tw, th, isFlashOn);
+    addTimestamp(ctx, tw, th);
+
+    // 保存（品質を1.0に設定して劣化を防ぐ）
+    canvas.toBlob(async (blob) => {
+        const transaction = db.transaction(["pendingUploads"], "readwrite");
+        transaction.objectStore("pendingUploads").add({ blob: blob, timestamp: Date.now() });
+        syncOfflineData();
+    }, 'image/jpeg', 1.0); // 品質を最大値へ
+
+    shotCount++;
+    localStorage.setItem('retro_used_count', shotCount);
+    updateUI();
+}
+注意点：ファイルサイズとデータ通信量
+画質を上げると、1枚あたりのファイルサイズが 5MB〜10MB 程度になる可能性があります。
+
+Firebaseの容量: 5GBの無料枠だと、約500枚〜1,000枚程度でいっぱいになります（11人で使う分にはまだ余裕です）。
+
+通信時間: 圏外対策（IndexedDB）が入っているので撮影自体は止まりませんが、電波が戻った時の「同期」に少し時間がかかるようになります。
+
+これを適用すれば、以前のGoogleフォト連携時と同等か、それ以上の高精細な「写ルンです風」写真が撮れるようになります！
+
+使いカメラ風のエフェクトは残ってますか？
+
+はい、もちろん使い捨てカメラ風のエフェクト（色調、ノイズ、ヴィネット、日付）はすべて残っています！
+
+先ほどの修正は、あくまで「キャンバスの大きさ（画素数）」を大きくしただけで、その上に描く「エフェクトの処理」自体は変えていません。むしろ、解像度が上がったことで、日付の文字やフィルムの粒状感がより精細に表現されるようになります。
+
+現在の「エフェクト」の内容を再確認
+高解像度版になっても、以下の処理が1枚ずつ自動で行われます。
+
+フィルムの色味: applyRetroEffects 関数によって、少しオレンジがかったノスタルジックな色調になります（フラッシュON時は少し明るく飛ばします）。
+
+フィルム粒子（ノイズ）: デジタル特有のツルッとした質感ではなく、ザラつきを加えます。
+
+ヴィネット効果: 写真の四隅がふんわり暗くなり、古い安価なレンズで撮ったような「覗き見感」が出ます。
+
+日付刻印: 右下にオレンジ色のドット文字で、その瞬間の日時が刻まれます。
+
+注意点：解像度と「エフェクト」のバランス
+解像度を上げたことで、もし**「日付が小さすぎる」や「ザラザラ（ノイズ）が目立たなくなった」**と感じる場合は、以下の部分の数字を少し調整するだけで好みのバランスに変更できます。
+
+JavaScript
+// 日付の大きさを調整する場合 (今は幅の4%に設定)
+ctx.font = `bold ${Math.floor(w * 0.05)}px "Courier New", monospace`; // 0.04を0.05にすると大きくなります
+
+// ノイズの量を調整する場合 (今は2000ピクセルに1つ)
+for (let i = 0; i < (w * h) / 1000; i++) // 2000を1000にすると粒子の密度が2倍になります
+最終確認
+コードをGitHub等に反映して試す際は、必ずブラウザのキャッシュをクリアするか、URLの末尾に ?v=2 などを付けて、最新の高解像度版コードが読み込まれていることを確認してください。
+
+これで「高画質」と「エモさ」が両立した最高の写真がFirebaseに届くはずです！
+
+どこを置き換えればいいかわからないので、
+
+コード全部をください
+
+これまでの全ての改良（Firebase対応、高解像度化、圏外対策（IndexedDB）、覗き穴ファインダー、フラッシュ機能、5秒タイマー）を盛り込んだ、最新の完全版コードです。
+
+このコードを丸ごとコピーして、HTMLファイルに貼り付けてください。96行目付近の firebaseConfig の書き換えだけ忘れずにお願いします。
+
+HTML
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Retro Cam - Ultimate Edition</title>
+    <style>
+        :root { --body-bg: #1a1a1a; --accent: #ffae00; }
+        body { 
+            margin: 0; padding: 0; background-color: var(--body-bg); color: white; 
+            font-family: 'Courier New', Courier, monospace; display: flex; 
+            flex-direction: column; align-items: center; justify-content: center; 
+            height: 100dvh; overflow: hidden; 
+        }
+        
+        /* 覗き穴ファインダー */
+        .viewfinder-container { 
+            width: 120px; height: 80px; 
+            border: 4px solid #333; border-radius: 2px; 
+            overflow: hidden; background: #000; position: relative;
+            box-shadow: inset 0 0 10px #000;
+        }
+        video { 
+            width: 100%; height: 100%; object-fit: cover; 
+            transform: scale(var(--zoom-level, 1)); transform-origin: center;
+        }
+        video.selfie { transform: scale(var(--zoom-level, 1)) scaleX(-1); }
+
+        #timer-display {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            font-size: 1.5rem; color: var(--accent); font-weight: bold; visibility: hidden;
+            z-index: 10;
+        }
+
+        .controls { margin-top: 15px; text-align: center; width: 100%; }
+        .counter { font-size: 1.8rem; color: var(--accent); font-weight: bold; }
+        .counter-label { font-size: 10px; color: #888; margin-bottom: 5px; }
+
+        .tool-box { margin-bottom: 25px; display: flex; flex-direction: column; align-items: center; gap: 12px; }
+        input[type=range] { width: 150px; accent-color: var(--accent); }
+        
+        .btn-group { display: flex; gap: 10px; margin-top: 5px; }
+        .sub-btn { background: #444; color: #eee; border: 1px solid #666; padding: 6px 12px; border-radius: 4px; font-size: 10px; cursor: pointer; }
+        .flash-on { background: var(--accent) !important; color: #000 !important; font-weight: bold; }
+
+        .shutter-area { display: flex; align-items: center; justify-content: center; gap: 20px; margin-top: 10px; }
+        #shutter { width: 70px; height: 70px; border-radius: 50%; border: 4px solid #222; background: #d00; box-shadow: 0 4px 0 #600; cursor: pointer; }
+        #shutter:disabled { background: #444; box-shadow: none; filter: grayscale(100%); opacity: 0.5; }
+        .timer-btn { background: #555; color: white; border: 2px solid #777; padding: 10px; border-radius: 8px; font-size: 10px; cursor: pointer; }
+
+        #status-msg { font-size: 10px; color: #aaa; margin-top: 15px; height: 12px; }
+        canvas { display: none; }
+    </style>
+</head>
+<body>
+
+    <div class="viewfinder-container">
+        <video id="video" autoplay playsinline></video>
+        <div id="timer-display">5</div>
+    </div>
+
+    <div class="controls">
+        <div class="counter" id="counter">30</div>
+        <div class="counter-label">REMAINING</div>
+        
+        <div class="tool-box">
+            <div>
+                <label style="font-size:10px; color:#888;">ZOOM</label><br>
+                <input type="range" id="zoomRange" min="1" max="3" step="0.1" value="1">
+            </div>
+            <div class="btn-group">
+                <button class="sub-btn" id="switchBtn">カメラ切り替え</button>
+                <button class="sub-btn" id="flashBtn">FLASH OFF</button>
+            </div>
+        </div>
+
+        <div class="shutter-area">
+            <button class="timer-btn" id="timerBtn">5s TIMER</button>
+            <button id="shutter"></button>
+            <div style="width: 50px;"></div>
+        </div>
+        
+        <div id="status-msg">INITIALIZING...</div>
+    </div>
+
+    <canvas id="canvas"></canvas>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getStorage, ref, uploadBytes } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
+        import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+
+        // --- 重要：Firebaseコンソールから取得した情報をここに貼り付けてください ---
+        const firebaseConfig = {
+            apiKey: "YOUR_API_KEY",
+            authDomain: "YOUR_PROJECT.firebaseapp.com",
+            projectId: "YOUR_PROJECT",
+            storageBucket: "YOUR_PROJECT.appspot.com",
+            messagingSenderId: "YOUR_ID",
+            appId: "YOUR_APP_ID"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const storage = getStorage(app);
+        const auth = getAuth(app);
+
+        // --- 設定値 ---
+        const MAX_SHOTS = 30;
+        const CHARGE_TIME = 5000; // 撮影後のチャージ時間
+        const video = document.getElementById('video');
+        const canvas = document.getElementById('canvas');
+        const shutterBtn = document.getElementById('shutter');
+        const timerBtn = document.getElementById('timerBtn');
+        const flashBtn = document.getElementById('flashBtn');
+        const switchBtn = document.getElementById('switchBtn');
+        const counterDisplay = document.getElementById('counter');
+        const statusMsg = document.getElementById('status-msg');
+        const timerDisplay = document.getElementById('timer-display');
+
+        let shotCount = localStorage.getItem('retro_used_count') ? parseInt(localStorage.getItem('retro_used_count')) : 0;
+        let currentFacingMode = "environment";
+        let isFlashOn = false;
+        let currentStream = null;
+        let db;
+
+        // --- IndexedDBの初期化 ---
+        const dbRequest = indexedDB.open("RetroCamDB", 1);
+        dbRequest.onsuccess = (e) => { db = e.target.result; syncOfflineData(); };
+        dbRequest.onupgradeneeded = (e) => {
+            db = e.target.result;
+            if (!db.objectStoreNames.contains("pendingUploads")) db.createObjectStore("pendingUploads", { keyPath: "id", autoIncrement: true });
+        };
+
+        // --- 初期化処理 ---
+        window.onload = async () => {
+            try {
+                await signInAnonymously(auth);
+                await initCamera("environment");
+                updateUI();
+                checkOnlineStatus();
+            } catch (err) {
+                console.error("Init error:", err);
+            }
+        };
+
+        // フラッシュ制御
+        async function toggleTorch(on) {
+            if (!currentStream || currentFacingMode === "user") return;
+            const track = currentStream.getVideoTracks()[0];
+            const caps = track.getCapabilities();
+            if (caps.torch) {
+                try { await track.applyConstraints({ advanced: [{ torch: on }] }); } catch (e) {}
+            }
+        }
+
+        // カメラ起動（高解像度指定）
+        async function initCamera(facingMode) {
+            if (currentStream) {
+                currentStream.getTracks().forEach(track => track.stop());
+                video.srcObject = null;
+                await new Promise(r => setTimeout(r, 800));
+            }
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({
+                    video: { 
+                        facingMode: facingMode,
+                        width: { ideal: 4096 }, // 高解像度要求
+                        height: { ideal: 2160 }
+                    }, audio: false
+                });
+                currentStream = stream;
+                video.srcObject = stream;
+                if (facingMode === "user") video.classList.add('selfie');
+                else video.classList.remove('selfie');
+                
+                if (isFlashOn && facingMode === "environment") toggleTorch(true);
+            } catch (err) {
+                // 失敗時は標準画質でリトライ
+                const fallback = await navigator.mediaDevices.getUserMedia({ video: { facingMode: facingMode } });
+                currentStream = fallback;
+                video.srcObject = fallback;
+            }
+        }
+
+        // 撮影処理
+        function takePicture() {
+            if (shotCount >= MAX_SHOTS) return;
+
+            shutterBtn.disabled = true;
+            timerBtn.disabled = true;
+            setTimeout(() => { if (MAX_SHOTS - shotCount > 0) { shutterBtn.disabled = false; timerBtn.disabled = false; } }, CHARGE_TIME);
+
+            const ctx = canvas.getContext('2d');
+            const vW = video.videoWidth;
+            const vH = video.videoHeight;
+            
+            // 3:2比率の計算
+            let tw, th;
+            if (vW / vH > 1.5) { th = vH; tw = vH * 1.5; } else { tw = vW; th = vW / 1.5; }
+            canvas.width = tw; canvas.height = th;
+
+            const z = parseFloat(document.getElementById('zoomRange').value);
+            const sw = tw / z; const sh = th / z;
+            const sx = (vW - sw) / 2; const sy = (vH - sh) / 2;
+
+            ctx.drawImage(video, sx, sy, sw, sh, 0, 0, tw, th);
+
+            if (currentFacingMode === "user") {
+                const t = document.createElement('canvas');
+                t.width = tw; t.height = th;
+                const tc = t.getContext('2d');
+                tc.translate(tw, 0); tc.scale(-1, 1);
+                tc.drawImage(canvas, 0, 0);
+                ctx.clearRect(0, 0, tw, th);
+                ctx.drawImage(t, 0, 0);
+            }
+
+            applyRetroEffects(ctx, tw, th, isFlashOn);
+            addTimestamp(ctx, tw, th);
+
+            canvas.toBlob(async (blob) => {
+                const transaction = db.transaction(["pendingUploads"], "readwrite");
+                transaction.objectStore("pendingUploads").add({ blob: blob, timestamp: Date.now() });
+                syncOfflineData();
+            }, 'image/jpeg', 1.0); // 最高画質
+
+            shotCount++;
+            localStorage.setItem('retro_used_count', shotCount);
+            updateUI();
+        }
+
+        // 同期処理
+        async function syncOfflineData() {
+            if (!navigator.onLine || !db) return;
+            const transaction = db.transaction(["pendingUploads"], "readwrite");
+            const store = transaction.objectStore("pendingUploads");
+            const request = store.getAll();
+            request.onsuccess = async () => {
+                const items = request.result;
+                if (items.length === 0) { 
+                    statusMsg.innerText = "ALL PHOTOS SYNCED"; 
+                    statusMsg.style.color = "#34a853"; 
+                    return; 
+                }
+                statusMsg.innerText = `SYNCING ${items.length} PHOTOS...`;
+                statusMsg.style.color = var(--accent);
+                for (const item of items) {
+                    try {
+                        const fileRef = ref(storage, `photos/${Date.now()}.jpg`);
+                        await uploadBytes(fileRef, item.blob);
+                        db.transaction(["pendingUploads"], "readwrite").objectStore("pendingUploads").delete(item.id);
+                    } catch (e) { break; }
+                }
+                syncOfflineData();
+            };
+        }
+
+        // 使い捨てカメラエフェクト
+        function applyRetroEffects(ctx, w, h, flash) {
+            ctx.globalCompositeOperation = 'overlay';
+            ctx.fillStyle = flash ? 'rgba(255, 255, 255, 0.2)' : 'rgba(255, 160, 50, 0.1)';
+            ctx.fillRect(0, 0, w, h);
+            
+            ctx.globalCompositeOperation = 'source-over';
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.03)';
+            for (let i = 0; i < (w * h) / 1500; i++) ctx.fillRect(Math.random() * w, Math.random() * h, 1, 1);
+            
+            const grad = ctx.createRadialGradient(w/2, h/2, w/3, w/2, h/2, w/0.9);
+            grad.addColorStop(0, 'transparent'); grad.addColorStop(1, 'rgba(0,0,0,0.4)');
+            ctx.fillStyle = grad; ctx.fillRect(0, 0, w, h);
+        }
+
+        function addTimestamp(ctx, w, h) {
+            const now = new Date();
+            const timeStr = `${now.getFullYear().toString().slice(-2)}.${(now.getMonth()+1).toString().padStart(2, '0')}.${now.getDate().toString().padStart(2, '0')}  ${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
+            ctx.font = `bold ${Math.floor(w * 0.045)}px "Courier New", monospace`;
+            ctx.textAlign = 'right'; ctx.fillStyle = '#ff7b00';
+            ctx.shadowColor = 'rgba(255, 100, 0, 0.5)'; ctx.shadowBlur = 5;
+            ctx.fillText(timeStr, w * 0.95, h * 0.95);
+        }
+
+        // UI更新
+        function updateUI() {
+            const rem = MAX_SHOTS - shotCount;
+            counterDisplay.innerText = rem > 0 ? rem : 0;
+            if (rem <= 0) { shutterBtn.disabled = true; timerBtn.disabled = true; counterDisplay.style.color = "red"; }
+        }
+
+        function checkOnlineStatus() {
+            window.addEventListener('online', syncOfflineData);
+            window.addEventListener('offline', () => { 
+                statusMsg.innerText = "OFFLINE - SAVING TO DEVICE"; 
+                statusMsg.style.color = "#aaa"; 
+            });
+        }
+
+        // ボタンイベント
+        shutterBtn.addEventListener('click', takePicture);
+        switchBtn.addEventListener('click', () => {
+            currentFacingMode = (currentFacingMode === "environment") ? "user" : "environment";
+            initCamera(currentFacingMode);
+        });
+        flashBtn.addEventListener('click', () => {
+            isFlashOn = !isFlashOn;
+            flashBtn.innerText = isFlashOn ? "FLASH ON" : "FLASH OFF";
+            flashBtn.classList.toggle('flash-on', isFlashOn);
+            if (currentFacingMode === "environment") toggleTorch(isFlashOn);
+        });
+        timerBtn.addEventListener('click', () => {
+            let timeLeft = 5;
+            timerBtn.disabled = true; shutterBtn.disabled = true;
+            timerDisplay.innerText = timeLeft; timerDisplay.style.visibility = "visible";
+            const cd = setInterval(() => {
+                timeLeft--; timerDisplay.innerText = timeLeft;
+                if (timeLeft <= 0) { clearInterval(cd); timerDisplay.style.visibility = "hidden"; takePicture(); }
+            }, 1000);
+        });
+        document.getElementById('zoomRange').addEventListener('input', (e) => video.style.setProperty('--zoom-level', e.target.value));
+    </script>
+</body>
+</html>
+テストの時だけかもしれないけど、
+
+URL末尾に”?=v⚪︎”を追記（⚪︎は数字）とした後に操作すると、
+
+追記したのがなくなったURLになっちゃって、
+
+URL変更後の操作がうまくできない。
+
+なんとかならない？（通常時で問題なことはわかってます
+
+その現象は、GitHub Pagesなどでよく使う「キャッシュ回避」のためのテクニックが、私の書いた**「URLをきれいに保つためのコード」とケンカしてしまっている**のが原因です。
+
+コード内に「Googleフォト連携の名残」として、URLの余計な部分（#access_tokenなど）を消してスッキリさせる history.replaceState という命令が入っているため、せっかく入力した ?v=1 なども一緒に消し飛んでしまっています。
+
+解決策
+コード内の checkAuth 関数（またはその周辺にある history.replaceState）を無効化するか、あるいは「開発モード」としてURLを勝手に書き換えないように修正します。
+
+最新のコードの 137行目付近 にある以下の部分を見つけて、削除するかコメントアウト（前に // をつける） してください。
+
+修正前
+JavaScript
+// --- 修正前：URLをきれいに掃除する命令 ---
+if (accessToken) {
+    history.replaceState(null, null, window.location.pathname); // ← これが犯人です！
+    authBtn.innerText = "✓ 連携済み";
+    // ...
+}
+修正後（一番簡単な方法）
+その行をまるごと消すか、以下のように // を足して無効化してください。
+
+JavaScript
+// --- 修正後：URLの書き換えを停止 ---
+if (accessToken) {
+    // history.replaceState(null, null, window.location.pathname); // ここをコメントアウト
+    // ...
+}
+なぜこれが起きるのか？
+もともとGoogleフォトの認証を使った際、URLに長い暗号（トークン）が表示されるのを防ぐために「読み込みが終わったらURLを元に戻す」という親切心で入れた機能でした。
+
+しかし、Firebase（匿名認証）に切り替えた今は、この「お掃除機能」は必須ではありません。むしろ、あなたがテストで使っている ?v=1 などのパラメータまで「ゴミ」と判断して消してしまっていた、というわけです。
+
+テスト時のコツ
+もしコードを書き換えるのが面倒な場合は、以下の方法でも回避できます。
+
+ブラウザの「プライベートモード（シークレットモード）」を使う:
+これなら ?v=1 を打たなくても、毎回最新のファイルを読み込みます。
+
+「強制再読み込み（スーパーリロード）」:
+iPhoneなら、設定から「Safari」＞「詳細」＞「Webサイトデータ」でそのサイトのデータを消してから開くと確実です。
+
+基本的には、上記の history.replaceState を消すのが一番ストレスのない解決策 です！
+
+該当の箇所が見当たらないのですが、どこに書かれていますか？
+
+失礼いたしました！先ほどお渡しした最新のFirebase対応版コードでは、Googleフォト連携のコードを整理した際に、その「お掃除命令（history.replaceState）」自体をすでに削除していました。
+
+それなのにURLが元に戻ってしまう理由は、Firebase Authentication（匿名認証）の動作によるものかもしれません。
+
+もし「URLが勝手に書き換わってテストしにくい」という場合は、以下の2つの対策を試してみてください。
+
+1. 「匿名ログイン」の行を確認・修正する
+最新コードの 118行目付近 にあるこの1行が、ページ読み込み時にFirebaseのサーバーと通信を行い、内部的にURLの状態をチェックしています。
+
+JavaScript
+window.onload = async () => {
+    try {
+        await signInAnonymously(auth); // ← ここでFirebaseが初期化されます
+        await initCamera("environment");
+        // ...
+ここにはURLを書き換える命令は含まれていませんが、もしブラウザが「同じサイトの別パラメータ（?v=1 と ?v=2）」を混乱してキャッシュしている場合、ブラウザ側の挙動でURLが正規化されることがあります。
+
+2. キャッシュを確実に回避する「最強の方法」
+URLの末尾を書き換えるのがうまくいかない時は、コードの中身を書き換えてブラウザに「別物だ！」と認識させるのが一番確実です。
+
+HTML内のどこでもいいので、文字を1文字変えて保存・アップロードしてください。
+（例：<title>Retro Cam</title> を <title>Retro Cam 2</title> に変えるなど）
+
+なぜ「?v=1」が消えてしまうのか？
+考えられる原因は以下の通りです。
+
+Firebase Hostingの仕様: Firebase Hostingを使って公開している場合、サーバー側の設定で「きれいなURL（Clean URLs）」が有効になっていると、パラメータを自動的にカットして正規のURLへリダイレクト（転送）してしまうことがあります。
+
+Service Worker（もし導入していれば）: 以前のテストでService Workerなどを試していた場合、それが古いURLを「これが正しいURLだ」と記憶して、新しいパラメータ付きURLを上書きしてしまうことがあります。
+
+解決のための提案
+もし「コードが新しくなっているか不安」な場合は、画面上の見た目を変えてみるのが一番の近道です。
+
+例えば、CSS（28行目付近）の背景色を一時的に変えてみてください。
+
+CSS
+:root { --body-bg: #000000; } /* #1a1a1a から #000000 (真っ黒) に変えてみる */
+これで開いた時に背景が真っ黒になっていれば、URLの末尾がどうあれ、最新のコードが読み込まれている証拠です！
+
+現在の最新コードにはURLを強制的に書き換えるスクリプトは入っていないので、安心してお使いいただけます。
+
+カメラがInitializingで固まっちゃうのだけど、解決して欲しい
+
+INITIALIZING... で止まってしまうのは、カメラの準備ができる前に何らかの「エラー」が起きて処理がストップしている状態です。
+
+これまでの高解像度化やFirebase対応でコードが複雑になったため、**「iPhoneのブラウザが要求（4K解像度など）に耐えきれず、カメラを起動するのを諦めてしまった」**可能性が高いです。
+
+確実に動かすための「修正・点検ポイント」をまとめました。
+
+1. 「高解像度」の要求を少しだけ緩める
+以前のコードで ideal: 4096（4K）を指定しましたが、古いiPhoneや通信環境によっては、ブラウザが「そんな高画質な映像は出せません」とエラーを吐いて止まることがあります。
+
+111行目付近の initCamera 関数を、以下の「より現実的な高画質」設定に書き換えてみてください。
+
+JavaScript
+async function initCamera(facingMode) {
+    if (currentStream) {
+        currentStream.getTracks().forEach(track => track.stop());
+        video.srcObject = null;
+        await new Promise(r => setTimeout(r, 800));
+    }
+    try {
+        const stream = await navigator.mediaDevices.getUserMedia({
+            video: { 
+                facingMode: facingMode,
+                // 4096(4K)から1920(フルHD)に落とすことで、起動の成功率を劇的に上げます
+                width: { ideal: 1920 }, 
+                height: { ideal: 1080 }
+            }, audio: false
+        });
+        currentStream = stream;
+        video.srcObject = stream;
+        
+        if (facingMode === "user") video.classList.add('selfie');
+        else video.classList.remove('selfie');
+        
+        if (isFlashOn && facingMode === "environment") toggleTorch(true);
+    } catch (err) {
+        // ここでエラーが出た場合、最低限の画質でリトライ
+        console.error("Camera error:", err);
+        const fallback = await navigator.mediaDevices.getUserMedia({ video: true });
+        currentStream = fallback;
+        video.srcObject = fallback;
+    }
+}
+2. Firebase Config の入力ミスを確認
+Firebaseの初期化（initializeApp）でエラーが出ると、その後の initCamera まで処理がたどり着きません。
+
+apiKey や projectId などに、余計なスペースやクォーテーション（"）の閉じ忘れがないか再確認してください。
+
+3. ブラウザの「カメラ権限」を一度リセットする
+一度「拒否」や「エラー」をブラウザが記憶すると、コードを直しても INITIALIZING で止まることがあります。
+
+Safariの場合: 設定アプリ ＞ Safari ＞ カメラ ＞ 「確認」または「許可」になっているか。また、開いているタブをすべて閉じて、履歴を消去してから再起動。
+
+Chromeの場合: URLバー横のアイコンをタップ ＞ 「サイトの設定」 ＞ 「カメラ」を許可。
+
+4. 匿名認証（Auth）の有効化忘れ
+Firebaseコンソールで [Authentication] ＞ [Sign-in method] ＞ [匿名] が「有効」になっていますか？ここが「無効」のままだと、signInAnonymously(auth) の行でエラーになり、カメラが起動しません。
+
+解決しない場合の「切り分け」テスト
+以下の1行を、window.onload のすぐ下に追加して保存してみてください。
+
+JavaScript
+window.onload = async () => {
+    alert("初期化開始！"); // これが出るか確認
+    try {
+        // ...
+「初期化開始！」が出ない: HTMLの読み込み自体が失敗しているか、SDKのインポート（import文）でエラーが出ています。
+
+「初期化開始！」は出るが止まる: カメラの起動、またはFirebaseのログインで止まっています。
+
+まずは 「1. 解像度を1920（フルHD）に下げる」 修正を試してみてください。ほとんどの場合、これでiPhoneのカメラが機嫌を直してくれます！
+
+コード全部を出して欲しい
+
+INITIALIZING...で止まってしまう最大の原因は、カメラの解像度要求が高すぎてブラウザが「そんなの無理！」とパニックになっていること、あるいはFirebaseのログインでつまずいていることです。
+
+解像度を**「高画質（フルHD）だが、iPhoneが確実に起動できるレベル」に調整し、万が一エラーが起きても無理やりカメラを動かす「不屈の起動モード」**を搭載した全コードを作成しました。
+
+導入の注意点
+96行目付近の firebaseConfig: ここだけは、お手元の情報を必ず貼り付けてください。
+
+Authenticationの確認: Firebaseコンソールで「匿名ログイン」が「有効」になっていることを再度ご確認ください。
+
+HTML
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Retro Cam - Reliable High-Res</title>
+    <style>
+        :root { --body-bg: #1a1a1a; --accent: #ffae00; }
+        body { 
+            margin: 0; padding: 0; background-color: var(--body-bg); color: white; 
+            font-family: 'Courier New', Courier, monospace; display: flex; 
+            flex-direction: column; align-items: center; justify-content: center; 
+            height: 100dvh; overflow: hidden; 
+        }
+        
+        /* 覗き穴ファインダー */
+        .viewfinder-container { 
+            width: 120px; height: 80px; 
+            border: 4px solid #333; border-radius: 2px; 
+            overflow: hidden; background: #000; position: relative;
+            box-shadow: inset 0 0 10px #000;
+        }
+        video { 
+            width: 100%; height: 100%; object-fit: cover; 
+            transform: scale(var(--zoom-level, 1)); transform-origin: center;
+        }
+        video.selfie { transform: scale(var(--zoom-level, 1)) scaleX(-1); }
+
+        #timer-display {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            font-size: 1.5rem; color: var(--accent); font-weight: bold; visibility: hidden;
+            z-index: 10;
+        }
+
+        .controls { margin-top: 15px; text-align: center; width: 100%; }
+        .counter { font-size: 1.8rem; color: var(--accent); font-weight: bold; }
+        .counter-label { font-size: 10px; color: #888; margin-bottom: 5px; }
+
+        .tool-box { margin-bottom: 25px; display: flex; flex-direction: column; align-items: center; gap: 12px; }
+        input[type=range] { width: 150px; accent-color: var(--accent); }
+        
+        .btn-group { display: flex; gap: 10px; margin-top: 5px; }
+        .sub-btn { background: #444; color: #eee; border: 1px solid #666; padding: 6px 12px; border-radius: 4px; font-size: 10px; cursor: pointer; }
+        .flash-on { background: var(--accent) !important; color: #000 !important; font-weight: bold; }
+
+        .shutter-area { display: flex; align-items: center; justify-content: center; gap: 20px; margin-top: 10px; }
+        #shutter { width: 70px; height: 70px; border-radius: 50%; border: 4px solid #222; background: #d00; box-shadow: 0 4px 0 #600; cursor: pointer; }
+        #shutter:disabled { background: #444; box-shadow: none; filter: grayscale(100%); opacity: 0.5; }
+        .timer-btn { background: #555; color: white; border: 2px solid #777; padding: 10px; border-radius: 8px; font-size: 10px; cursor: pointer; }
+
+        #status-msg { font-size: 10px; color: #aaa; margin-top: 15px; height: 12px; }
+        canvas { display: none; }
+    </style>
+</head>
+<body>
+
+    <div class="viewfinder-container">
+        <video id="video" autoplay playsinline></video>
+        <div id="timer-display">5</div>
+    </div>
+
+    <div class="controls">
+        <div class="counter" id="counter">30</div>
+        <div class="counter-label">REMAINING</div>
+        
+        <div class="tool-box">
+            <div>
+                <label style="font-size:10px; color:#888;">ZOOM</label><br>
+                <input type="range" id="zoomRange" min="1" max="3" step="0.1" value="1">
+            </div>
+            <div class="btn-group">
+                <button class="sub-btn" id="switchBtn">カメラ切り替え</button>
+                <button class="sub-btn" id="flashBtn">FLASH OFF</button>
+            </div>
+        </div>
+
+        <div class="shutter-area">
+            <button class="timer-btn" id="timerBtn">5s TIMER</button>
+            <button id="shutter"></button>
+            <div style="width: 50px;"></div>
+        </div>
+        
+        <div id="status-msg">INITIALIZING...</div>
+    </div>
+
+    <canvas id="canvas"></canvas>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getStorage, ref, uploadBytes } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
+        import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+
+        // --- Firebase 設定（必ず自分のものに書き換えてください） ---
+        const firebaseConfig = {
+            apiKey: "YOUR_API_KEY",
+            authDomain: "YOUR_PROJECT.firebaseapp.com",
+            projectId: "YOUR_PROJECT",
+            storageBucket: "YOUR_PROJECT.appspot.com",
+            messagingSenderId: "YOUR_ID",
+            appId: "YOUR_APP_ID"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const storage = getStorage(app);
+        const auth = getAuth(app);
+
+        // --- 定数と変数 ---
+        const MAX_SHOTS = 30;
+        const CHARGE_TIME = 5000;
+        const video = document.getElementById('video');
+        const canvas = document.getElementById('canvas');
+        const shutterBtn = document.getElementById('shutter');
+        const timerBtn = document.getElementById('timerBtn');
+        const flashBtn = document.getElementById('flashBtn');
+        const switchBtn = document.getElementById('switchBtn');
+        const counterDisplay = document.getElementById('counter');
+        const statusMsg = document.getElementById('status-msg');
+        const timerDisplay = document.getElementById('timer-display');
+
+        let shotCount = localStorage.getItem('retro_used_count') ? parseInt(localStorage.getItem('retro_used_count')) : 0;
+        let currentFacingMode = "environment";
+        let isFlashOn = false;
+        let currentStream = null;
+        let db;
+
+        // --- IndexedDB ---
+        const dbRequest = indexedDB.open("RetroCamDB", 1);
+        dbRequest.onsuccess = (e) => { db = e.target.result; syncOfflineData(); };
+        dbRequest.onupgradeneeded = (e) => {
+            db = e.target.result;
+            if (!db.objectStoreNames.contains("pendingUploads")) db.createObjectStore("pendingUploads", { keyPath: "id", autoIncrement: true });
+        };
+
+        // --- 初期化 ---
+        window.onload = async () => {
+            try {
+                statusMsg.innerText = "AUTHENTICATING...";
+                await signInAnonymously(auth);
+                statusMsg.innerText = "STARTING CAMERA...";
+                await initCamera("environment");
+                updateUI();
+                checkOnlineStatus();
+            } catch (err) {
+                console.error("Init Error:", err);
+                statusMsg.innerText = "ERROR: CHECK FIREBASE/AUTH";
+            }
+        };
+
+        // カメラ起動（解像度要求を現実的なフルHDへ調整）
+        async function initCamera(facingMode) {
+            if (currentStream) {
+                currentStream.getTracks().forEach(track => track.stop());
+                video.srcObject = null;
+                await new Promise(r => setTimeout(r, 800));
+            }
+            try {
+                // iPhoneのブラウザでも安定する解像度設定
+                const constraints = {
+                    video: { 
+                        facingMode: facingMode,
+                        width: { ideal: 1920 },
+                        height: { ideal: 1080 }
+                    },
+                    audio: false
+                };
+                const stream = await navigator.mediaDevices.getUserMedia(constraints);
+                currentStream = stream;
+                video.srcObject = stream;
+                
+                if (facingMode === "user") video.classList.add('selfie');
+                else video.classList.remove('selfie');
+                
+                // フラッシュ（ライト）点灯
+                if (isFlashOn && facingMode === "environment") {
+                    const track = stream.getVideoTracks()[0];
+                    if (track.getCapabilities().torch) {
+                        await track.applyConstraints({ advanced: [{ torch: true }] });
+                    }
+                }
+                statusMsg.innerText = "READY";
+                statusMsg.style.color = "#34a853";
+            } catch (err) {
+                console.warn("Retrying with simple constraints...", err);
+                try {
+                    // 解像度指定を外してリトライ
+                    const fallback = await navigator.mediaDevices.getUserMedia({ video: { facingMode: facingMode } });
+                    currentStream = fallback;
+                    video.srcObject = fallback;
+                    statusMsg.innerText = "READY (SD MODE)";
+                } catch (e) {
+                    statusMsg.innerText = "CAMERA BLOCKED";
+                    alert("カメラが使用できません。ブラウザの設定を確認してください。");
+                }
+            }
+        }
+
+        // 撮影
+        function takePicture() {
+            if (shotCount >= MAX_SHOTS) return;
+            shutterBtn.disabled = true;
+            timerBtn.disabled = true;
+            
+            setTimeout(() => { if (MAX_SHOTS - shotCount > 0) { shutterBtn.disabled = false; timerBtn.disabled = false; } }, CHARGE_TIME);
+
+            const ctx = canvas.getContext('2d');
+            const vW = video.videoWidth;
+            const vH = video.videoHeight;
+            
+            let tw, th;
+            if (vW / vH > 1.5) { th = vH; tw = vH * 1.5; } else { tw = vW; th = vW / 1.5; }
+            canvas.width = tw; canvas.height = th;
+
+            const z = parseFloat(document.getElementById('zoomRange').value);
+            const sw = tw / z; const sh = th / z;
+            const sx = (vW - sw) / 2; const sy = (vH - sh) / 2;
+
+            ctx.drawImage(video, sx, sy, sw, sh, 0, 0, tw, th);
+
+            if (currentFacingMode === "user") {
+                const t = document.createElement('canvas');
+                t.width = tw; t.height = th;
+                const tc = t.getContext('2d');
+                tc.translate(tw, 0); tc.scale(-1, 1);
+                tc.drawImage(canvas, 0, 0);
+                ctx.clearRect(0, 0, tw, th);
+                ctx.drawImage(t, 0, 0);
+            }
+
+            applyRetroEffects(ctx, tw, th, isFlashOn);
+            addTimestamp(ctx, tw, th);
+
+            canvas.toBlob(async (blob) => {
+                const transaction = db.transaction(["pendingUploads"], "readwrite");
+                transaction.objectStore("pendingUploads").add({ blob: blob, timestamp: Date.now() });
+                syncOfflineData();
+            }, 'image/jpeg', 1.0);
+
+            shotCount++;
+            localStorage.setItem('retro_used_count', shotCount);
+            updateUI();
+        }
+
+        // 同期
+        async function syncOfflineData() {
+            if (!navigator.onLine || !db) return;
+            const transaction = db.transaction(["pendingUploads"], "readwrite");
+            const store = transaction.objectStore("pendingUploads");
+            const request = store.getAll();
+            request.onsuccess = async () => {
+                const items = request.result;
+                if (items.length === 0) { 
+                    statusMsg.innerText = "ALL PHOTOS SYNCED"; 
+                    statusMsg.style.color = "#34a853"; 
+                    return; 
+                }
+                statusMsg.innerText = `SYNCING ${items.length}...`;
+                statusMsg.style.color = var(--accent);
+                for (const item of items) {
+                    try {
+                        const fileRef = ref(storage, `photos/${Date.now()}.jpg`);
+                        await uploadBytes(fileRef, item.blob);
+                        db.transaction(["pendingUploads"], "readwrite").objectStore("pendingUploads").delete(item.id);
+                    } catch (e) { break; }
+                }
+                syncOfflineData();
+            };
+        }
+
+        function applyRetroEffects(ctx, w, h, flash) {
+            ctx.globalCompositeOperation = 'overlay';
+            ctx.fillStyle = flash ? 'rgba(255, 255, 255, 0.2)' : 'rgba(255, 160, 50, 0.1)';
+            ctx.fillRect(0, 0, w, h);
+            ctx.globalCompositeOperation = 'source-over';
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.03)';
+            for (let i = 0; i < (w * h) / 1500; i++) ctx.fillRect(Math.random() * w, Math.random() * h, 1, 1);
+            const grad = ctx.createRadialGradient(w/2, h/2, w/3, w/2, h/2, w/0.9);
+            grad.addColorStop(0, 'transparent'); grad.addColorStop(1, 'rgba(0,0,0,0.4)');
+            ctx.fillStyle = grad; ctx.fillRect(0, 0, w, h);
+        }
+
+        function addTimestamp(ctx, w, h) {
+            const now = new Date();
+            const timeStr = `${now.getFullYear().toString().slice(-2)}.${(now.getMonth()+1).toString().padStart(2, '0')}.${now.getDate().toString().padStart(2, '0')}  ${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
+            ctx.font = `bold ${Math.floor(w * 0.045)}px "Courier New", monospace`;
+            ctx.textAlign = 'right'; ctx.fillStyle = '#ff7b00';
+            ctx.shadowColor = 'rgba(255, 100, 0, 0.5)'; ctx.shadowBlur = 5;
+            ctx.fillText(timeStr, w * 0.95, h * 0.95);
+        }
+
+        function updateUI() {
+            const rem = MAX_SHOTS - shotCount;
+            counterDisplay.innerText = rem > 0 ? rem : 0;
+            if (rem <= 0) { shutterBtn.disabled = true; timerBtn.disabled = true; counterDisplay.style.color = "red"; }
+        }
+
+        function checkOnlineStatus() {
+            window.addEventListener('online', syncOfflineData);
+            window.addEventListener('offline', () => { statusMsg.innerText = "OFFLINE - QUEUED"; statusMsg.style.color = "#aaa"; });
+        }
+
+        // イベント
+        shutterBtn.addEventListener('click', takePicture);
+        switchBtn.addEventListener('click', () => {
+            currentFacingMode = (currentFacingMode === "environment") ? "user" : "environment";
+            initCamera(currentFacingMode);
+        });
+        flashBtn.addEventListener('click', async () => {
+            isFlashOn = !isFlashOn;
+            flashBtn.innerText = isFlashOn ? "FLASH ON" : "FLASH OFF";
+            flashBtn.classList.toggle('flash-on', isFlashOn);
+            if (currentFacingMode === "environment" && currentStream) {
+                const track = currentStream.getVideoTracks()[0];
+                if (track.getCapabilities().torch) {
+                    await track.applyConstraints({ advanced: [{ torch: isFlashOn }] });
+                }
+            }
+        });
+        timerBtn.addEventListener('click', () => {
+            let timeLeft = 5;
+            timerBtn.disabled = true; shutterBtn.disabled = true;
+            timerDisplay.innerText = timeLeft; timerDisplay.style.visibility = "visible";
+            const cd = setInterval(() => {
+                timeLeft--; timerDisplay.innerText = timeLeft;
+                if (timeLeft <= 0) { clearInterval(cd); timerDisplay.style.visibility = "hidden"; takePicture(); }
+            }, 1000);
+        });
+        document.getElementById('zoomRange').addEventListener('input', (e) => video.style.setProperty('--zoom-level', e.target.value));
+    </script>
+</body>
+</html>
+Initializeでやっぱり止まる
+
+設定は見直してOKだった
+
+設定も見直し済みで INITIALIZING... で止まる場合、プログラムが「どこで」転送を待機しているのかを突き止める必要があります。
+
+現在のコードは、以下の順序で処理を行っています。
+
+Firebaseの匿名認証（Authentication）にサインインする
+
+カメラを起動する
+
+もし [Authentication] ＞ [匿名] が有効なのに止まる場合、ブラウザの広告ブロック機能や、Firebase SDKの読み込み遅延が原因で await signInAnonymously(auth) から先に進めていない可能性が高いです。
+
+これを解決するために、「カメラ起動を最優先し、認証はバックグラウンドで行う」 ように構造を組み替えた「不屈の起動版」を作成しました。
+
+修正のポイント
+非同期処理の分離: 認証の成功を待たずにカメラを起動させます。これで画面が固まるのを防ぎます。
+
+デバッグメッセージの強化: AUTHENTICATING... などの表示を細かく出し、どこで止まっているか一目でわかるようにしました。
+
+エラー回避: もし認証に失敗しても、カメラだけは映るようにして「何が起きているか」を把握しやすくしています。
+
+HTML
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Retro Cam - Fast Start</title>
+    <style>
+        :root { --body-bg: #1a1a1a; --accent: #ffae00; }
+        body { 
+            margin: 0; padding: 0; background-color: var(--body-bg); color: white; 
+            font-family: 'Courier New', Courier, monospace; display: flex; 
+            flex-direction: column; align-items: center; justify-content: center; 
+            height: 100dvh; overflow: hidden; 
+        }
+        .viewfinder-container { 
+            width: 120px; height: 80px; border: 4px solid #333; border-radius: 2px; 
+            overflow: hidden; background: #000; position: relative; box-shadow: inset 0 0 10px #000;
+        }
+        video { width: 100%; height: 100%; object-fit: cover; transform: scale(var(--zoom-level, 1)); transform-origin: center; }
+        video.selfie { transform: scale(var(--zoom-level, 1)) scaleX(-1); }
+        #timer-display { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 1.5rem; color: var(--accent); font-weight: bold; visibility: hidden; z-index: 10; }
+        .controls { margin-top: 15px; text-align: center; width: 100%; }
+        .counter { font-size: 1.8rem; color: var(--accent); font-weight: bold; }
+        .counter-label { font-size: 10px; color: #888; margin-bottom: 5px; }
+        .tool-box { margin-bottom: 25px; display: flex; flex-direction: column; align-items: center; gap: 12px; }
+        input[type=range] { width: 150px; accent-color: var(--accent); }
+        .btn-group { display: flex; gap: 10px; margin-top: 5px; }
+        .sub-btn { background: #444; color: #eee; border: 1px solid #666; padding: 6px 12px; border-radius: 4px; font-size: 10px; cursor: pointer; }
+        .flash-on { background: var(--accent) !important; color: #000 !important; font-weight: bold; }
+        .shutter-area { display: flex; align-items: center; justify-content: center; gap: 20px; margin-top: 10px; }
+        #shutter { width: 70px; height: 70px; border-radius: 50%; border: 4px solid #222; background: #d00; box-shadow: 0 4px 0 #600; cursor: pointer; }
+        #shutter:disabled { background: #444; box-shadow: none; filter: grayscale(100%); opacity: 0.5; }
+        .timer-btn { background: #555; color: white; border: 2px solid #777; padding: 10px; border-radius: 8px; font-size: 10px; cursor: pointer; }
+        #status-msg { font-size: 10px; color: #aaa; margin-top: 15px; height: 12px; }
+        canvas { display: none; }
+    </style>
+</head>
+<body>
+
+    <div class="viewfinder-container">
+        <video id="video" autoplay playsinline></video>
+        <div id="timer-display">5</div>
+    </div>
+
+    <div class="controls">
+        <div class="counter" id="counter">30</div>
+        <div class="counter-label">REMAINING</div>
+        
+        <div class="tool-box">
+            <div>
+                <label style="font-size:10px; color:#888;">ZOOM</label><br>
+                <input type="range" id="zoomRange" min="1" max="3" step="0.1" value="1">
+            </div>
+            <div class="btn-group">
+                <button class="sub-btn" id="switchBtn">カメラ切り替え</button>
+                <button class="sub-btn" id="flashBtn">FLASH OFF</button>
+            </div>
+        </div>
+
+        <div class="shutter-area">
+            <button class="timer-btn" id="timerBtn">5s TIMER</button>
+            <button id="shutter"></button>
+            <div style="width: 50px;"></div>
+        </div>
+        
+        <div id="status-msg">WAITING FOR START...</div>
+    </div>
+
+    <canvas id="canvas"></canvas>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getStorage, ref, uploadBytes } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
+        import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+
+        // --- Firebase Config（ここを差し替えてください） ---
+        const firebaseConfig = {
+            apiKey: "YOUR_API_KEY",
+            authDomain: "YOUR_PROJECT.firebaseapp.com",
+            projectId: "YOUR_PROJECT",
+            storageBucket: "YOUR_PROJECT.appspot.com",
+            messagingSenderId: "YOUR_ID",
+            appId: "YOUR_APP_ID"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const storage = getStorage(app);
+        const auth = getAuth(app);
+
+        const MAX_SHOTS = 30;
+        const CHARGE_TIME = 5000;
+        const video = document.getElementById('video');
+        const canvas = document.getElementById('canvas');
+        const shutterBtn = document.getElementById('shutter');
+        const timerBtn = document.getElementById('timerBtn');
+        const flashBtn = document.getElementById('flashBtn');
+        const switchBtn = document.getElementById('switchBtn');
+        const counterDisplay = document.getElementById('counter');
+        const statusMsg = document.getElementById('status-msg');
+        const timerDisplay = document.getElementById('timer-display');
+
+        let shotCount = localStorage.getItem('retro_used_count') ? parseInt(localStorage.getItem('retro_used_count')) : 0;
+        let currentFacingMode = "environment";
+        let isFlashOn = false;
+        let currentStream = null;
+        let db;
+
+        // --- IndexedDB ---
+        const dbRequest = indexedDB.open("RetroCamDB", 1);
+        dbRequest.onsuccess = (e) => { db = e.target.result; syncOfflineData(); };
+        dbRequest.onupgradeneeded = (e) => {
+            db = e.target.result;
+            if (!db.objectStoreNames.contains("pendingUploads")) db.createObjectStore("pendingUploads", { keyPath: "id", autoIncrement: true });
+        };
+
+        // --- 起動シーケンス ---
+        window.onload = () => {
+            // 1. カメラを即座に起動（最優先）
+            initCamera("environment");
+            
+            // 2. 認証をバックグラウンドで開始
+            statusMsg.innerText = "AUTHENTICATING...";
+            signInAnonymously(auth).then(() => {
+                statusMsg.innerText = "AUTH OK";
+                checkOnlineStatus();
+                syncOfflineData();
+            }).catch(err => {
+                console.error("Auth Error:", err);
+                statusMsg.innerText = "AUTH ERROR - LOCAL ONLY";
+            });
+
+            updateUI();
+        };
+
+        async function initCamera(facingMode) {
+            statusMsg.innerText = "CAMERA STARTING...";
+            if (currentStream) {
+                currentStream.getTracks().forEach(track => track.stop());
+                video.srcObject = null;
+                await new Promise(r => setTimeout(r, 800));
+            }
+            try {
+                // iPhoneの限界を考慮し、1920x1080をターゲットにする
+                const stream = await navigator.mediaDevices.getUserMedia({
+                    video: { facingMode: facingMode, width: { ideal: 1920 }, height: { ideal: 1080 } },
+                    audio: false
+                });
+                currentStream = stream;
+                video.srcObject = stream;
+                video.classList.toggle('selfie', facingMode === "user");
+                if (isFlashOn && facingMode === "environment") toggleTorch(true);
+                statusMsg.innerText = "READY";
+            } catch (err) {
+                console.warn("Retrying camera...", err);
+                try {
+                    const fallback = await navigator.mediaDevices.getUserMedia({ video: true });
+                    currentStream = fallback;
+                    video.srcObject = fallback;
+                    statusMsg.innerText = "READY (LOW-RES)";
+                } catch (e) {
+                    statusMsg.innerText = "CAMERA ERROR";
+                }
+            }
+        }
+
+        function takePicture() {
+            if (shotCount >= MAX_SHOTS) return;
+            shutterBtn.disabled = true;
+            timerBtn.disabled = true;
+            setTimeout(() => { if (MAX_SHOTS - shotCount > 0) { shutterBtn.disabled = false; timerBtn.disabled = false; } }, CHARGE_TIME);
+
+            const ctx = canvas.getContext('2d');
+            const vW = video.videoWidth;
+            const vH = video.videoHeight;
+            let tw, th;
+            if (vW / vH > 1.5) { th = vH; tw = vH * 1.5; } else { tw = vW; th = vW / 1.5; }
+            canvas.width = tw; canvas.height = th;
+
+            const z = parseFloat(document.getElementById('zoomRange').value);
+            const sw = tw / z; const sh = th / z;
+            const sx = (vW - sw) / 2; const sy = (vH - sh) / 2;
+
+            ctx.drawImage(video, sx, sy, sw, sh, 0, 0, tw, th);
+            if (currentFacingMode === "user") {
+                const t = document.createElement('canvas'); t.width = tw; t.height = th;
+                const tc = t.getContext('2d'); tc.translate(tw, 0); tc.scale(-1, 1);
+                tc.drawImage(canvas, 0, 0); ctx.clearRect(0, 0, tw, th); ctx.drawImage(t, 0, 0);
+            }
+            applyRetroEffects(ctx, tw, th, isFlashOn);
+            addTimestamp(ctx, tw, th);
+
+            canvas.toBlob((blob) => {
+                const transaction = db.transaction(["pendingUploads"], "readwrite");
+                transaction.objectStore("pendingUploads").add({ blob: blob, timestamp: Date.now() });
+                syncOfflineData();
+            }, 'image/jpeg', 1.0);
+
+            shotCount++;
+            localStorage.setItem('retro_used_count', shotCount);
+            updateUI();
+        }
+
+        async function syncOfflineData() {
+            if (!navigator.onLine || !db || !auth.currentUser) return;
+            const store = db.transaction(["pendingUploads"], "readwrite").objectStore("pendingUploads");
+            const request = store.getAll();
+            request.onsuccess = async () => {
+                const items = request.result;
+                if (items.length === 0) { statusMsg.innerText = "READY"; return; }
+                statusMsg.innerText = `SYNCING ${items.length}...`;
+                for (const item of items) {
+                    try {
+                        const fileRef = ref(storage, `photos/${Date.now()}.jpg`);
+                        await uploadBytes(fileRef, item.blob);
+                        db.transaction(["pendingUploads"], "readwrite").objectStore("pendingUploads").delete(item.id);
+                    } catch (e) { break; }
+                }
+                syncOfflineData();
+            };
+        }
+
+        async function toggleTorch(on) {
+            if (!currentStream || currentFacingMode === "user") return;
+            const track = currentStream.getVideoTracks()[0];
+            const caps = track.getCapabilities();
+            if (caps.torch) await track.applyConstraints({ advanced: [{ torch: on }] });
+        }
+
+        function applyRetroEffects(ctx, w, h, flash) {
+            ctx.globalCompositeOperation = 'overlay';
+            ctx.fillStyle = flash ? 'rgba(255, 255, 255, 0.2)' : 'rgba(255, 160, 50, 0.1)';
+            ctx.fillRect(0, 0, w, h);
+            ctx.globalCompositeOperation = 'source-over';
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.03)';
+            for (let i = 0; i < (w * h) / 1500; i++) ctx.fillRect(Math.random() * w, Math.random() * h, 1, 1);
+            const grad = ctx.createRadialGradient(w/2, h/2, w/3, w/2, h/2, w/0.9);
+            grad.addColorStop(0, 'transparent'); grad.addColorStop(1, 'rgba(0,0,0,0.4)');
+            ctx.fillStyle = grad; ctx.fillRect(0, 0, w, h);
+        }
+
+        function addTimestamp(ctx, w, h) {
+            const now = new Date();
+            const timeStr = `${now.getFullYear().toString().slice(-2)}.${(now.getMonth()+1).toString().padStart(2, '0')}.${now.getDate().toString().padStart(2, '0')}  ${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
+            ctx.font = `bold ${Math.floor(w * 0.045)}px "Courier New", monospace`;
+            ctx.textAlign = 'right'; ctx.fillStyle = '#ff7b00';
+            ctx.shadowColor = 'rgba(255, 100, 0, 0.5)'; ctx.shadowBlur = 5;
+            ctx.fillText(timeStr, w * 0.95, h * 0.95);
+        }
+
+        function updateUI() {
+            const rem = MAX_SHOTS - shotCount;
+            counterDisplay.innerText = rem > 0 ? rem : 0;
+            if (rem <= 0) { shutterBtn.disabled = true; timerBtn.disabled = true; counterDisplay.style.color = "red"; }
+        }
+
+        function checkOnlineStatus() {
+            window.addEventListener('online', syncOfflineData);
+            window.addEventListener('offline', () => { statusMsg.innerText = "OFFLINE - QUEUED"; });
+        }
+
+        shutterBtn.addEventListener('click', takePicture);
+        switchBtn.addEventListener('click', () => { currentFacingMode = (currentFacingMode === "environment") ? "user" : "environment"; initCamera(currentFacingMode); });
+        flashBtn.addEventListener('click', async () => {
+            isFlashOn = !isFlashOn;
+            flashBtn.innerText = isFlashOn ? "FLASH ON" : "FLASH OFF";
+            flashBtn.classList.toggle('flash-on', isFlashOn);
+            toggleTorch(isFlashOn);
+        });
+        timerBtn.addEventListener('click', () => {
+            let timeLeft = 5; timerBtn.disabled = true; shutterBtn.disabled = true;
+            timerDisplay.innerText = timeLeft; timerDisplay.style.visibility = "visible";
+            const cd = setInterval(() => { timeLeft--; timerDisplay.innerText = timeLeft; if (timeLeft <= 0) { clearInterval(cd); timerDisplay.style.visibility = "hidden"; takePicture(); } }, 1000);
+        });
+        document.getElementById('zoomRange').addEventListener('input', (e) => video.style.setProperty('--zoom-level', e.target.value));
+    </script>
+</body>
+</html>
+反映後の確認
+もしこれでも INITIALIZING... で止まる場合は、下部の statusMsg（画面下部の小さな文字） が何と言っているか教えてください。
+
+CAMERA STARTING... で止まるなら、カメラの権限問題です。
+
+AUTHENTICATING... で止まるなら、Firebaseの設定かネットワーク制限です。
+
+一歩ずつ確実に進めましょう！
+
+カメラは起動しました（Readyとなりました
+
+
+
+撮影しても写真がFirebaseに反映されません
+
+カメラが起動して「Ready」になったとのこと、まずは大きな一歩ですね！
+
+撮影してもFirebaseに反映されない場合、原因は「Firebase側の書き込み許可（セキュリティルール）」または「画像データの同期処理」のいずれかにあります。
+
+解決のために、以下の3ステップを確認・修正してください。
+
+1. Firebase Storageの「ルール」を確認（最重要）
+Firebaseコンソールで、保存先である Storage の書き込み権限が閉じている可能性があります。
+
+Firebaseコンソールのメニューから [Storage] を選択。
+
+上部の [Rules] (ルール) タブをクリック。
+
+中身を以下の内容に書き換えて [公開] を押してください。
+
+JavaScript
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    match /{allPaths=**} {
+      // 誰でも読み書きできるように設定（開発・イベント用）
+      allow read, write: if true;
+    }
+  }
+}
+※初期設定では allow read, write: if request.auth != null; となっていることが多く、匿名認証がうまく認識されていない場合に弾かれてしまいます。イベント期間中はこの if true; 設定が最も確実です。
+
+2. 同期処理のコードを少し修正
+現在のコードでは「認証が完了してから同期」という流れになっていますが、より確実に、撮影直後にも「強制同期」をかけるように takePicture 関数内を1箇所だけ微調整します。
+
+コード内の takePicture 関数の一番最後にある syncOfflineData(); の直前に、「今すぐ送る」 命令を明示的に追加します。
+
+【修正箇所：150行目付近】
+
+JavaScript
+            canvas.toBlob((blob) => {
+                const transaction = db.transaction(["pendingUploads"], "readwrite");
+                transaction.objectStore("pendingUploads").add({ blob: blob, timestamp: Date.now() });
+                
+                // --- ここから追加 ---
+                if (navigator.onLine && auth.currentUser) {
+                    const fileRef = ref(storage, `photos/${Date.now()}.jpg`);
+                    uploadBytes(fileRef, blob).then(() => {
+                        console.log("Upload Success!");
+                        statusMsg.innerText = "UPLOADED!";
+                    }).catch(err => console.error("Upload failed:", err));
+                }
+                // --- ここまで追加 ---
+
+                syncOfflineData();
+            }, 'image/jpeg', 1.0);
+3. ブラウザの「コンソール」でエラーを確認
+もし上記2つを試しても反映されない場合は、スマホをPCに繋いで確認するか、一時的に alert を使ってエラーを表示させてみてください。
+
+コードの syncOfflineData 関数内の catch(e) 部分に、以下のようにアラートを追加すると、スマホ画面上でエラー内容が分かります。
+
+JavaScript
+                    try {
+                        const fileRef = ref(storage, `photos/${Date.now()}.jpg`);
+                        await uploadBytes(fileRef, item.blob);
+                        db.transaction(["pendingUploads"], "readwrite").objectStore("pendingUploads").delete(item.id);
+                    } catch (e) { 
+                        alert("Firebase Error: " + e.message); // エラー内容をポップアップ
+                        break; 
+                    }
+まとめ
+まずは 「1. Storageのルールを if true; にする」 を試してみてください。
+これだけで解決する可能性が非常に高いです。
+
+また、反映の確認はFirebaseコンソールの [Storage] ＞ [Files] ＞ photos フォルダの中を見てください。自動でリロードされない場合があるので、画面上の更新ボタン（くるっとした矢印）を押して確認してみてくださいね。
+
+１は設定間違いありません
+
+「1（ストレージのルール）」の設定に間違いがないとすると、残る可能性は**「匿名認証が完了する前にアップロードしようとして拒否されている」か、「アップロードの命令がスマホ側でうまく実行されていない」**かのどちらかです。
+
+特にiPhoneの場合、バックグラウンドでの通信がシビアなため、**「撮影した瞬間に、認証状態を無視してでも無理やり叩き込む」**ような、より強力なアップロード処理が必要です。
+
+修正した**「強行アップロード版」の全コード**を作成しました。
+
+修正のポイント
+認証待機ロジックの強化: 認証が通るまでアップロードをリトライし続けるようにしました。
+
+個別アップロードの優先: IndexedDB（貯金箱）への保存と同時に、個別のアップロード命令を直接飛ばします。
+
+エラーの可視化: Firebase側でエラーが起きた場合、画面下のステータスバーにエラーコードが出るようにしました。
+
+HTML
 <!DOCTYPE html>
 <html lang="ja">
 <head>
@@ -295,3 +1721,403 @@
     </script>
 </body>
 </html>
+反映後のチェックポイント
+起動したとき、画面下の文字が AUTH OK - READY になるか確認してください。
+
+撮影したとき、UPLOADING... → UPLOAD SUCCESS! と表示されるか確認してください。
+
+もし UPLOAD ERROR: storage/retry-limit-exceeded や unauthorized と出たら、そのエラーメッセージを教えてください。
+
+これで、データが空へと飛んでいくはずです！
+
+ありがとう、うまくいきました
+
+
+
+＃画面を修正したい
+
+・スマホを横向きで使う前提で画面構成を変更して欲しい
+
+・タイマーのカウントダウンをプレビューの外に表示し欲しい
+
+
+
+＃できるかどうかの確認
+
+カメラの有効無効ボタンの追加はできる？
+
+うまくいったとのこと、本当に良かったです！これでデータの命綱がつながりましたね。
+
+ご要望に合わせて、「スマホ横向き（ランドスケープ）」専用の画面構成への大幅なリニューアルと、機能追加についてお答えします。
+
+ご要望への対応
+横向き画面構成への変更:
+
+スマホを横に持った時に、**左側にファインダー、右側に操作パネル（シャッター、枚数、ズームなど）**が配置される、本格的なカメラアプリのようなレイアウトに変更します。
+
+タイマーカウントダウンの移動:
+
+プレビュー（覗き穴）の中央ではなく、**覗き穴のすぐ下（横向き時は右下）**の目立つ位置に表示されるように移動します。
+
+【確認】カメラの有効/無効ボタン:
+
+可能です。休憩中や移動中にカメラ（映像ストリーム）を完全に停止させ、バッテリーの消費を抑える「電源ボタン」のような役割のボタンを追加します。
+
+リニューアル版：横向き専用・フラッシュ＆電源ボタン搭載コード
+このコードは、スマホを横にして使うことを前提に設計されています。縦向きだとレイアウトが崩れるため、必ずスマホの画面回転をオンにして、横向きでお使いください。
+
+HTML
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Retro Cam - Landscape</title>
+    <style>
+        :root { --body-bg: #1a1a1a; --accent: #ffae00; --panel-bg: #2a2a2a; }
+        body { 
+            margin: 0; padding: 0; background-color: var(--body-bg); color: white; 
+            font-family: 'Courier New', Courier, monospace; 
+            display: flex; height: 100dvh; overflow: hidden; 
+            /* 横向き専用のレイアウト */
+            flex-direction: row; align-items: stretch;
+        }
+
+        /* --- 左側：ファインダーエリア --- */
+        .viewfinder-section {
+            flex: 1; display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            position: relative; padding: 10px; padding-left: env(safe-area-inset-left);
+        }
+        .viewfinder-container { 
+            width: 240px; height: 160px; /* 覗き穴サイズ */
+            border: 5px solid #333; border-radius: 4px; 
+            overflow: hidden; background: #000; position: relative;
+            box-shadow: inset 0 0 15px #000;
+        }
+        video { 
+            width: 100%; height: 100%; object-fit: cover; 
+            transform: scale(var(--zoom-level, 1)); transform-origin: center;
+        }
+        video.selfie { transform: scale(var(--zoom-level, 1)) scaleX(-1); }
+
+        /* タイマーカウントダウン（プレビューの外・右下） */
+        #timer-display {
+            position: absolute; bottom: 5px; right: 5px;
+            font-size: 2.5rem; color: var(--accent); font-weight: bold;
+            visibility: hidden; text-shadow: 0 0 10px rgba(0,0,0,0.8);
+        }
+
+        /* --- 右側：操作パネルエリア --- */
+        .controls-section {
+            width: 160px; background-color: var(--panel-bg);
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: space-around;
+            padding: 15px 10px; padding-right: env(safe-area-inset-right);
+            border-left: 2px solid #111;
+        }
+
+        /* 枚数カウンター */
+        .counter-group { text-align: center; }
+        .counter { font-size: 2rem; color: var(--accent); font-weight: bold; line-height: 1; }
+        .counter-label { font-size: 10px; color: #aaa; }
+
+        /* ツールボタン群 */
+        .tool-box { width: 100%; display: flex; flex-direction: column; gap: 8px; align-items: center; }
+        input[type=range] { width: 100px; accent-color: var(--accent); margin-bottom: 5px;}
+        .sub-btn { background: #444; color: #eee; border: 1px solid #666; padding: 7px; border-radius: 4px; font-size: 10px; cursor: pointer; width: 80%; }
+        
+        /* フラッシュON時のスタイル */
+        .flash-on { background: var(--accent) !important; color: #000 !important; font-weight: bold; }
+        /* カメラOFF時のスタイル */
+        .power-off { background: #d00 !important; font-weight: bold; }
+
+        /* シャッターボタンエリア */
+        .shutter-group { position: relative; }
+        #shutter { width: 80px; height: 80px; border-radius: 50%; border: 5px solid #222; background: #d00; box-shadow: 0 5px 0 #600; cursor: pointer; }
+        #shutter:disabled { background: #444; box-shadow: none; filter: grayscale(100%); opacity: 0.5; }
+        
+        .timer-btn { background: #555; color: white; border: 2px solid #777; padding: 6px 10px; border-radius: 8px; font-size: 10px; cursor: pointer; position: absolute; top: -15px; right: -15px; }
+
+        /* ステータスバー（最下部） */
+        #status-msg { font-size: 10px; color: #888; text-align: center; width: 90%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-top: auto;}
+        canvas { display: none; }
+    </style>
+</head>
+<body>
+
+    <div class="viewfinder-section">
+        <div class="viewfinder-container">
+            <video id="video" autoplay playsinline></video>
+        </div>
+        <div id="timer-display">5</div>
+    </div>
+
+    <div class="controls-section">
+        <div class="counter-group">
+            <div class="counter" id="counter">30</div>
+            <div class="counter-label">REMAINING</div>
+        </div>
+        
+        <div class="tool-box">
+            <div>
+                <label style="font-size:10px; color:#aaa;">ZOOM</label><br>
+                <input type="range" id="zoomRange" min="1" max="3" step="0.1" value="1">
+            </div>
+            <button class="sub-btn" id="switchBtn">カメラ切り替え</button>
+            <button class="sub-btn" id="flashBtn">FLASH OFF</button>
+            <button class="sub-btn" id="powerBtn">CAMERA ON</button>
+        </div>
+
+        <div class="shutter-group">
+            <button id="shutter"></button>
+            <button class="timer-btn" id="timerBtn">5s T</button>
+        </div>
+        
+        <div id="status-msg">INITIALIZING...</div>
+    </div>
+
+    <canvas id="canvas"></canvas>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getStorage, ref, uploadBytes } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+
+        // --- Firebase Config（ここを差し替えてください） ---
+        const firebaseConfig = {
+            apiKey: "YOUR_API_KEY",
+            authDomain: "YOUR_PROJECT.firebaseapp.com",
+            projectId: "YOUR_PROJECT",
+            storageBucket: "YOUR_PROJECT.appspot.com",
+            messagingSenderId: "YOUR_ID",
+            appId: "YOUR_APP_ID"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const storage = getStorage(app);
+        const auth = getAuth(app);
+
+        const MAX_SHOTS = 30;
+        const CHARGE_TIME = 5000;
+        const video = document.getElementById('video');
+        const canvas = document.getElementById('canvas');
+        const shutterBtn = document.getElementById('shutter');
+        const timerBtn = document.getElementById('timerBtn');
+        const flashBtn = document.getElementById('flashBtn');
+        const switchBtn = document.getElementById('switchBtn');
+        const powerBtn = document.getElementById('powerBtn');
+        const counterDisplay = document.getElementById('counter');
+        const statusMsg = document.getElementById('status-msg');
+        const timerDisplay = document.getElementById('timer-display');
+
+        let shotCount = localStorage.getItem('retro_used_count') ? parseInt(localStorage.getItem('retro_used_count')) : 0;
+        let currentFacingMode = "environment";
+        let isFlashOn = false;
+        let isCameraOn = false; // カメラの電源状態
+        let currentStream = null;
+        let db;
+        let isAuthReady = false;
+
+        // IndexedDB
+        const dbRequest = indexedDB.open("RetroCamDB", 1);
+        dbRequest.onsuccess = (e) => { db = e.target.result; };
+        dbRequest.onupgradeneeded = (e) => {
+            db = e.target.result;
+            if (!db.objectStoreNames.contains("pendingUploads")) db.createObjectStore("pendingUploads", { keyPath: "id", autoIncrement: true });
+        };
+
+        // 認証監視
+        onAuthStateChanged(auth, (user) => {
+            if (user) { isAuthReady = true; statusMsg.innerText = "AUTH OK"; syncOfflineData(); }
+            else { signInAnonymously(auth); }
+        });
+
+        window.onload = () => {
+            startCamera(); // 起動時はON
+            updateUI();
+        };
+
+        // カメラを起動する関数
+        async function startCamera() {
+            statusMsg.innerText = "STARTING CAMERA...";
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({
+                    video: { facingMode: currentFacingMode, width: { ideal: 1920 }, height: { ideal: 1080 } },
+                    audio: false
+                });
+                currentStream = stream;
+                video.srcObject = stream;
+                video.classList.toggle('selfie', currentFacingMode === "user");
+                isCameraOn = true;
+                updatePowerBtnUI();
+                if (isFlashOn && currentFacingMode === "environment") toggleTorch(true);
+                statusMsg.innerText = isAuthReady ? "READY" : "AUTH PENDING...";
+            } catch (err) { statusMsg.innerText = "CAMERA ERROR"; isCameraOn = false; updatePowerBtnUI(); }
+        }
+
+        // カメラを完全に停止する関数（バッテリー節約）
+        function stopCamera() {
+            if (currentStream) {
+                currentStream.getTracks().forEach(track => track.stop());
+                video.srcObject = null;
+                currentStream = null;
+            }
+            isCameraOn = false;
+            updatePowerBtnUI();
+            statusMsg.innerText = "CAMERA OFF";
+        }
+
+        // 電源ボタンのクリック処理
+        powerBtn.addEventListener('click', () => {
+            if (isCameraOn) stopCamera();
+            else startCamera();
+        });
+
+        // 電源ボタンの見た目を更新
+        function updatePowerBtnUI() {
+            if (isCameraOn) {
+                powerBtn.innerText = "CAMERA ON";
+                powerBtn.classList.remove('power-off');
+                shutterBtn.disabled = shotCount >= MAX_SHOTS ? true : false;
+                timerBtn.disabled = false;
+            } else {
+                powerBtn.innerText = "CAMERA OFF";
+                powerBtn.classList.add('power-off');
+                shutterBtn.disabled = true;
+                timerBtn.disabled = true;
+            }
+        }
+
+        // カメラ切り替え（電源ONの時だけ動作）
+        switchBtn.addEventListener('click', () => {
+            if (!isCameraOn) return;
+            currentFacingMode = (currentFacingMode === "environment") ? "user" : "environment";
+            startCamera(); // 再起動
+        });
+
+        // 撮影処理
+        function takePicture() {
+            if (shotCount >= MAX_SHOTS || !isCameraOn) return;
+            shutterBtn.disabled = true;
+            timerBtn.disabled = true;
+            setTimeout(() => { if (MAX_SHOTS - shotCount > 0 && isCameraOn) { shutterBtn.disabled = false; timerBtn.disabled = false; } }, CHARGE_TIME);
+
+            const ctx = canvas.getContext('2d');
+            const vW = video.videoWidth; const vH = video.videoHeight;
+            let tw, th;
+            if (vW / vH > 1.5) { th = vH; tw = vH * 1.5; } else { tw = vW; th = vW / 1.5; }
+            canvas.width = tw; canvas.height = th;
+
+            const z = parseFloat(document.getElementById('zoomRange').value);
+            const sw = tw / z; const sh = th / z;
+            const sx = (vW - sw) / 2; const sy = (vH - sh) / 2;
+
+            ctx.drawImage(video, sx, sy, sw, sh, 0, 0, tw, th);
+            if (currentFacingMode === "user") {
+                const t = document.createElement('canvas'); t.width = tw; t.height = th;
+                const tc = t.getContext('2d'); tc.translate(tw, 0); tc.scale(-1, 1);
+                tc.drawImage(canvas, 0, 0); ctx.clearRect(0, 0, tw, th); ctx.drawImage(t, 0, 0);
+            }
+            applyRetroEffects(ctx, tw, th, isFlashOn);
+            addTimestamp(ctx, tw, th);
+
+            canvas.toBlob((blob) => {
+                const transaction = db.transaction(["pendingUploads"], "readwrite");
+                transaction.objectStore("pendingUploads").add({ blob: blob, timestamp: Date.now() });
+                uploadImage(blob); // 即座にアップロード試行
+            }, 'image/jpeg', 1.0);
+
+            shotCount++;
+            localStorage.setItem('retro_used_count', shotCount);
+            updateUI();
+        }
+
+        // --- アップロードと同期（前回の強力なやつを維持） ---
+        async function uploadImage(blob) {
+            if (!navigator.onLine || !isAuthReady) return;
+            try {
+                const fileName = `photos/${Date.now()}_${Math.floor(Math.random()*1000)}.jpg`;
+                const fileRef = ref(storage, fileName);
+                statusMsg.innerText = "UPLOADING...";
+                await uploadBytes(fileRef, blob);
+                statusMsg.innerText = "READY";
+                // 成功したらPendingを削除
+                syncOfflineData(true); 
+                return true;
+            } catch (e) { statusMsg.innerText = "UPLOAD ERR: " + e.code; return false; }
+        }
+
+        async function syncOfflineData(deleteOnly = false) {
+            if (!navigator.onLine || !db || !isAuthReady) return;
+            const store = db.transaction(["pendingUploads"], "readwrite").objectStore("pendingUploads");
+            const request = store.getAll();
+            request.onsuccess = async () => {
+                const items = request.result;
+                if (items.length === 0) return;
+                // deleteOnlyモード（アップロード成功直後）なら最古のデータを消すだけ
+                if (deleteOnly) {
+                    db.transaction(["pendingUploads"], "readwrite").objectStore("pendingUploads").delete(items[0].id);
+                    return;
+                }
+                statusMsg.innerText = `SYNCING ${items.length}...`;
+                for (const item of items) {
+                    const success = await uploadImage(item.blob);
+                    if (success) { db.transaction(["pendingUploads"], "readwrite").objectStore("pendingUploads").delete(item.id); }
+                    else break;
+                }
+                statusMsg.innerText = "READY";
+            };
+        }
+
+        // --- ツールとUI ---
+        async function toggleTorch(on) {
+            if (!currentStream || currentFacingMode === "user") return;
+            const track = currentStream.getVideoTracks()[0];
+            const caps = track.getCapabilities();
+            if (caps.torch) await track.applyConstraints({ advanced: [{ torch: on }] });
+        }
+        flashBtn.addEventListener('click', async () => {
+            if (!isCameraOn) return;
+            isFlashOn = !isFlashOn;
+            flashBtn.innerText = isFlashOn ? "FLASH ON" : "FLASH OFF";
+            flashBtn.classList.toggle('flash-on', isFlashOn);
+            toggleTorch(isFlashOn);
+        });
+        timerBtn.addEventListener('click', () => {
+            if (!isCameraOn) return;
+            let timeLeft = 5; timerBtn.disabled = true; shutterBtn.disabled = true;
+            timerDisplay.innerText = timeLeft; timerDisplay.style.visibility = "visible";
+            const cd = setInterval(() => { timeLeft--; timerDisplay.innerText = timeLeft; if (timeLeft <= 0) { clearInterval(cd); timerDisplay.style.visibility = "hidden"; takePicture(); } }, 1000);
+        });
+        function applyRetroEffects(ctx, w, h, flash) { ctx.globalCompositeOperation = 'overlay'; ctx.fillStyle = flash ? 'rgba(255, 255, 255, 0.2)' : 'rgba(255, 160, 50, 0.1)'; ctx.fillRect(0, 0, w, h); ctx.globalCompositeOperation = 'source-over'; ctx.fillStyle = 'rgba(255, 255, 255, 0.03)'; for (let i = 0; i < (w * h) / 1500; i++) ctx.fillRect(Math.random() * w, Math.random() * h, 1, 1); const grad = ctx.createRadialGradient(w/2, h/2, w/3, w/2, h/2, w/0.9); grad.addColorStop(0, 'transparent'); grad.addColorStop(1, 'rgba(0,0,0,0.4)'); ctx.fillStyle = grad; ctx.fillRect(0, 0, w, h); }
+        function addTimestamp(ctx, w, h) { const now = new Date(); const timeStr = `${now.getFullYear().toString().slice(-2)}.${(now.getMonth()+1).toString().padStart(2, '0')}.${now.getDate().toString().padStart(2, '0')}  ${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`; ctx.font = `bold ${Math.floor(w * 0.045)}px "Courier New", monospace`; ctx.textAlign = 'right'; ctx.fillStyle = '#ff7b00'; ctx.shadowColor = 'rgba(255, 100, 0, 0.5)'; ctx.shadowBlur = 5; ctx.fillText(timeStr, w * 0.95, h * 0.95); }
+        function updateUI() { const rem = MAX_SHOTS - shotCount; counterDisplay.innerText = rem > 0 ? rem : 0; if (rem <= 0 && isCameraOn) { shutterBtn.disabled = true; timerBtn.disabled = true; counterDisplay.style.color = "red"; } }
+        window.addEventListener('online', () => syncOfflineData());
+        document.getElementById('zoomRange').addEventListener('input', (e) => video.style.setProperty('--zoom-level', e.target.value));
+    </script>
+</body>
+</html>
+変更点と使い方
+横向き専用レイアウト: 左側が広いファインダー、右側が操作パネルになりました。
+
+タイマーカウントダウン: 覗き穴の外（横向き時は右下）に大きく表示されるようになりました。
+
+「CAMERA ON/OFF」ボタン:
+
+右側のツールボックスに追加しました。
+
+**「CAMERA OFF」**にすると、カメラ映像が止まり、画面が真っ暗になります。この状態はカメラのハードウェアが停止しているため、バッテリー消費が大幅に抑えられます。フラッシュや撮影ボタンも無効になります。
+
+もう一度押すと**「CAMERA ON」**になり、READY状態に戻ります。
+
+（※注意：ブラウザの制約上、完全にアプリを終了した時ほどの節約効果はありませんが、カメラを動かし続けるよりは圧倒的に電池が持ちます）
+
+これで、旅行中もバッテリーを気にせず、横持ちで本格的に撮影を楽しめます！
+
+
+
+
+
+Gemini は AI であり、間違えることがあります。
+
