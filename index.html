@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Retro Cam - Shiretoko Mission Final</title>
+    <title>Retro Cam - Shiretoko A/B/C</title>
     <style>
         :root { --body-bg: #1a1a1a; --accent: #ffae00; --panel-bg: #252525; --overlay-bg: rgba(0,0,0,0.95); }
         body { margin: 0; padding: 0; background-color: var(--body-bg); color: white; font-family: 'Courier New', Courier, monospace; display: flex; height: 100dvh; width: 100dvw; overflow: hidden; flex-direction: row; align-items: stretch; }
@@ -15,9 +15,9 @@
         video.selfie { transform: scale(var(--zoom-level, 1)) scaleX(-1); }
         #timer-display { margin-top: 10px; font-size: 2rem; color: var(--accent); font-weight: bold; visibility: hidden; height: 2rem; }
 
-        /* 中：設定（ボタン間隔を拡大） */
+        /* 中：設定 */
         .mid-section { width: 190px; background-color: var(--panel-bg); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 20px; border-left: 1px solid #111; border-right: 1px solid #111; }
-        .tool-group { width: 100%; display: flex; flex-direction: column; align-items: center; gap: 15px; } /* gapを大きく設定 */
+        .tool-group { width: 100%; display: flex; flex-direction: column; align-items: center; gap: 15px; }
         input[type=range] { width: 120px; accent-color: var(--accent); }
         .sub-btn { background: #444; color: #eee; border: 1px solid #666; padding: 10px; border-radius: 6px; font-size: 10px; cursor: pointer; width: 85%; text-align: center; }
         .flash-on { background: var(--accent) !important; color: #000 !important; font-weight: bold; }
@@ -25,13 +25,13 @@
         .car-select { background: #000; color: var(--accent); border: 1px solid var(--accent); padding: 8px; border-radius: 4px; font-size: 12px; width: 85%; margin-bottom: 5px; text-align: center; }
         .car-select:disabled { opacity: 0.5; border-color: #444; color: #888; }
 
-        /* 右：撮影（中央寄せに修正） */
+        /* 右：撮影（中央寄せ） */
         .right-section { width: 180px; display: flex; flex-direction: column; align-items: center; justify-content: center; padding-right: env(safe-area-inset-right); background-color: var(--panel-bg); }
         .counter-group { text-align: center; cursor: pointer; -webkit-tap-highlight-color: transparent; margin-bottom: 30px; }
         .counter { font-size: 2.2rem; color: var(--accent); font-weight: bold; line-height: 1; }
         .counter-label { font-size: 10px; color: #888; margin-top: 5px; }
         
-        .shutter-box { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 25px; width: 100%; } /* 中央寄せの要 */
+        .shutter-box { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 25px; width: 100%; }
         #shutter { width: 85px; height: 85px; border-radius: 50%; border: 6px solid #222; background: #d00; box-shadow: 0 6px 0 #600; cursor: pointer; }
         #shutter:active { transform: translateY(3px); box-shadow: 0 3px 0 #600; }
         #shutter:disabled { background: #444; box-shadow: none; opacity: 0.5; }
@@ -110,7 +110,7 @@
         import { getStorage, ref, uploadBytes } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
         import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
-        // --- Firebase Config（ここを差し替え） ---
+        // --- Firebase Config（ここを自分のものに書き換え！） ---
         const firebaseConfig = {
             apiKey: "AIzaSyDHqQDeEMrFV09YI0n_ARr1Tzta5aqmE2U",
             authDomain: "my-retro-cam.firebaseapp.com",
@@ -277,6 +277,30 @@
             } else takePicture();
         });
 
+        // チーム名と日付を刻印する関数
+        function addTimestampAndTeam(ctx, w, h) {
+            const n = new Date();
+            const timeStr = `${n.getFullYear().toString().slice(-2)}.${(n.getMonth()+1).toString().padStart(2, '0')}.${n.getDate().toString().padStart(2, '0')} ${n.getHours().toString().padStart(2, '0')}:${n.getMinutes().toString().padStart(2, '0')}`;
+            const teamStr = selectedCar ? `${selectedCar}チーム` : '';
+
+            const fontSize = Math.floor(w * 0.045);
+            ctx.font = `bold ${fontSize}px "Courier New", monospace`;
+            ctx.fillStyle = '#ff7b00';
+            ctx.shadowColor = 'rgba(255, 100, 0, 0.5)';
+            ctx.shadowBlur = 5;
+
+            // 右下：日付
+            ctx.textAlign = 'right';
+            ctx.fillText(timeStr, w * 0.95, h * 0.95);
+
+            // 左下：チーム名
+            if (teamStr) {
+                ctx.textAlign = 'left';
+                ctx.fillText(teamStr, w * 0.05, h * 0.95);
+            }
+            ctx.shadowBlur = 0;
+        }
+
         function takePicture() {
             if (shotCount >= MAX_SHOTS || !isCameraOn) return;
             shutterBtn.disabled = true;
@@ -290,7 +314,7 @@
             const sx = (vW - sw) / 2; const sy = (vH - sh) / 2;
             ctx.drawImage(video, sx, sy, sw, sh, 0, 0, tw, th);
             applyRetroEffects(ctx, tw, th, isFlashOn);
-            addTimestamp(ctx, tw, th);
+            addTimestampAndTeam(ctx, tw, th); // 修正した関数を呼び出し
             canvas.toBlob((b) => {
                 db.transaction(["pendingUploads"], "readwrite").objectStore("pendingUploads").add({ blob: b, timestamp: Date.now() });
                 uploadImage(b);
@@ -318,12 +342,6 @@
             ctx.globalCompositeOperation = 'overlay'; ctx.fillStyle = f ? 'rgba(255, 255, 255, 0.2)' : 'rgba(255, 160, 50, 0.1)'; ctx.fillRect(0, 0, w, h);
             ctx.globalCompositeOperation = 'source-over'; ctx.fillStyle = 'rgba(255, 255, 255, 0.03)'; for (let i = 0; i < (w * h) / 1500; i++) ctx.fillRect(Math.random() * w, Math.random() * h, 1, 1);
             const g = ctx.createRadialGradient(w/2, h/2, w/3, w/2, h/2, w/0.9); g.addColorStop(0, 'transparent'); g.addColorStop(1, 'rgba(0,0,0,0.4)'); ctx.fillStyle = g; ctx.fillRect(0, 0, w, h);
-        }
-
-        function addTimestamp(ctx, w, h) {
-            const n = new Date();
-            const s = `${n.getFullYear().toString().slice(-2)}.${(n.getMonth()+1).toString().padStart(2, '0')}.${n.getDate().toString().padStart(2, '0')} ${n.getHours().toString().padStart(2, '0')}:${n.getMinutes().toString().padStart(2, '0')}`;
-            ctx.font = `bold ${Math.floor(w * 0.045)}px "Courier New", monospace`; ctx.textAlign = 'right'; ctx.fillStyle = '#ff7b00'; ctx.shadowColor = 'rgba(255, 100, 0, 0.5)'; ctx.shadowBlur = 5; ctx.fillText(s, w * 0.95, h * 0.95);
         }
 
         function updateUI() { const rem = MAX_SHOTS - shotCount; counterDisplay.innerText = rem > 0 ? rem : 0; if (rem <= 0 && isCameraOn) shutterBtn.disabled = true; }
