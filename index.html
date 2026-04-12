@@ -3,9 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Retro Cam - Shiretoko Final</title>
+    <title>Retro Cam - Shiretoko Mission Detail</title>
     <style>
-        :root { --body-bg: #1a1a1a; --accent: #ffae00; --panel-bg: #252525; --overlay-bg: rgba(0,0,0,0.9); }
+        :root { --body-bg: #1a1a1a; --accent: #ffae00; --panel-bg: #252525; --overlay-bg: rgba(0,0,0,0.95); }
         body { margin: 0; padding: 0; background-color: var(--body-bg); color: white; font-family: 'Courier New', Courier, monospace; display: flex; height: 100dvh; width: 100dvw; overflow: hidden; flex-direction: row; align-items: stretch; }
 
         /* 左：プレビュー */
@@ -36,15 +36,15 @@
         .timer-btn { background: #555; color: white; border: 2px solid #777; padding: 10px; border-radius: 8px; font-size: 11px; cursor: pointer; width: 120px; }
         .timer-btn.active { background: var(--accent); color: #000; font-weight: bold; }
 
-        /* ミッションオーバーレイ */
+        /* ミッションオーバーレイ（詳細記載用） */
         #mission-overlay { position: fixed; top: 0; left: 0; width: 100dvw; height: 100dvh; background-image: url('https://images.unsplash.com/photo-1590710667464-9b8830b42784?q=80&w=1200'); background-size: cover; background-position: center; z-index: 100; display: none; align-items: center; justify-content: center; backdrop-filter: blur(5px); }
-        .overlay-content { background-color: rgba(0,0,0,0.8); width: 90%; height: 90%; border-radius: 10px; padding: 15px; overflow-y: auto; box-sizing: border-box; border: 1px solid #444; }
-        .mission-header { color: var(--accent); font-weight: bold; font-size: 1.2rem; text-align: center; margin-bottom: 10px; border-bottom: 2px solid var(--accent); }
-        .mission-item { margin-bottom: 12px; }
-        .mission-title { font-weight: bold; color: #fff; font-size: 12px; display: flex; justify-content: space-between; }
-        .mission-detail { color: var(--accent); font-size: 13px; margin: 4px 0; background: rgba(255,174,0,0.1); padding: 4px; border-radius: 4px; }
-        .mission-desc { color: #ccc; font-size: 10px; line-height: 1.3; }
-        .important-note { background: #600; color: #fff; padding: 8px; font-size: 10px; margin-top: 10px; border-radius: 4px; }
+        .overlay-content { background-color: rgba(0,0,0,0.85); width: 92%; height: 92%; border-radius: 10px; padding: 15px; overflow-y: auto; box-sizing: border-box; border: 1px solid #444; }
+        .mission-header { color: var(--accent); font-weight: bold; font-size: 1.1rem; text-align: center; margin-bottom: 10px; border-bottom: 2px solid var(--accent); position: sticky; top: 0; background: rgba(0,0,0,0.9); padding: 5px; z-index: 10; }
+        .mission-item { margin-bottom: 15px; border-bottom: 1px solid #333; padding-bottom: 10px; }
+        .mission-title-row { font-weight: bold; color: #fff; font-size: 12px; display: flex; justify-content: space-between; align-items: center; }
+        .mission-label { color: var(--accent); font-size: 13px; margin: 5px 0; background: rgba(255,174,0,0.15); padding: 4px 8px; border-radius: 4px; display: inline-block; }
+        .mission-desc { color: #ddd; font-size: 11px; line-height: 1.4; }
+        .important-note { background: #600; color: #fff; padding: 10px; font-size: 10px; margin-top: 15px; border-radius: 4px; border: 1px solid #a00; }
 
         #status-msg { position: fixed; bottom: 5px; width: 100%; text-align: center; font-size: 9px; color: #555; pointer-events: none; }
         canvas { display: none; }
@@ -88,15 +88,15 @@
 
     <div id="mission-overlay">
         <div class="overlay-content">
-            <div id="mission-target-car" class="mission-header">1号車 MISSION</div>
+            <div id="mission-target-car" class="mission-header">1号車 MISSION LIST</div>
             <div id="mission-list"></div>
             <div class="important-note">
-                【重要】<br>
-                ・室内/夜間は必ずフラッシュをONにすること<br>
-                ・レンズへの指の映り込みに注意！<br>
-                ・写真はフォトグランプリの審査対象です
+                【重要：フォトグランプリ必勝法】<br>
+                ・室内/夜間/車内は必ずフラッシュをONに！<br>
+                ・撮影前にレンズ周辺から指をどかしたか確認！<br>
+                ・ピントの限界は1m。近すぎるとボケます。
             </div>
-            <div style="text-align: center; color: #888; font-size: 9px; margin-top: 15px;">(画面タップで閉じる)</div>
+            <div style="text-align: center; color: #888; font-size: 10px; margin: 20px 0;">(タップして閉じる)</div>
         </div>
     </div>
 
@@ -108,7 +108,7 @@
         import { getStorage, ref, uploadBytes } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
         import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
-        // --- ここを自分のFirebase設定に書き換えてください ---
+        // --- Firebase Config ---
         const firebaseConfig = {
             apiKey: "AIzaSyDHqQDeEMrFV09YI0n_ARr1Tzta5aqmE2U",
             authDomain: "my-retro-cam.firebaseapp.com",
@@ -121,6 +121,43 @@
         const app = initializeApp(firebaseConfig);
         const storage = getStorage(app);
         const auth = getAuth(app);
+
+        // ミッション詳細データ
+        const missions = {
+            "1": [
+                { cat: "1. 会議（練習）", title: "【露出実験】", task: "フラッシュなしとありで同じ場所を撮り比べよ。光の効果を検証し、フィルムの特性を理解せよ。", num: "3枚" },
+                { cat: "2. 移動・昼食", title: "【あーん】", task: "メンバー同士で食べさせ合う仲良しショット。最高の笑顔とグルメを一枚に収めよ。", num: "4枚" },
+                { cat: "3. 天に続く道", title: "【ジャンプ】", task: "全員同時に飛び上がり、空に浮いているような飛躍ショット。ローアングルで高さを強調せよ。", num: "3枚" },
+                { cat: "4. 買い出し", title: "【大量捕獲】", task: "カゴいっぱいの食材を抱え、強欲な笑顔を見せるハンターショット。知床の食への執念を見せよ。", num: "3枚" },
+                { cat: "5. フィールドハウス", title: "【森の精霊】", task: "木の陰から顔を覗かせるひょっこりショット。11名が原生林に溶け込むシュールな構図を狙え。", num: "5枚" },
+                { cat: "6. 夕食（調理）", title: "【シェフの魂】", task: "プロのような大袈裟な手つきで盛り付ける躍動ショット。フラッシュ必須で調理の熱気を捉えよ。", num: "6枚" },
+                { cat: "7. 朝の準備", title: "【無防備な朝】", task: "歯ブラシをくわえたまま、ぼーっとしているリアルな寝起き姿。飾らない戦友の素顔を記録せよ。", num: "3枚" },
+                { cat: "8. 遊覧船おーろら", title: "【限界耐風】", task: "正面から強風を受け、顔のゆがみを恐れず立ち向かう根性ショット。知床の厳しさを体現せよ。", num: "4枚" },
+                { cat: "9. 帰路・空港", title: "【名残惜しさ】", task: "空港の柱にしがみつき、帰りたくないと泣き真似をする惜別ショット。旅の終わりをドラマチックに。", num: "3枚" }
+            ],
+            "2": [
+                { cat: "1. 会議（練習）", title: "【構図実験】", task: "悪い構え（指入り）と正しい構えを撮り比べ、ファインダーの死角を検証せよ。", num: "3枚" },
+                { cat: "2. 移動・昼食", title: "【孤独のグルメ】", task: "料理と真剣に向き合うメンバーを背後から狙う求道者ショット。食に対する敬意を背中で語れ。", num: "4枚" },
+                { cat: "3. 天に続く道", title: "【千手観音】", task: "全員が重なり合い、道の一部となるような芸術的ポーズ。チームの結束を幾何学的に表現せよ。", num: "3枚" },
+                { cat: "4. 買い出し", title: "【目利き】", task: "成分表示を鋭い目つきでチェックする、こだわり役員ショット。妥協を許さないプロの目を見せよ。", num: "3枚" },
+                { cat: "5. フィールドハウス", title: "【野生の呼吸】", task: "大地に向けて深く深呼吸し、パワーを吸収しているヒーリングショット。知床のエネルギーと一体化せよ。", num: "5枚" },
+                { cat: "6. 夕食（乾杯）", title: "【大机の総督】", task: "11人のグラスが並ぶ大机で、端から端まで迫力を出した乾杯ショット。宴のスケール感を記録せよ。", num: "6枚" },
+                { cat: "7. 朝の準備", title: "【出発の敬礼】", task: "コテージを背景にビシッと敬礼し、今日への決意を示す規律ショット。統制の取れた組織美を出せ。", num: "3枚" },
+                { cat: "8. 遊覧船おーろら", title: "【発見！知床】", task: "遠くに何かを見つけ、全員で同じ方向を力強く指さす驚きショット。探検家としての本能を写せ。", num: "4枚" },
+                { cat: "9. 帰路・空港", title: "【ミッション完了】", task: "全員でグッドポーズをし、満足げな顔で歩く達成感ショット。任務を遂行した誇りを顔に刻め。", num: "3枚" }
+            ],
+            "3": [
+                { cat: "1. 会議（練習）", title: "【距離実験】", task: "至近距離(50cm)と適正距離(1m)で撮り比べ、ピントの限界を検証せよ。ボケを恐れるな。", num: "3枚" },
+                { cat: "2. 移動・昼食", title: "【CM出演依頼】", task: "最高の笑顔でグルメをアピールする広告風ショット。北海道観光大使になりきってキメろ。", num: "4枚" },
+                { cat: "3. 天に続く道", title: "【遠近法】", task: "遠くのメンバーを指でつまむ、または手のひらに乗せる錯覚ショット。知床の広大さを利用せよ。", num: "3枚" },
+                { cat: "4. 買い出し", title: "【潜入スタッフ】", task: "看板や店員さんと一体化し、スタッフになりすます潜入ショット。現地に馴染む適応能力を見せよ。", num: "3枚" },
+                { cat: "5. フィールドハウス", title: "【自然への対話】", task: "巨大な木や石に深々とお辞儀をし、敬意を払っているシュールな1枚。万物への感謝を形にせよ。", num: "5枚" },
+                { cat: "6. 夕食（対談）", title: "【次代への絆】", task: "お酒を片手に肩を組み、これまでの苦労を労い合う戦友ショット。夜の知床で深まる絆を捉えよ。", num: "6枚" },
+                { cat: "7. 朝の準備", title: "【爽やかモデル】", task: "朝日に照らされ、雑誌の表紙のようなキメ顔でコーヒーを飲むショット。大人の余裕を演出せよ。", num: "3枚" },
+                { cat: "8. 遊覧船おーろら", title: "【知床の王】", task: "船首で仁王立ちし、海を支配したかのような堂々たる支配者ショット。オホーツク海を背に吠えろ。", num: "4枚" },
+                { cat: "9. 帰路・空港", title: "【また会おう】", task: "背中を向け、片手だけを挙げてゲートへ消えていくヒーローの別れ。去り際の美学を追求せよ。", num: "3枚" }
+            ]
+        };
 
         const MAX_SHOTS = 34;
         const CHARGE_TIME = 5000;
@@ -151,12 +188,6 @@
         let db;
         let isAuthReady = false;
 
-        const missions = {
-            "1": [{ cat: "1.会議", title: "【露出実験】", task: "フラッシュなし/ありの比較。", num: "3枚" }, { cat: "2.昼食", title: "【あーん】", task: "メンバー同士の仲良しショット。", num: "4枚" }, { cat: "3.天道", title: "【ジャンプ】", task: "全員同時の浮遊ショット。", num: "3枚" }, { cat: "4.買出", title: "【大量捕獲】", task: "カゴいっぱいの食材。", num: "3枚" }, { cat: "5.自然", title: "【森の精霊】", task: "木陰からひょっこり。", num: "5枚" }, { cat: "6.夕食", title: "【シェフの魂】", task: "プロのような調理。", num: "6枚" }, { cat: "7.朝食", title: "【無防備な朝】", task: "歯ブラシ寝起き姿。", num: "3枚" }, { cat: "8.船", title: "【限界耐風】", task: "強風への根性顔。", num: "4枚" }, { cat: "9.空港", title: "【名残惜しさ】", task: "柱にしがみつく。", num: "3枚" }],
-            "2": [{ cat: "1.会議", title: "【構図実験】", task: "指入り/なしの比較。", num: "3枚" }, { cat: "2.昼食", title: "【孤独のグルメ】", task: "真剣な背中ショット。", num: "4枚" }, { cat: "3.天道", title: "【千手観音】", task: "全員重なる芸術ポーズ。", num: "3枚" }, { cat: "4.買出", title: "【目利き】", task: "成分表示チェック姿。", num: "3枚" }, { cat: "5.自然", title: "【野生の呼吸】", task: "大地への深呼吸。", num: "5枚" }, { cat: "6.夕食", title: "【大机の総督】", task: "大迫力の乾杯。", num: "6枚" }, { cat: "7.朝食", title: "【出発の敬礼】", task: "今日への決意の敬礼。", num: "3枚" }, { cat: "8.船", title: "【発見！知床】", task: "全員で同じ方を指差す。", num: "4枚" }, { cat: "9.空港", title: "【ミッション完了】", task: "グッドポーズ歩き。", num: "3枚" }],
-            "3": [{ cat: "1.会議", title: "【距離実験】", task: "至近距離/適正の比較。", num: "3枚" }, { cat: "2.昼食", title: "【CM出演依頼】", task: "最高の笑顔でアピール。", num: "4枚" }, { cat: "3.天道", title: "【遠近法】", task: "指でつまむ錯覚ショット。", num: "3枚" }, { cat: "4.買出", title: "【潜入スタッフ】", task: "看板や店員さんと一体化し、スタッフになりすまし。", num: "3枚" }, { cat: "5.自然", title: "【自然への対話】", task: "木や石にお辞儀。", num: "5枚" }, { cat: "6.夕食", title: "【次代への絆】", task: "お酒片手に戦友ショット。", num: "6枚" }, { cat: "7.朝食", title: "【爽やかモデル】", task: "朝日とコーヒー表紙風。", num: "3枚" }, { cat: "8.船", title: "【知床の王】", task: "船首で仁王立ち。", num: "4枚" }, { cat: "9.空港", title: "【また会おう】", task: "ヒーローの別れ背中。", num: "3枚" }]
-        };
-
         const dbRequest = indexedDB.open("RetroCamDB", 1);
         dbRequest.onsuccess = (e) => { db = e.target.result; };
         dbRequest.onupgradeneeded = (e) => {
@@ -181,6 +212,7 @@
                     shotCount = 0; selectedCar = null;
                     localStorage.setItem('retro_used_count', 0); localStorage.removeItem('retro_selected_car');
                     carSelect.disabled = false; updateUI();
+                    alert("RESET DONE");
                 }
                 resetClickCount = 0;
             }
@@ -190,12 +222,16 @@
         missionBtn.addEventListener('click', () => {
             const carNum = carSelect.value;
             if (!selectedCar) { selectedCar = carNum; localStorage.setItem('retro_selected_car', carNum); carSelect.disabled = true; }
-            missionTargetCar.innerText = `${carNum}号車 MISSION`;
+            missionTargetCar.innerText = `${carNum}号車 MISSION LIST`;
             missionList.innerHTML = '';
             missions[carNum].forEach(m => {
                 const div = document.createElement('div');
                 div.className = 'mission-item';
-                div.innerHTML = `<div class="mission-title"><span>${m.cat}</span><span>${m.num}</span></div><div class="mission-detail">${m.title}</div><div class="mission-desc">${m.task}</div>`;
+                div.innerHTML = `
+                    <div class="mission-title-row"><span>${m.cat}</span><span>${m.num}</span></div>
+                    <div class="mission-label">${m.title}</div>
+                    <div class="mission-desc">${m.task}</div>
+                `;
                 missionList.appendChild(div);
             });
             missionOverlay.style.display = 'flex';
@@ -268,7 +304,7 @@
 
         async function uploadImage(b) {
             if (!navigator.onLine || !isAuthReady) return;
-            try { await uploadBytes(ref(storage, `photos/${Date.now()}.jpg`), b); statusMsg.innerText = "READY"; syncOfflineData(true); return true; }
+            try { await uploadBytes(ref(storage, `photos/${Date.now()}.jpg`), b); syncOfflineData(true); return true; }
             catch (e) { return false; }
         }
 
