@@ -3,51 +3,48 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Retro Cam - Shiretoko 34</title>
+    <title>Retro Cam - Shiretoko Final</title>
     <style>
-        :root { --body-bg: #1a1a1a; --accent: #ffae00; --panel-bg: #252525; --overlay-bg: rgba(0,0,0,0.85); }
-        body { 
-            margin: 0; padding: 0; background-color: var(--body-bg); color: white; 
-            font-family: 'Courier New', Courier, monospace; 
-            display: flex; height: 100dvh; width: 100dvw; overflow: hidden; 
-            flex-direction: row; align-items: stretch;
-        }
+        :root { --body-bg: #1a1a1a; --accent: #ffae00; --panel-bg: #252525; --overlay-bg: rgba(0,0,0,0.9); }
+        body { margin: 0; padding: 0; background-color: var(--body-bg); color: white; font-family: 'Courier New', Courier, monospace; display: flex; height: 100dvh; width: 100dvw; overflow: hidden; flex-direction: row; align-items: stretch; }
 
-        /* --- 左：プレビュー --- */
+        /* 左：プレビュー */
         .left-section { flex: 1.2; display: flex; flex-direction: column; align-items: center; justify-content: center; background-color: var(--body-bg); padding-left: env(safe-area-inset-left); position: relative; }
         .viewfinder-container { width: 140px; height: 93px; border: 4px solid #444; border-radius: 4px; overflow: hidden; background: #000; position: relative; }
         video { width: 100%; height: 100%; object-fit: cover; transform: scale(var(--zoom-level, 1)); transform-origin: center; }
         video.selfie { transform: scale(var(--zoom-level, 1)) scaleX(-1); }
         #timer-display { margin-top: 10px; font-size: 2rem; color: var(--accent); font-weight: bold; visibility: hidden; height: 2rem; }
 
-        /* --- 中：設定 --- */
-        .mid-section { width: 180px; background-color: var(--panel-bg); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 15px; border-left: 1px solid #111; border-right: 1px solid #111; }
-        .tool-group { width: 100%; display: flex; flex-direction: column; align-items: center; gap: 10px; }
+        /* 中：設定 */
+        .mid-section { width: 190px; background-color: var(--panel-bg); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; border-left: 1px solid #111; border-right: 1px solid #111; }
+        .tool-group { width: 100%; display: flex; flex-direction: column; align-items: center; gap: 8px; }
         input[type=range] { width: 120px; accent-color: var(--accent); }
-        .sub-btn { background: #444; color: #eee; border: 1px solid #666; padding: 9px; border-radius: 6px; font-size: 10px; cursor: pointer; width: 85%; text-align: center; }
+        .sub-btn { background: #444; color: #eee; border: 1px solid #666; padding: 8px; border-radius: 6px; font-size: 10px; cursor: pointer; width: 85%; text-align: center; }
         .flash-on { background: var(--accent) !important; color: #000 !important; font-weight: bold; }
-        .power-off { background: #d00 !important; font-weight: bold; }
+        
+        .car-select { background: #000; color: var(--accent); border: 1px solid var(--accent); padding: 5px; border-radius: 4px; font-size: 12px; width: 85%; margin-bottom: 5px; }
+        .car-select:disabled { opacity: 0.5; border-color: #444; color: #888; }
 
-        /* --- 右：撮影 --- */
-        .right-section { width: 180px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 25px; padding-right: env(safe-area-inset-right); background-color: var(--panel-bg); }
-        .counter-group { text-align: center; cursor: pointer; -webkit-tap-highlight-color: transparent; } /* リセット用にカーソル指定 */
+        /* 右：撮影 */
+        .right-section { width: 180px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 20px; padding-right: env(safe-area-inset-right); background-color: var(--panel-bg); }
+        .counter-group { text-align: center; cursor: pointer; -webkit-tap-highlight-color: transparent; }
         .counter { font-size: 2.2rem; color: var(--accent); font-weight: bold; line-height: 1; }
         .counter-label { font-size: 10px; color: #888; margin-top: 5px; }
-
-        .shutter-box { display: flex; flex-direction: column; align-items: center; gap: 15px; }
         #shutter { width: 80px; height: 80px; border-radius: 50%; border: 6px solid #222; background: #d00; box-shadow: 0 6px 0 #600; cursor: pointer; }
         #shutter:active { transform: translateY(3px); box-shadow: 0 3px 0 #600; }
         #shutter:disabled { background: #444; box-shadow: none; opacity: 0.5; }
         .timer-btn { background: #555; color: white; border: 2px solid #777; padding: 10px; border-radius: 8px; font-size: 11px; cursor: pointer; width: 120px; }
-        .timer-btn.active { background: var(--accent); color: #000; font-weight: bold; border-color: #fff; }
+        .timer-btn.active { background: var(--accent); color: #000; font-weight: bold; }
 
-        /* --- 配分表示オーバーレイ --- */
-        #list-overlay { position: fixed; top: 0; left: 0; width: 100dvw; height: 100dvh; background-color: var(--overlay-bg); background-image: url('https://images.unsplash.com/photo-1590710667464-9b8830b42784?q=80&w=1200'); background-size: cover; background-position: center; z-index: 100; display: none; align-items: center; justify-content: center; cursor: pointer; backdrop-filter: blur(5px); }
-        .overlay-content { background-color: rgba(0,0,0,0.7); width: 85%; height: 85%; border-radius: 10px; border: 2px solid #555; padding: 20px; overflow-y: auto; box-sizing: border-box; }
-        .overlay-title { font-size: 1.2rem; color: var(--accent); font-weight: bold; text-align: center; margin-bottom: 15px; }
-        .list-item { margin-bottom: 10px; border-bottom: 1px solid #333; padding-bottom: 8px; }
-        .item-header { display: flex; justify-content: space-between; align-items: center; font-size: 11px; font-weight: bold; }
-        .item-desc { font-size: 9px; color: #ccc; margin-top: 3px; line-height: 1.2; }
+        /* ミッションオーバーレイ */
+        #mission-overlay { position: fixed; top: 0; left: 0; width: 100dvw; height: 100dvh; background-image: url('https://images.unsplash.com/photo-1590710667464-9b8830b42784?q=80&w=1200'); background-size: cover; background-position: center; z-index: 100; display: none; align-items: center; justify-content: center; backdrop-filter: blur(5px); }
+        .overlay-content { background-color: rgba(0,0,0,0.8); width: 90%; height: 90%; border-radius: 10px; padding: 15px; overflow-y: auto; box-sizing: border-box; border: 1px solid #444; }
+        .mission-header { color: var(--accent); font-weight: bold; font-size: 1.2rem; text-align: center; margin-bottom: 10px; border-bottom: 2px solid var(--accent); }
+        .mission-item { margin-bottom: 12px; }
+        .mission-title { font-weight: bold; color: #fff; font-size: 12px; display: flex; justify-content: space-between; }
+        .mission-detail { color: var(--accent); font-size: 13px; margin: 4px 0; background: rgba(255,174,0,0.1); padding: 4px; border-radius: 4px; }
+        .mission-desc { color: #ccc; font-size: 10px; line-height: 1.3; }
+        .important-note { background: #600; color: #fff; padding: 8px; font-size: 10px; margin-top: 10px; border-radius: 4px; }
 
         #status-msg { position: fixed; bottom: 5px; width: 100%; text-align: center; font-size: 9px; color: #555; pointer-events: none; }
         canvas { display: none; }
@@ -62,11 +59,19 @@
 
     <div class="mid-section">
         <div class="tool-group">
-            <div style="text-align: center;"><label style="font-size:9px; color:#aaa;">ZOOM</label><br><input type="range" id="zoomRange" min="1" max="3" step="0.1" value="1"></div>
-            <button class="sub-btn" id="switchBtn">カメラ切り替え</button>
+            <select id="carSelect" class="car-select">
+                <option value="1">1号車 ミッション</option>
+                <option value="2">2号車 ミッション</option>
+                <option value="3">3号車 ミッション</option>
+            </select>
+            <button class="sub-btn" id="missionBtn">ミッション確認</button>
             <button class="sub-btn" id="flashBtn">FLASH OFF</button>
+            <button class="sub-btn" id="switchBtn">カメラ切り替え</button>
             <button class="sub-btn" id="powerBtn">CAMERA ON</button>
-            <button class="sub-btn" id="listBtn">撮影配分を確認</button>
+            <div style="text-align: center; margin-top:5px;">
+                <label style="font-size:8px; color:#aaa;">ZOOM</label><br>
+                <input type="range" id="zoomRange" min="1" max="3" step="0.1" value="1">
+            </div>
         </div>
     </div>
 
@@ -81,20 +86,17 @@
         </div>
     </div>
 
-    <div id="list-overlay">
+    <div id="mission-overlay">
         <div class="overlay-content">
-            <div class="overlay-title">- Shiretoko Shoot List -</div>
-            <div class="list-item"><div class="item-header"><span>会議（練習）</span><span>3枚</span></div><div class="item-desc">旅のキックオフ、あえて真面目な会議シーン。</div></div>
-            <div class="list-item"><div class="item-header"><span>移動・昼食</span><span>4枚</span></div><div class="item-desc">車内のわちゃわちゃ感と、北海道グルメ。</div></div>
-            <div class="list-item"><div class="item-header"><span>天に続く道</span><span>3枚</span></div><div class="item-desc">奥行きを活かしたアーティスティックな1枚。</div></div>
-            <div class="list-item"><div class="item-header"><span>買い出し</span><span>3枚</span></div><div class="item-desc">どこで買い物したのか、和気あいあいと。</div></div>
-            <div class="list-item"><div class="item-header"><span>フィールドハウス</span><span>5枚</span></div><div class="item-desc">知床の雄大な自然、夕暮れのエモい瞬間。</div></div>
-            <div class="list-item"><div class="item-header"><span>夕食</span><span>6枚</span></div><div class="item-desc">最後の盛り上がり調理中から夜間討議まで。</div></div>
-            <div class="list-item"><div class="item-header"><span>朝の準備・朝食</span><span>3枚</span></div><div class="item-desc">一日の始まり、リラックスした様子。</div></div>
-            <div class="list-item"><div class="item-header"><span>遊覧船おーろら</span><span>4枚</span></div><div class="item-desc">メイン。潮風、絶景、船上の仲間。</div></div>
-            <div class="list-item"><div class="item-header"><span>帰路・空港解散</span><span>3枚</span></div><div class="item-desc">旅の締めくくり、名残惜しい瞬間。</div></div>
-            <div style="text-align: center; color: #accent; font-weight:bold; font-size: 11px; margin-top: 15px;">Total: 34 Photos</div>
-            <div style="text-align: center; color: #888; font-size: 9px; margin-top: 10px;">(タップして閉じる)</div>
+            <div id="mission-target-car" class="mission-header">1号車 MISSION</div>
+            <div id="mission-list"></div>
+            <div class="important-note">
+                【重要】<br>
+                ・室内/夜間は必ずフラッシュをONにすること<br>
+                ・レンズへの指の映り込みに注意！<br>
+                ・写真はフォトグランプリの審査対象です
+            </div>
+            <div style="text-align: center; color: #888; font-size: 9px; margin-top: 15px;">(画面タップで閉じる)</div>
         </div>
     </div>
 
@@ -106,6 +108,7 @@
         import { getStorage, ref, uploadBytes } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
         import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
+        // --- ここを自分のFirebase設定に書き換えてください ---
         const firebaseConfig = {
             apiKey: "AIzaSyDHqQDeEMrFV09YI0n_ARr1Tzta5aqmE2U",
             authDomain: "my-retro-cam.firebaseapp.com",
@@ -119,7 +122,6 @@
         const storage = getStorage(app);
         const auth = getAuth(app);
 
-        // 合計枚数を34枚に変更
         const MAX_SHOTS = 34;
         const CHARGE_TIME = 5000;
         const video = document.getElementById('video');
@@ -129,22 +131,31 @@
         const flashBtn = document.getElementById('flashBtn');
         const switchBtn = document.getElementById('switchBtn');
         const powerBtn = document.getElementById('powerBtn');
-        const listBtn = document.getElementById('listBtn');
+        const carSelect = document.getElementById('carSelect');
+        const missionBtn = document.getElementById('missionBtn');
         const resetTrigger = document.getElementById('resetTrigger');
-        const listOverlay = document.getElementById('list-overlay');
+        const missionOverlay = document.getElementById('mission-overlay');
+        const missionList = document.getElementById('mission-list');
+        const missionTargetCar = document.getElementById('mission-target-car');
         const counterDisplay = document.getElementById('counter');
         const statusMsg = document.getElementById('status-msg');
         const timerDisplay = document.getElementById('timer-display');
 
         let shotCount = localStorage.getItem('retro_used_count') ? parseInt(localStorage.getItem('retro_used_count')) : 0;
-        let currentFacingMode = "environment";
+        let selectedCar = localStorage.getItem('retro_selected_car') || null;
         let isFlashOn = false;
         let isCameraOn = false;
         let isTimerActive = false;
+        let resetClickCount = 0;
         let currentStream = null;
         let db;
         let isAuthReady = false;
-        let resetClickCount = 0; // 隠し操作用
+
+        const missions = {
+            "1": [{ cat: "1.会議", title: "【露出実験】", task: "フラッシュなし/ありの比較。", num: "3枚" }, { cat: "2.昼食", title: "【あーん】", task: "メンバー同士の仲良しショット。", num: "4枚" }, { cat: "3.天道", title: "【ジャンプ】", task: "全員同時の浮遊ショット。", num: "3枚" }, { cat: "4.買出", title: "【大量捕獲】", task: "カゴいっぱいの食材。", num: "3枚" }, { cat: "5.自然", title: "【森の精霊】", task: "木陰からひょっこり。", num: "5枚" }, { cat: "6.夕食", title: "【シェフの魂】", task: "プロのような調理。", num: "6枚" }, { cat: "7.朝食", title: "【無防備な朝】", task: "歯ブラシ寝起き姿。", num: "3枚" }, { cat: "8.船", title: "【限界耐風】", task: "強風への根性顔。", num: "4枚" }, { cat: "9.空港", title: "【名残惜しさ】", task: "柱にしがみつく。", num: "3枚" }],
+            "2": [{ cat: "1.会議", title: "【構図実験】", task: "指入り/なしの比較。", num: "3枚" }, { cat: "2.昼食", title: "【孤独のグルメ】", task: "真剣な背中ショット。", num: "4枚" }, { cat: "3.天道", title: "【千手観音】", task: "全員重なる芸術ポーズ。", num: "3枚" }, { cat: "4.買出", title: "【目利き】", task: "成分表示チェック姿。", num: "3枚" }, { cat: "5.自然", title: "【野生の呼吸】", task: "大地への深呼吸。", num: "5枚" }, { cat: "6.夕食", title: "【大机の総督】", task: "大迫力の乾杯。", num: "6枚" }, { cat: "7.朝食", title: "【出発の敬礼】", task: "今日への決意の敬礼。", num: "3枚" }, { cat: "8.船", title: "【発見！知床】", task: "全員で同じ方を指差す。", num: "4枚" }, { cat: "9.空港", title: "【ミッション完了】", task: "グッドポーズ歩き。", num: "3枚" }],
+            "3": [{ cat: "1.会議", title: "【距離実験】", task: "至近距離/適正の比較。", num: "3枚" }, { cat: "2.昼食", title: "【CM出演依頼】", task: "最高の笑顔でアピール。", num: "4枚" }, { cat: "3.天道", title: "【遠近法】", task: "指でつまむ錯覚ショット。", num: "3枚" }, { cat: "4.買出", title: "【潜入スタッフ】", task: "看板や店員さんと一体化し、スタッフになりすまし。", num: "3枚" }, { cat: "5.自然", title: "【自然への対話】", task: "木や石にお辞儀。", num: "5枚" }, { cat: "6.夕食", title: "【次代への絆】", task: "お酒片手に戦友ショット。", num: "6枚" }, { cat: "7.朝食", title: "【爽やかモデル】", task: "朝日とコーヒー表紙風。", num: "3枚" }, { cat: "8.船", title: "【知床の王】", task: "船首で仁王立ち。", num: "4枚" }, { cat: "9.空港", title: "【また会おう】", task: "ヒーローの別れ背中。", num: "3枚" }]
+        };
 
         const dbRequest = indexedDB.open("RetroCamDB", 1);
         dbRequest.onsuccess = (e) => { db = e.target.result; };
@@ -158,55 +169,136 @@
             else { signInAnonymously(auth); }
         });
 
-        window.onload = () => { startCamera(); updateUI(); };
+        window.onload = () => { 
+            if (selectedCar) { carSelect.value = selectedCar; carSelect.disabled = true; }
+            startCamera(); updateUI(); 
+        };
 
-        // 隠しリセット操作（5回タップでリセット）
         resetTrigger.addEventListener('click', () => {
             resetClickCount++;
             if (resetClickCount >= 5) {
-                if(confirm("撮影枚数をリセットしますか？")) {
-                    shotCount = 0;
-                    localStorage.setItem('retro_used_count', 0);
-                    updateUI();
-                    alert("リセット完了: 残り34枚");
+                if(confirm("撮影枚数と号車選択をリセットしますか？")) {
+                    shotCount = 0; selectedCar = null;
+                    localStorage.setItem('retro_used_count', 0); localStorage.removeItem('retro_selected_car');
+                    carSelect.disabled = false; updateUI();
                 }
                 resetClickCount = 0;
             }
-            setTimeout(() => { resetClickCount = 0; }, 2000); // 2秒以内に5連打
+            setTimeout(() => { resetClickCount = 0; }, 2000);
         });
 
-        listBtn.addEventListener('click', () => { listOverlay.style.display = 'flex'; });
-        listOverlay.addEventListener('click', () => { listOverlay.style.display = 'none'; });
+        missionBtn.addEventListener('click', () => {
+            const carNum = carSelect.value;
+            if (!selectedCar) { selectedCar = carNum; localStorage.setItem('retro_selected_car', carNum); carSelect.disabled = true; }
+            missionTargetCar.innerText = `${carNum}号車 MISSION`;
+            missionList.innerHTML = '';
+            missions[carNum].forEach(m => {
+                const div = document.createElement('div');
+                div.className = 'mission-item';
+                div.innerHTML = `<div class="mission-title"><span>${m.cat}</span><span>${m.num}</span></div><div class="mission-detail">${m.title}</div><div class="mission-desc">${m.task}</div>`;
+                missionList.appendChild(div);
+            });
+            missionOverlay.style.display = 'flex';
+        });
+
+        missionOverlay.addEventListener('click', () => { missionOverlay.style.display = 'none'; });
 
         async function startCamera() {
             try {
-                const stream = await navigator.mediaDevices.getUserMedia({
-                    video: { facingMode: currentFacingMode, width: { ideal: 1920 }, height: { ideal: 1080 } },
-                    audio: false
-                });
-                currentStream = stream; video.srcObject = stream;
-                isCameraOn = true; updatePowerBtnUI();
-                if (isFlashOn && currentFacingMode === "environment") toggleTorch(true);
+                const s = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment", width: { ideal: 1920 }, height: { ideal: 1080 } }, audio: false });
+                currentStream = s; video.srcObject = s; isCameraOn = true; updatePowerBtnUI();
+                if (isFlashOn) toggleTorch(true);
                 statusMsg.innerText = "READY";
-            } catch (err) { statusMsg.innerText = "CAMERA ERROR"; isCameraOn = false; updatePowerBtnUI(); }
+            } catch (e) { statusMsg.innerText = "CAMERA ERROR"; isCameraOn = false; updatePowerBtnUI(); }
         }
-        function stopCamera() { if (currentStream) { currentStream.getTracks().forEach(track => track.stop()); video.srcObject = null; currentStream = null; } isCameraOn = false; updatePowerBtnUI(); statusMsg.innerText = "CAMERA OFF"; }
+
+        function stopCamera() { if (currentStream) { currentStream.getTracks().forEach(t => t.stop()); video.srcObject = null; currentStream = null; } isCameraOn = false; updatePowerBtnUI(); statusMsg.innerText = "CAMERA OFF"; }
         powerBtn.addEventListener('click', () => { if (isCameraOn) stopCamera(); else startCamera(); });
-        function updatePowerBtnUI() { if (isCameraOn) { powerBtn.innerText = "CAMERA ON"; shutterBtn.disabled = shotCount >= MAX_SHOTS ? true : false; timerBtn.disabled = false; } else { powerBtn.innerText = "CAMERA OFF"; shutterBtn.disabled = true; timerBtn.disabled = true; isTimerActive = false; timerBtn.classList.remove('active'); } }
-        switchBtn.addEventListener('click', () => { if (!isCameraOn) return; currentFacingMode = (currentFacingMode === "environment") ? "user" : "environment"; startCamera(); });
+
+        function updatePowerBtnUI() {
+            if (isCameraOn) {
+                powerBtn.innerText = "CAMERA ON"; powerBtn.classList.remove('power-off');
+                shutterBtn.disabled = shotCount >= MAX_SHOTS; timerBtn.disabled = false;
+            } else {
+                powerBtn.innerText = "CAMERA OFF"; powerBtn.classList.add('power-off');
+                shutterBtn.disabled = true; timerBtn.disabled = true;
+            }
+        }
+
+        async function toggleTorch(on) { if (!currentStream) return; const t = currentStream.getVideoTracks()[0]; if (t.getCapabilities().torch) await t.applyConstraints({ advanced: [{ torch: on }] }); }
+
+        flashBtn.addEventListener('click', () => {
+            if (!isCameraOn) return;
+            isFlashOn = !isFlashOn;
+            flashBtn.innerText = isFlashOn ? "FLASH ON" : "FLASH OFF";
+            flashBtn.classList.toggle('flash-on', isFlashOn);
+            toggleTorch(isFlashOn);
+        });
+
         timerBtn.addEventListener('click', () => { if (!isCameraOn) return; isTimerActive = !isTimerActive; timerBtn.classList.toggle('active', isTimerActive); });
-        shutterBtn.addEventListener('click', () => { if (!isCameraOn || shutterBtn.disabled) return; if (isTimerActive) startTimerCountdown(); else takePicture(); });
-        function startTimerCountdown() { let timeLeft = 5; shutterBtn.disabled = true; timerBtn.disabled = true; timerDisplay.innerText = timeLeft; timerDisplay.style.visibility = "visible"; const cd = setInterval(() => { timeLeft--; timerDisplay.innerText = timeLeft; if (timeLeft <= 0) { clearInterval(cd); timerDisplay.style.visibility = "hidden"; takePicture(); isTimerActive = false; timerBtn.classList.remove('active'); } }, 1000); }
-        function takePicture() { if (shotCount >= MAX_SHOTS || !isCameraOn) return; shutterBtn.disabled = true; timerBtn.disabled = true; setTimeout(() => { if (MAX_SHOTS - shotCount > 0 && isCameraOn) { shutterBtn.disabled = false; timerBtn.disabled = false; } }, CHARGE_TIME); const ctx = canvas.getContext('2d'); const vW = video.videoWidth; const vH = video.videoHeight; let tw, th; if (vW / vH > 1.5) { th = vH; tw = vH * 1.5; } else { tw = vW; th = vW / 1.5; } canvas.width = tw; canvas.height = th; const z = parseFloat(document.getElementById('zoomRange').value); const sw = tw / z; const sh = th / z; const sx = (vW - sw) / 2; const sy = (vH - sh) / 2; ctx.drawImage(video, sx, sy, sw, sh, 0, 0, tw, th); if (currentFacingMode === "user") { const t = document.createElement('canvas'); t.width = tw; t.height = th; const tc = t.getContext('2d'); tc.translate(tw, 0); tc.scale(-1, 1); tc.drawImage(canvas, 0, 0); ctx.clearRect(0, 0, tw, th); ctx.drawImage(t, 0, 0); } applyRetroEffects(ctx, tw, th, isFlashOn); addTimestamp(ctx, tw, th); canvas.toBlob((blob) => { const transaction = db.transaction(["pendingUploads"], "readwrite"); transaction.objectStore("pendingUploads").add({ blob: blob, timestamp: Date.now() }); uploadImage(blob); }, 'image/jpeg', 1.0); shotCount++; localStorage.setItem('retro_used_count', shotCount); updateUI(); }
-        async function uploadImage(blob) { if (!navigator.onLine || !isAuthReady) return; try { const fileName = `photos/${Date.now()}.jpg`; await uploadBytes(ref(storage, fileName), blob); statusMsg.innerText = "READY"; syncOfflineData(true); return true; } catch (e) { statusMsg.innerText = "UPLOAD ERR"; return false; } }
-        async function syncOfflineData(deleteOnly = false) { if (!navigator.onLine || !db || !isAuthReady) return; const store = db.transaction(["pendingUploads"], "readwrite").objectStore("pendingUploads"); const request = store.getAll(); request.onsuccess = async () => { const items = request.result; if (items.length === 0) return; if (deleteOnly) { db.transaction(["pendingUploads"], "readwrite").objectStore("pendingUploads").delete(items[0].id); return; } for (const item of items) { if (await uploadImage(item.blob)) db.transaction(["pendingUploads"], "readwrite").objectStore("pendingUploads").delete(item.id); else break; } }; }
-        async function toggleTorch(on) { if (!currentStream || currentFacingMode === "user") return; const track = currentStream.getVideoTracks()[0]; if (track.getCapabilities().torch) await track.applyConstraints({ advanced: [{ torch: on }] }); }
-        flashBtn.addEventListener('click', async () => { if (!isCameraOn) return; isFlashOn = !isFlashOn; flashBtn.innerText = isFlashOn ? "FLASH ON" : "FLASH OFF"; flashBtn.classList.toggle('flash-on', isFlashOn); toggleTorch(isFlashOn); });
-        function applyRetroEffects(ctx, w, h, flash) { ctx.globalCompositeOperation = 'overlay'; ctx.fillStyle = flash ? 'rgba(255, 255, 255, 0.2)' : 'rgba(255, 160, 50, 0.1)'; ctx.fillRect(0, 0, w, h); ctx.globalCompositeOperation = 'source-over'; ctx.fillStyle = 'rgba(255, 255, 255, 0.03)'; for (let i = 0; i < (w * h) / 1500; i++) ctx.fillRect(Math.random() * w, Math.random() * h, 1, 1); const grad = ctx.createRadialGradient(w/2, h/2, w/3, w/2, h/2, w/0.9); grad.addColorStop(0, 'transparent'); grad.addColorStop(1, 'rgba(0,0,0,0.4)'); ctx.fillStyle = grad; ctx.fillRect(0, 0, w, h); }
-        function addTimestamp(ctx, w, h) { const now = new Date(); const timeStr = `${now.getFullYear().toString().slice(-2)}.${(now.getMonth()+1).toString().padStart(2, '0')}.${now.getDate().toString().padStart(2, '0')} ${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`; ctx.font = `bold ${Math.floor(w * 0.045)}px "Courier New", monospace`; ctx.textAlign = 'right'; ctx.fillStyle = '#ff7b00'; ctx.shadowColor = 'rgba(255, 100, 0, 0.5)'; ctx.shadowBlur = 5; ctx.fillText(timeStr, w * 0.95, h * 0.95); }
-        function updateUI() { const rem = MAX_SHOTS - shotCount; counterDisplay.innerText = rem > 0 ? rem : 0; if (rem <= 0 && isCameraOn) { shutterBtn.disabled = true; timerBtn.disabled = true; } }
-        window.addEventListener('online', () => syncOfflineData());
+
+        shutterBtn.addEventListener('click', () => {
+            if (!isCameraOn || shutterBtn.disabled) return;
+            if (isTimerActive) {
+                let tl = 5; timerDisplay.innerText = tl; timerDisplay.style.visibility = "visible";
+                const c = setInterval(() => { tl--; timerDisplay.innerText = tl; if (tl <= 0) { clearInterval(c); timerDisplay.style.visibility = "hidden"; takePicture(); isTimerActive = false; timerBtn.classList.remove('active'); } }, 1000);
+            } else takePicture();
+        });
+
+        function takePicture() {
+            if (shotCount >= MAX_SHOTS || !isCameraOn) return;
+            shutterBtn.disabled = true;
+            setTimeout(() => { if (MAX_SHOTS - shotCount > 0 && isCameraOn) shutterBtn.disabled = false; }, CHARGE_TIME);
+            const ctx = canvas.getContext('2d');
+            const vW = video.videoWidth; const vH = video.videoHeight;
+            let tw, th; if (vW / vH > 1.5) { th = vH; tw = vH * 1.5; } else { tw = vW; th = vW / 1.5; }
+            canvas.width = tw; canvas.height = th;
+            const z = parseFloat(document.getElementById('zoomRange').value);
+            const sw = tw / z; const sh = th / z;
+            const sx = (vW - sw) / 2; const sy = (vH - sh) / 2;
+            ctx.drawImage(video, sx, sy, sw, sh, 0, 0, tw, th);
+            applyRetroEffects(ctx, tw, th, isFlashOn);
+            addTimestamp(ctx, tw, th);
+            canvas.toBlob((b) => {
+                db.transaction(["pendingUploads"], "readwrite").objectStore("pendingUploads").add({ blob: b, timestamp: Date.now() });
+                uploadImage(b);
+            }, 'image/jpeg', 1.0);
+            shotCount++; localStorage.setItem('retro_used_count', shotCount); updateUI();
+        }
+
+        async function uploadImage(b) {
+            if (!navigator.onLine || !isAuthReady) return;
+            try { await uploadBytes(ref(storage, `photos/${Date.now()}.jpg`), b); statusMsg.innerText = "READY"; syncOfflineData(true); return true; }
+            catch (e) { return false; }
+        }
+
+        async function syncOfflineData(del = false) {
+            if (!navigator.onLine || !db || !isAuthReady) return;
+            const s = db.transaction(["pendingUploads"], "readwrite").objectStore("pendingUploads");
+            const r = s.getAll(); r.onsuccess = async () => {
+                const i = r.result; if (i.length === 0) return;
+                if (del) { db.transaction(["pendingUploads"], "readwrite").objectStore("pendingUploads").delete(i[0].id); return; }
+                for (const x of i) { if (await uploadImage(x.blob)) db.transaction(["pendingUploads"], "readwrite").objectStore("pendingUploads").delete(x.id); else break; }
+            };
+        }
+
+        function applyRetroEffects(ctx, w, h, f) {
+            ctx.globalCompositeOperation = 'overlay'; ctx.fillStyle = f ? 'rgba(255, 255, 255, 0.2)' : 'rgba(255, 160, 50, 0.1)'; ctx.fillRect(0, 0, w, h);
+            ctx.globalCompositeOperation = 'source-over'; ctx.fillStyle = 'rgba(255, 255, 255, 0.03)'; for (let i = 0; i < (w * h) / 1500; i++) ctx.fillRect(Math.random() * w, Math.random() * h, 1, 1);
+            const g = ctx.createRadialGradient(w/2, h/2, w/3, w/2, h/2, w/0.9); g.addColorStop(0, 'transparent'); g.addColorStop(1, 'rgba(0,0,0,0.4)'); ctx.fillStyle = g; ctx.fillRect(0, 0, w, h);
+        }
+
+        function addTimestamp(ctx, w, h) {
+            const n = new Date();
+            const s = `${n.getFullYear().toString().slice(-2)}.${(n.getMonth()+1).toString().padStart(2, '0')}.${n.getDate().toString().padStart(2, '0')} ${n.getHours().toString().padStart(2, '0')}:${n.getMinutes().toString().padStart(2, '0')}`;
+            ctx.font = `bold ${Math.floor(w * 0.045)}px "Courier New", monospace`; ctx.textAlign = 'right'; ctx.fillStyle = '#ff7b00'; ctx.shadowColor = 'rgba(255, 100, 0, 0.5)'; ctx.shadowBlur = 5; ctx.fillText(s, w * 0.95, h * 0.95);
+        }
+
+        function updateUI() { const rem = MAX_SHOTS - shotCount; counterDisplay.innerText = rem > 0 ? rem : 0; if (rem <= 0 && isCameraOn) shutterBtn.disabled = true; }
+        
+        switchBtn.addEventListener('click', () => { if (!isCameraOn) return; startCamera(); });
         document.getElementById('zoomRange').addEventListener('input', (e) => video.style.setProperty('--zoom-level', e.target.value));
+        window.addEventListener('online', () => syncOfflineData());
     </script>
 </body>
 </html>
