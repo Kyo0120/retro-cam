@@ -3,111 +3,102 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Retro Cam - Landscape</title>
+    <title>Retro Cam - Shiretoko 34</title>
     <style>
-        :root { --body-bg: #1a1a1a; --accent: #ffae00; --panel-bg: #2a2a2a; }
+        :root { --body-bg: #1a1a1a; --accent: #ffae00; --panel-bg: #252525; --overlay-bg: rgba(0,0,0,0.85); }
         body { 
             margin: 0; padding: 0; background-color: var(--body-bg); color: white; 
             font-family: 'Courier New', Courier, monospace; 
-            display: flex; height: 100dvh; overflow: hidden; 
-            /* 横向き専用のレイアウト */
+            display: flex; height: 100dvh; width: 100dvw; overflow: hidden; 
             flex-direction: row; align-items: stretch;
         }
 
-        /* --- 左側：ファインダーエリア --- */
-        .viewfinder-section {
-            flex: 1; display: flex; flex-direction: column;
-            align-items: center; justify-content: center;
-            position: relative; padding: 10px; padding-left: env(safe-area-inset-left);
-        }
-        .viewfinder-container { 
-            width: 240px; height: 160px; /* 覗き穴サイズ */
-            border: 5px solid #333; border-radius: 4px; 
-            overflow: hidden; background: #000; position: relative;
-            box-shadow: inset 0 0 15px #000;
-        }
-        video { 
-            width: 100%; height: 100%; object-fit: cover; 
-            transform: scale(var(--zoom-level, 1)); transform-origin: center;
-        }
+        /* --- 左：プレビュー --- */
+        .left-section { flex: 1.2; display: flex; flex-direction: column; align-items: center; justify-content: center; background-color: var(--body-bg); padding-left: env(safe-area-inset-left); position: relative; }
+        .viewfinder-container { width: 140px; height: 93px; border: 4px solid #444; border-radius: 4px; overflow: hidden; background: #000; position: relative; }
+        video { width: 100%; height: 100%; object-fit: cover; transform: scale(var(--zoom-level, 1)); transform-origin: center; }
         video.selfie { transform: scale(var(--zoom-level, 1)) scaleX(-1); }
+        #timer-display { margin-top: 10px; font-size: 2rem; color: var(--accent); font-weight: bold; visibility: hidden; height: 2rem; }
 
-        /* タイマーカウントダウン（プレビューの外・右下） */
-        #timer-display {
-            position: absolute; bottom: 5px; right: 5px;
-            font-size: 2.5rem; color: var(--accent); font-weight: bold;
-            visibility: hidden; text-shadow: 0 0 10px rgba(0,0,0,0.8);
-        }
-
-        /* --- 右側：操作パネルエリア --- */
-        .controls-section {
-            width: 160px; background-color: var(--panel-bg);
-            display: flex; flex-direction: column;
-            align-items: center; justify-content: space-around;
-            padding: 15px 10px; padding-right: env(safe-area-inset-right);
-            border-left: 2px solid #111;
-        }
-
-        /* 枚数カウンター */
-        .counter-group { text-align: center; }
-        .counter { font-size: 2rem; color: var(--accent); font-weight: bold; line-height: 1; }
-        .counter-label { font-size: 10px; color: #aaa; }
-
-        /* ツールボタン群 */
-        .tool-box { width: 100%; display: flex; flex-direction: column; gap: 8px; align-items: center; }
-        input[type=range] { width: 100px; accent-color: var(--accent); margin-bottom: 5px;}
-        .sub-btn { background: #444; color: #eee; border: 1px solid #666; padding: 7px; border-radius: 4px; font-size: 10px; cursor: pointer; width: 80%; }
-        
-        /* フラッシュON時のスタイル */
+        /* --- 中：設定 --- */
+        .mid-section { width: 180px; background-color: var(--panel-bg); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 15px; border-left: 1px solid #111; border-right: 1px solid #111; }
+        .tool-group { width: 100%; display: flex; flex-direction: column; align-items: center; gap: 10px; }
+        input[type=range] { width: 120px; accent-color: var(--accent); }
+        .sub-btn { background: #444; color: #eee; border: 1px solid #666; padding: 9px; border-radius: 6px; font-size: 10px; cursor: pointer; width: 85%; text-align: center; }
         .flash-on { background: var(--accent) !important; color: #000 !important; font-weight: bold; }
-        /* カメラOFF時のスタイル */
         .power-off { background: #d00 !important; font-weight: bold; }
 
-        /* シャッターボタンエリア */
-        .shutter-group { position: relative; }
-        #shutter { width: 80px; height: 80px; border-radius: 50%; border: 5px solid #222; background: #d00; box-shadow: 0 5px 0 #600; cursor: pointer; }
-        #shutter:disabled { background: #444; box-shadow: none; filter: grayscale(100%); opacity: 0.5; }
-        
-        .timer-btn { background: #555; color: white; border: 2px solid #777; padding: 6px 10px; border-radius: 8px; font-size: 10px; cursor: pointer; position: absolute; top: -15px; right: -15px; }
+        /* --- 右：撮影 --- */
+        .right-section { width: 180px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 25px; padding-right: env(safe-area-inset-right); background-color: var(--panel-bg); }
+        .counter-group { text-align: center; cursor: pointer; -webkit-tap-highlight-color: transparent; } /* リセット用にカーソル指定 */
+        .counter { font-size: 2.2rem; color: var(--accent); font-weight: bold; line-height: 1; }
+        .counter-label { font-size: 10px; color: #888; margin-top: 5px; }
 
-        /* ステータスバー（最下部） */
-        #status-msg { font-size: 10px; color: #888; text-align: center; width: 90%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-top: auto;}
+        .shutter-box { display: flex; flex-direction: column; align-items: center; gap: 15px; }
+        #shutter { width: 80px; height: 80px; border-radius: 50%; border: 6px solid #222; background: #d00; box-shadow: 0 6px 0 #600; cursor: pointer; }
+        #shutter:active { transform: translateY(3px); box-shadow: 0 3px 0 #600; }
+        #shutter:disabled { background: #444; box-shadow: none; opacity: 0.5; }
+        .timer-btn { background: #555; color: white; border: 2px solid #777; padding: 10px; border-radius: 8px; font-size: 11px; cursor: pointer; width: 120px; }
+        .timer-btn.active { background: var(--accent); color: #000; font-weight: bold; border-color: #fff; }
+
+        /* --- 配分表示オーバーレイ --- */
+        #list-overlay { position: fixed; top: 0; left: 0; width: 100dvw; height: 100dvh; background-color: var(--overlay-bg); background-image: url('https://images.unsplash.com/photo-1590710667464-9b8830b42784?q=80&w=1200'); background-size: cover; background-position: center; z-index: 100; display: none; align-items: center; justify-content: center; cursor: pointer; backdrop-filter: blur(5px); }
+        .overlay-content { background-color: rgba(0,0,0,0.7); width: 85%; height: 85%; border-radius: 10px; border: 2px solid #555; padding: 20px; overflow-y: auto; box-sizing: border-box; }
+        .overlay-title { font-size: 1.2rem; color: var(--accent); font-weight: bold; text-align: center; margin-bottom: 15px; }
+        .list-item { margin-bottom: 10px; border-bottom: 1px solid #333; padding-bottom: 8px; }
+        .item-header { display: flex; justify-content: space-between; align-items: center; font-size: 11px; font-weight: bold; }
+        .item-desc { font-size: 9px; color: #ccc; margin-top: 3px; line-height: 1.2; }
+
+        #status-msg { position: fixed; bottom: 5px; width: 100%; text-align: center; font-size: 9px; color: #555; pointer-events: none; }
         canvas { display: none; }
     </style>
 </head>
 <body>
 
-    <div class="viewfinder-section">
-        <div class="viewfinder-container">
-            <video id="video" autoplay playsinline></video>
-        </div>
+    <div class="left-section">
+        <div class="viewfinder-container"><video id="video" autoplay playsinline></video></div>
         <div id="timer-display">5</div>
     </div>
 
-    <div class="controls-section">
-        <div class="counter-group">
-            <div class="counter" id="counter">30</div>
-            <div class="counter-label">REMAINING</div>
-        </div>
-        
-        <div class="tool-box">
-            <div>
-                <label style="font-size:10px; color:#aaa;">ZOOM</label><br>
-                <input type="range" id="zoomRange" min="1" max="3" step="0.1" value="1">
-            </div>
+    <div class="mid-section">
+        <div class="tool-group">
+            <div style="text-align: center;"><label style="font-size:9px; color:#aaa;">ZOOM</label><br><input type="range" id="zoomRange" min="1" max="3" step="0.1" value="1"></div>
             <button class="sub-btn" id="switchBtn">カメラ切り替え</button>
             <button class="sub-btn" id="flashBtn">FLASH OFF</button>
             <button class="sub-btn" id="powerBtn">CAMERA ON</button>
+            <button class="sub-btn" id="listBtn">撮影配分を確認</button>
         </div>
-
-        <div class="shutter-group">
-            <button id="shutter"></button>
-            <button class="timer-btn" id="timerBtn">5s T</button>
-        </div>
-        
-        <div id="status-msg">INITIALIZING...</div>
     </div>
 
+    <div class="right-section">
+        <div class="counter-group" id="resetTrigger">
+            <div class="counter" id="counter">34</div>
+            <div class="counter-label">REMAINING</div>
+        </div>
+        <div class="shutter-box">
+            <button id="shutter"></button>
+            <button class="timer-btn" id="timerBtn">５秒タイマー</button>
+        </div>
+    </div>
+
+    <div id="list-overlay">
+        <div class="overlay-content">
+            <div class="overlay-title">- Shiretoko Shoot List -</div>
+            <div class="list-item"><div class="item-header"><span>会議（練習）</span><span>3枚</span></div><div class="item-desc">旅のキックオフ、あえて真面目な会議シーン。</div></div>
+            <div class="list-item"><div class="item-header"><span>移動・昼食</span><span>4枚</span></div><div class="item-desc">車内のわちゃわちゃ感と、北海道グルメ。</div></div>
+            <div class="list-item"><div class="item-header"><span>天に続く道</span><span>3枚</span></div><div class="item-desc">奥行きを活かしたアーティスティックな1枚。</div></div>
+            <div class="list-item"><div class="item-header"><span>買い出し</span><span>3枚</span></div><div class="item-desc">どこで買い物したのか、和気あいあいと。</div></div>
+            <div class="list-item"><div class="item-header"><span>フィールドハウス</span><span>5枚</span></div><div class="item-desc">知床の雄大な自然、夕暮れのエモい瞬間。</div></div>
+            <div class="list-item"><div class="item-header"><span>夕食</span><span>6枚</span></div><div class="item-desc">最後の盛り上がり調理中から夜間討議まで。</div></div>
+            <div class="list-item"><div class="item-header"><span>朝の準備・朝食</span><span>3枚</span></div><div class="item-desc">一日の始まり、リラックスした様子。</div></div>
+            <div class="list-item"><div class="item-header"><span>遊覧船おーろら</span><span>4枚</span></div><div class="item-desc">メイン。潮風、絶景、船上の仲間。</div></div>
+            <div class="list-item"><div class="item-header"><span>帰路・空港解散</span><span>3枚</span></div><div class="item-desc">旅の締めくくり、名残惜しい瞬間。</div></div>
+            <div style="text-align: center; color: #accent; font-weight:bold; font-size: 11px; margin-top: 15px;">Total: 34 Photos</div>
+            <div style="text-align: center; color: #888; font-size: 9px; margin-top: 10px;">(タップして閉じる)</div>
+        </div>
+    </div>
+
+    <div id="status-msg">INITIALIZING...</div>
     <canvas id="canvas"></canvas>
 
     <script type="module">
@@ -115,21 +106,21 @@
         import { getStorage, ref, uploadBytes } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
         import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
-        // --- Firebase Config（ここを差し替えてください） ---
         const firebaseConfig = {
-            apiKey: "AIzaSyDHqQDeEMrFV09YI0n_ARr1Tzta5aqmE2U",
-            authDomain: "my-retro-cam.firebaseapp.com",
-            projectId: "my-retro-cam",
-            storageBucket: "my-retro-cam.firebasestorage.app",
-            messagingSenderId: "700098109654",
-            appId: "1:700098109654:web:9d679cbd092c1376642977"
+            apiKey: "YOUR_API_KEY",
+            authDomain: "YOUR_PROJECT.firebaseapp.com",
+            projectId: "YOUR_PROJECT",
+            storageBucket: "YOUR_PROJECT.appspot.com",
+            messagingSenderId: "YOUR_ID",
+            appId: "YOUR_APP_ID"
         };
 
         const app = initializeApp(firebaseConfig);
         const storage = getStorage(app);
         const auth = getAuth(app);
 
-        const MAX_SHOTS = 30;
+        // 合計枚数を34枚に変更
+        const MAX_SHOTS = 34;
         const CHARGE_TIME = 5000;
         const video = document.getElementById('video');
         const canvas = document.getElementById('canvas');
@@ -138,6 +129,9 @@
         const flashBtn = document.getElementById('flashBtn');
         const switchBtn = document.getElementById('switchBtn');
         const powerBtn = document.getElementById('powerBtn');
+        const listBtn = document.getElementById('listBtn');
+        const resetTrigger = document.getElementById('resetTrigger');
+        const listOverlay = document.getElementById('list-overlay');
         const counterDisplay = document.getElementById('counter');
         const statusMsg = document.getElementById('status-msg');
         const timerDisplay = document.getElementById('timer-display');
@@ -145,12 +139,13 @@
         let shotCount = localStorage.getItem('retro_used_count') ? parseInt(localStorage.getItem('retro_used_count')) : 0;
         let currentFacingMode = "environment";
         let isFlashOn = false;
-        let isCameraOn = false; // カメラの電源状態
+        let isCameraOn = false;
+        let isTimerActive = false;
         let currentStream = null;
         let db;
         let isAuthReady = false;
+        let resetClickCount = 0; // 隠し操作用
 
-        // IndexedDB
         const dbRequest = indexedDB.open("RetroCamDB", 1);
         dbRequest.onsuccess = (e) => { db = e.target.result; };
         dbRequest.onupgradeneeded = (e) => {
@@ -158,172 +153,58 @@
             if (!db.objectStoreNames.contains("pendingUploads")) db.createObjectStore("pendingUploads", { keyPath: "id", autoIncrement: true });
         };
 
-        // 認証監視
         onAuthStateChanged(auth, (user) => {
             if (user) { isAuthReady = true; statusMsg.innerText = "AUTH OK"; syncOfflineData(); }
             else { signInAnonymously(auth); }
         });
 
-        window.onload = () => {
-            startCamera(); // 起動時はON
-            updateUI();
-        };
+        window.onload = () => { startCamera(); updateUI(); };
 
-        // カメラを起動する関数
+        // 隠しリセット操作（5回タップでリセット）
+        resetTrigger.addEventListener('click', () => {
+            resetClickCount++;
+            if (resetClickCount >= 5) {
+                if(confirm("撮影枚数をリセットしますか？")) {
+                    shotCount = 0;
+                    localStorage.setItem('retro_used_count', 0);
+                    updateUI();
+                    alert("リセット完了: 残り34枚");
+                }
+                resetClickCount = 0;
+            }
+            setTimeout(() => { resetClickCount = 0; }, 2000); // 2秒以内に5連打
+        });
+
+        listBtn.addEventListener('click', () => { listOverlay.style.display = 'flex'; });
+        listOverlay.addEventListener('click', () => { listOverlay.style.display = 'none'; });
+
         async function startCamera() {
-            statusMsg.innerText = "STARTING CAMERA...";
             try {
                 const stream = await navigator.mediaDevices.getUserMedia({
                     video: { facingMode: currentFacingMode, width: { ideal: 1920 }, height: { ideal: 1080 } },
                     audio: false
                 });
-                currentStream = stream;
-                video.srcObject = stream;
-                video.classList.toggle('selfie', currentFacingMode === "user");
-                isCameraOn = true;
-                updatePowerBtnUI();
+                currentStream = stream; video.srcObject = stream;
+                isCameraOn = true; updatePowerBtnUI();
                 if (isFlashOn && currentFacingMode === "environment") toggleTorch(true);
-                statusMsg.innerText = isAuthReady ? "READY" : "AUTH PENDING...";
+                statusMsg.innerText = "READY";
             } catch (err) { statusMsg.innerText = "CAMERA ERROR"; isCameraOn = false; updatePowerBtnUI(); }
         }
-
-        // カメラを完全に停止する関数（バッテリー節約）
-        function stopCamera() {
-            if (currentStream) {
-                currentStream.getTracks().forEach(track => track.stop());
-                video.srcObject = null;
-                currentStream = null;
-            }
-            isCameraOn = false;
-            updatePowerBtnUI();
-            statusMsg.innerText = "CAMERA OFF";
-        }
-
-        // 電源ボタンのクリック処理
-        powerBtn.addEventListener('click', () => {
-            if (isCameraOn) stopCamera();
-            else startCamera();
-        });
-
-        // 電源ボタンの見た目を更新
-        function updatePowerBtnUI() {
-            if (isCameraOn) {
-                powerBtn.innerText = "CAMERA ON";
-                powerBtn.classList.remove('power-off');
-                shutterBtn.disabled = shotCount >= MAX_SHOTS ? true : false;
-                timerBtn.disabled = false;
-            } else {
-                powerBtn.innerText = "CAMERA OFF";
-                powerBtn.classList.add('power-off');
-                shutterBtn.disabled = true;
-                timerBtn.disabled = true;
-            }
-        }
-
-        // カメラ切り替え（電源ONの時だけ動作）
-        switchBtn.addEventListener('click', () => {
-            if (!isCameraOn) return;
-            currentFacingMode = (currentFacingMode === "environment") ? "user" : "environment";
-            startCamera(); // 再起動
-        });
-
-        // 撮影処理
-        function takePicture() {
-            if (shotCount >= MAX_SHOTS || !isCameraOn) return;
-            shutterBtn.disabled = true;
-            timerBtn.disabled = true;
-            setTimeout(() => { if (MAX_SHOTS - shotCount > 0 && isCameraOn) { shutterBtn.disabled = false; timerBtn.disabled = false; } }, CHARGE_TIME);
-
-            const ctx = canvas.getContext('2d');
-            const vW = video.videoWidth; const vH = video.videoHeight;
-            let tw, th;
-            if (vW / vH > 1.5) { th = vH; tw = vH * 1.5; } else { tw = vW; th = vW / 1.5; }
-            canvas.width = tw; canvas.height = th;
-
-            const z = parseFloat(document.getElementById('zoomRange').value);
-            const sw = tw / z; const sh = th / z;
-            const sx = (vW - sw) / 2; const sy = (vH - sh) / 2;
-
-            ctx.drawImage(video, sx, sy, sw, sh, 0, 0, tw, th);
-            if (currentFacingMode === "user") {
-                const t = document.createElement('canvas'); t.width = tw; t.height = th;
-                const tc = t.getContext('2d'); tc.translate(tw, 0); tc.scale(-1, 1);
-                tc.drawImage(canvas, 0, 0); ctx.clearRect(0, 0, tw, th); ctx.drawImage(t, 0, 0);
-            }
-            applyRetroEffects(ctx, tw, th, isFlashOn);
-            addTimestamp(ctx, tw, th);
-
-            canvas.toBlob((blob) => {
-                const transaction = db.transaction(["pendingUploads"], "readwrite");
-                transaction.objectStore("pendingUploads").add({ blob: blob, timestamp: Date.now() });
-                uploadImage(blob); // 即座にアップロード試行
-            }, 'image/jpeg', 1.0);
-
-            shotCount++;
-            localStorage.setItem('retro_used_count', shotCount);
-            updateUI();
-        }
-
-        // --- アップロードと同期（前回の強力なやつを維持） ---
-        async function uploadImage(blob) {
-            if (!navigator.onLine || !isAuthReady) return;
-            try {
-                const fileName = `photos/${Date.now()}_${Math.floor(Math.random()*1000)}.jpg`;
-                const fileRef = ref(storage, fileName);
-                statusMsg.innerText = "UPLOADING...";
-                await uploadBytes(fileRef, blob);
-                statusMsg.innerText = "READY";
-                // 成功したらPendingを削除
-                syncOfflineData(true); 
-                return true;
-            } catch (e) { statusMsg.innerText = "UPLOAD ERR: " + e.code; return false; }
-        }
-
-        async function syncOfflineData(deleteOnly = false) {
-            if (!navigator.onLine || !db || !isAuthReady) return;
-            const store = db.transaction(["pendingUploads"], "readwrite").objectStore("pendingUploads");
-            const request = store.getAll();
-            request.onsuccess = async () => {
-                const items = request.result;
-                if (items.length === 0) return;
-                // deleteOnlyモード（アップロード成功直後）なら最古のデータを消すだけ
-                if (deleteOnly) {
-                    db.transaction(["pendingUploads"], "readwrite").objectStore("pendingUploads").delete(items[0].id);
-                    return;
-                }
-                statusMsg.innerText = `SYNCING ${items.length}...`;
-                for (const item of items) {
-                    const success = await uploadImage(item.blob);
-                    if (success) { db.transaction(["pendingUploads"], "readwrite").objectStore("pendingUploads").delete(item.id); }
-                    else break;
-                }
-                statusMsg.innerText = "READY";
-            };
-        }
-
-        // --- ツールとUI ---
-        async function toggleTorch(on) {
-            if (!currentStream || currentFacingMode === "user") return;
-            const track = currentStream.getVideoTracks()[0];
-            const caps = track.getCapabilities();
-            if (caps.torch) await track.applyConstraints({ advanced: [{ torch: on }] });
-        }
-        flashBtn.addEventListener('click', async () => {
-            if (!isCameraOn) return;
-            isFlashOn = !isFlashOn;
-            flashBtn.innerText = isFlashOn ? "FLASH ON" : "FLASH OFF";
-            flashBtn.classList.toggle('flash-on', isFlashOn);
-            toggleTorch(isFlashOn);
-        });
-        timerBtn.addEventListener('click', () => {
-            if (!isCameraOn) return;
-            let timeLeft = 5; timerBtn.disabled = true; shutterBtn.disabled = true;
-            timerDisplay.innerText = timeLeft; timerDisplay.style.visibility = "visible";
-            const cd = setInterval(() => { timeLeft--; timerDisplay.innerText = timeLeft; if (timeLeft <= 0) { clearInterval(cd); timerDisplay.style.visibility = "hidden"; takePicture(); } }, 1000);
-        });
+        function stopCamera() { if (currentStream) { currentStream.getTracks().forEach(track => track.stop()); video.srcObject = null; currentStream = null; } isCameraOn = false; updatePowerBtnUI(); statusMsg.innerText = "CAMERA OFF"; }
+        powerBtn.addEventListener('click', () => { if (isCameraOn) stopCamera(); else startCamera(); });
+        function updatePowerBtnUI() { if (isCameraOn) { powerBtn.innerText = "CAMERA ON"; shutterBtn.disabled = shotCount >= MAX_SHOTS ? true : false; timerBtn.disabled = false; } else { powerBtn.innerText = "CAMERA OFF"; shutterBtn.disabled = true; timerBtn.disabled = true; isTimerActive = false; timerBtn.classList.remove('active'); } }
+        switchBtn.addEventListener('click', () => { if (!isCameraOn) return; currentFacingMode = (currentFacingMode === "environment") ? "user" : "environment"; startCamera(); });
+        timerBtn.addEventListener('click', () => { if (!isCameraOn) return; isTimerActive = !isTimerActive; timerBtn.classList.toggle('active', isTimerActive); });
+        shutterBtn.addEventListener('click', () => { if (!isCameraOn || shutterBtn.disabled) return; if (isTimerActive) startTimerCountdown(); else takePicture(); });
+        function startTimerCountdown() { let timeLeft = 5; shutterBtn.disabled = true; timerBtn.disabled = true; timerDisplay.innerText = timeLeft; timerDisplay.style.visibility = "visible"; const cd = setInterval(() => { timeLeft--; timerDisplay.innerText = timeLeft; if (timeLeft <= 0) { clearInterval(cd); timerDisplay.style.visibility = "hidden"; takePicture(); isTimerActive = false; timerBtn.classList.remove('active'); } }, 1000); }
+        function takePicture() { if (shotCount >= MAX_SHOTS || !isCameraOn) return; shutterBtn.disabled = true; timerBtn.disabled = true; setTimeout(() => { if (MAX_SHOTS - shotCount > 0 && isCameraOn) { shutterBtn.disabled = false; timerBtn.disabled = false; } }, CHARGE_TIME); const ctx = canvas.getContext('2d'); const vW = video.videoWidth; const vH = video.videoHeight; let tw, th; if (vW / vH > 1.5) { th = vH; tw = vH * 1.5; } else { tw = vW; th = vW / 1.5; } canvas.width = tw; canvas.height = th; const z = parseFloat(document.getElementById('zoomRange').value); const sw = tw / z; const sh = th / z; const sx = (vW - sw) / 2; const sy = (vH - sh) / 2; ctx.drawImage(video, sx, sy, sw, sh, 0, 0, tw, th); if (currentFacingMode === "user") { const t = document.createElement('canvas'); t.width = tw; t.height = th; const tc = t.getContext('2d'); tc.translate(tw, 0); tc.scale(-1, 1); tc.drawImage(canvas, 0, 0); ctx.clearRect(0, 0, tw, th); ctx.drawImage(t, 0, 0); } applyRetroEffects(ctx, tw, th, isFlashOn); addTimestamp(ctx, tw, th); canvas.toBlob((blob) => { const transaction = db.transaction(["pendingUploads"], "readwrite"); transaction.objectStore("pendingUploads").add({ blob: blob, timestamp: Date.now() }); uploadImage(blob); }, 'image/jpeg', 1.0); shotCount++; localStorage.setItem('retro_used_count', shotCount); updateUI(); }
+        async function uploadImage(blob) { if (!navigator.onLine || !isAuthReady) return; try { const fileName = `photos/${Date.now()}.jpg`; await uploadBytes(ref(storage, fileName), blob); statusMsg.innerText = "READY"; syncOfflineData(true); return true; } catch (e) { statusMsg.innerText = "UPLOAD ERR"; return false; } }
+        async function syncOfflineData(deleteOnly = false) { if (!navigator.onLine || !db || !isAuthReady) return; const store = db.transaction(["pendingUploads"], "readwrite").objectStore("pendingUploads"); const request = store.getAll(); request.onsuccess = async () => { const items = request.result; if (items.length === 0) return; if (deleteOnly) { db.transaction(["pendingUploads"], "readwrite").objectStore("pendingUploads").delete(items[0].id); return; } for (const item of items) { if (await uploadImage(item.blob)) db.transaction(["pendingUploads"], "readwrite").objectStore("pendingUploads").delete(item.id); else break; } }; }
+        async function toggleTorch(on) { if (!currentStream || currentFacingMode === "user") return; const track = currentStream.getVideoTracks()[0]; if (track.getCapabilities().torch) await track.applyConstraints({ advanced: [{ torch: on }] }); }
+        flashBtn.addEventListener('click', async () => { if (!isCameraOn) return; isFlashOn = !isFlashOn; flashBtn.innerText = isFlashOn ? "FLASH ON" : "FLASH OFF"; flashBtn.classList.toggle('flash-on', isFlashOn); toggleTorch(isFlashOn); });
         function applyRetroEffects(ctx, w, h, flash) { ctx.globalCompositeOperation = 'overlay'; ctx.fillStyle = flash ? 'rgba(255, 255, 255, 0.2)' : 'rgba(255, 160, 50, 0.1)'; ctx.fillRect(0, 0, w, h); ctx.globalCompositeOperation = 'source-over'; ctx.fillStyle = 'rgba(255, 255, 255, 0.03)'; for (let i = 0; i < (w * h) / 1500; i++) ctx.fillRect(Math.random() * w, Math.random() * h, 1, 1); const grad = ctx.createRadialGradient(w/2, h/2, w/3, w/2, h/2, w/0.9); grad.addColorStop(0, 'transparent'); grad.addColorStop(1, 'rgba(0,0,0,0.4)'); ctx.fillStyle = grad; ctx.fillRect(0, 0, w, h); }
-        function addTimestamp(ctx, w, h) { const now = new Date(); const timeStr = `${now.getFullYear().toString().slice(-2)}.${(now.getMonth()+1).toString().padStart(2, '0')}.${now.getDate().toString().padStart(2, '0')}  ${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`; ctx.font = `bold ${Math.floor(w * 0.045)}px "Courier New", monospace`; ctx.textAlign = 'right'; ctx.fillStyle = '#ff7b00'; ctx.shadowColor = 'rgba(255, 100, 0, 0.5)'; ctx.shadowBlur = 5; ctx.fillText(timeStr, w * 0.95, h * 0.95); }
-        function updateUI() { const rem = MAX_SHOTS - shotCount; counterDisplay.innerText = rem > 0 ? rem : 0; if (rem <= 0 && isCameraOn) { shutterBtn.disabled = true; timerBtn.disabled = true; counterDisplay.style.color = "red"; } }
+        function addTimestamp(ctx, w, h) { const now = new Date(); const timeStr = `${now.getFullYear().toString().slice(-2)}.${(now.getMonth()+1).toString().padStart(2, '0')}.${now.getDate().toString().padStart(2, '0')} ${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`; ctx.font = `bold ${Math.floor(w * 0.045)}px "Courier New", monospace`; ctx.textAlign = 'right'; ctx.fillStyle = '#ff7b00'; ctx.shadowColor = 'rgba(255, 100, 0, 0.5)'; ctx.shadowBlur = 5; ctx.fillText(timeStr, w * 0.95, h * 0.95); }
+        function updateUI() { const rem = MAX_SHOTS - shotCount; counterDisplay.innerText = rem > 0 ? rem : 0; if (rem <= 0 && isCameraOn) { shutterBtn.disabled = true; timerBtn.disabled = true; } }
         window.addEventListener('online', () => syncOfflineData());
         document.getElementById('zoomRange').addEventListener('input', (e) => video.style.setProperty('--zoom-level', e.target.value));
     </script>
