@@ -276,9 +276,24 @@
         missionOverlay.addEventListener('click', () => { missionOverlay.style.display = 'none'; });
 
         function applyRetroEffects(ctx, w, h, f) {
-            ctx.globalCompositeOperation = 'overlay'; ctx.fillStyle = f ? 'rgba(255, 255, 255, 0.2)' : 'rgba(255, 160, 50, 0.1)'; ctx.fillRect(0, 0, w, h);
-            ctx.globalCompositeOperation = 'source-over'; ctx.fillStyle = 'rgba(255, 255, 255, 0.03)'; for (let i = 0; i < (w * h) / 1500; i++) ctx.fillRect(Math.random() * w, Math.random() * h, 1, 1);
-            const g = ctx.createRadialGradient(w/2, h/2, w/3, w/2, h/2, w/0.9); g.addColorStop(0, 'transparent'); g.addColorStop(1, 'rgba(0,0,0,0.4)'); ctx.fillStyle = g; ctx.fillRect(0, 0, w, h);
+            ctx.globalCompositeOperation = 'overlay';
+            ctx.fillStyle = f ? 'rgba(255, 255, 255, 0.25)' : 'rgba(255, 160, 50, 0.15)';
+            ctx.fillRect(0, 0, w, h);
+            ctx.globalCompositeOperation = 'source-over';
+            const grainAmount = (w * h) / 3;
+            for (let i = 0; i < grainAmount; i++) {
+                const x = Math.random() * w; const y = Math.random() * h;
+                const size = Math.random() * 1.2; const opacity = Math.random() * 0.08;
+                ctx.fillStyle = `rgba(255, 255, 255, ${opacity})`; ctx.fillRect(x, y, size, size);
+            }
+            for (let i = 0; i < grainAmount / 5; i++) {
+                const x = Math.random() * w; const y = Math.random() * h;
+                const opacity = Math.random() * 0.05; ctx.fillStyle = `rgba(0, 0, 0, ${opacity})`; ctx.fillRect(x, y, 1, 1);
+            }
+            const g = ctx.createRadialGradient(w/2, h/2, w/4, w/2, h/2, w/0.8);
+            g.addColorStop(0, 'transparent'); g.addColorStop(1, 'rgba(0,0,0,0.5)');
+            ctx.fillStyle = g; ctx.fillRect(0, 0, w, h);
+            ctx.globalCompositeOperation = 'soft-light'; ctx.fillStyle = 'rgba(0, 0, 0, 0.1)'; ctx.fillRect(0, 0, w, h);
         }
 
         function updateUI() { const rem = MAX_SHOTS - shotCount; counterDisplay.innerText = rem > 0 ? rem : 0; if (rem <= 0 && isCameraOn) shutterBtn.disabled = true; }
