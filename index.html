@@ -143,7 +143,9 @@
         const statusMsg = document.getElementById('status-msg');
         const timerDisplay = document.getElementById('timer-display');
 
-        let shotCount = localStorage.getItem('retro_used_count') ? parseInt(localStorage.getItem('retro_used_count')) : 0;
+        //let shotCount = localStorage.getItem('retro_used_count') ? parseInt(localStorage.getItem('retro_used_count')) : 0;
+        // 残り3枚（34 - 31 = 3）の状態にする
+        let shotCount = 31;  
         let selectedCar = localStorage.getItem('retro_selected_car') || null;
         let currentFacingMode = "environment";
         let isFlashOn = false;
