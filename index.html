@@ -3,198 +3,274 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Retro Cam - Shiretoko Ultra Final</title>
+    <title>Retro Cam - Shiretoko Ultimate Final</title>
     <style>
-        :root { --body-bg: #1a1a1a; --accent: #ffae00; --panel-bg: #252525; }
-        body { margin: 0; padding: 0; background-color: var(--body-bg); color: white; font-family: 'Courier New', Courier, monospace; display: flex; height: 100dvh; width: 100dvw; overflow: hidden; }
+        :root { --body-bg: #1a1a1a; --accent: #ffae00; --panel-bg: #252525; --overlay-bg: rgba(0,0,0,0.95); }
+        body { margin: 0; padding: 0; background-color: var(--body-bg); color: white; font-family: 'Courier New', Courier, monospace; display: flex; height: 100dvh; width: 100dvw; overflow: hidden; flex-direction: row; align-items: stretch; }
 
-        /* レイアウト */
-        .left-section { flex: 1.2; display: flex; flex-direction: column; align-items: center; justify-content: center; padding-left: env(safe-area-inset-left); position: relative; }
-        .viewfinder-container { width: 160px; height: 106px; border: 4px solid #444; border-radius: 4px; overflow: hidden; background: #000; }
+        /* 左：プレビュー + ミッションガイド */
+        .left-section { flex: 1.2; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; background: #000; padding-left: env(safe-area-inset-left); }
+        .viewfinder-container { width: 160px; height: 106px; border: 2px solid #333; border-radius: 4px; overflow: hidden; position: relative; }
         video { width: 100%; height: 100%; object-fit: cover; transform: scale(var(--zoom-level, 1)); }
         video.selfie { transform: scale(var(--zoom-level, 1)) scaleX(-1); }
 
-        .mid-section { width: 200px; background-color: var(--panel-bg); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 15px; border-left: 1px solid #111; border-right: 1px solid #111; }
-        .right-section { width: 180px; display: flex; flex-direction: column; align-items: center; justify-content: center; padding-right: env(safe-area-inset-right); background-color: var(--panel-bg); }
+        /* 常時ミッションガイド */
+        #mission-guide {
+            position: absolute; top: 10px; width: 90%; background: rgba(0,0,0,0.8);
+            border: 1px solid var(--accent); border-radius: 5px; padding: 6px;
+            text-align: center; z-index: 10; pointer-events: none;
+        }
+        .guide-label { font-size: 8px; color: var(--accent); margin-bottom: 2px; }
+        .guide-title { font-size: 11px; font-weight: bold; color: #fff; }
 
-        /* UIパーツ */
-        .sub-btn { background: #444; color: #eee; border: 1px solid #666; padding: 12px; border-radius: 6px; font-size: 11px; cursor: pointer; width: 85%; }
+        /* 中：設定エリア */
+        .mid-section { width: 190px; background-color: var(--panel-bg); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 15px; border-left: 1px solid #111; border-right: 1px solid #111; }
+        .sub-btn { background: #444; color: #eee; border: 1px solid #666; padding: 10px; border-radius: 6px; font-size: 10px; cursor: pointer; width: 85%; }
+        .car-select { background: #000; color: var(--accent); border: 1px solid var(--accent); padding: 8px; border-radius: 4px; font-size: 12px; width: 85%; }
         .flash-on { background: var(--accent) !important; color: #000 !important; font-weight: bold; }
-        .car-select { background: #000; color: var(--accent); border: 1px solid var(--accent); padding: 10px; border-radius: 4px; font-size: 12px; width: 85%; }
-        
-        #shutter { width: 90px; height: 90px; border-radius: 50%; border: 6px solid #222; background: #d00; box-shadow: 0 6px 0 #600; cursor: pointer; margin-bottom: 20px; }
-        #shutter:active { transform: translateY(3px); box-shadow: 0 3px 0 #600; }
-        #shutter:disabled { background: #444; box-shadow: none; opacity: 0.5; }
 
+        /* 右：撮影エリア */
+        .right-section { width: 180px; display: flex; flex-direction: column; align-items: center; justify-content: center; background-color: var(--panel-bg); padding-right: env(safe-area-inset-right); }
         .counter { font-size: 2.5rem; color: var(--accent); font-weight: bold; line-height: 1; }
-        #status-msg { position: fixed; bottom: 10px; width: 100%; text-align: center; font-size: 10px; color: #888; z-index: 200; }
-        
-        /* ミッションオーバーレイ */
-        #mission-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 1000; display: none; padding: 20px; box-sizing: border-box; overflow-y: auto; }
+        #shutter { width: 85px; height: 85px; border-radius: 50%; border: 6px solid #222; background: #d00; box-shadow: 0 6px 0 #600; cursor: pointer; }
+        #shutter:disabled { background: #333; box-shadow: none; opacity: 0.3; filter: grayscale(1); }
+
+        #status-msg { position: fixed; bottom: 5px; width: 100%; text-align: center; font-size: 9px; color: #888; }
         canvas { display: none; }
     </style>
 </head>
 <body>
 
     <div class="left-section">
+        <div id="mission-guide">
+            <div class="guide-label">CURRENT MISSION</div>
+            <div id="guide-title" class="guide-title">チームを選択してください</div>
+        </div>
         <div class="viewfinder-container"><video id="video" autoplay playsinline></video></div>
-        <div id="timer-display" style="visibility: hidden; font-size: 2rem; color: var(--accent);">5</div>
+        <div id="timer-display" style="visibility: hidden; position: absolute; font-size: 3rem; color: var(--accent); z-index: 20;">5</div>
     </div>
 
     <div class="mid-section">
         <select id="carSelect" class="car-select">
-            <option value="A">Aチーム</option><option value="B">Bチーム</option><option value="C">Cチーム</option>
+            <option value="">チーム未選択</option>
+            <option value="A">Aチーム</option>
+            <option value="B">Bチーム</option>
+            <option value="C">Cチーム</option>
         </select>
-        <button class="sub-btn" id="missionBtn">ミッション</button>
+        <button class="sub-btn" id="missionBtn">ミッション一覧を確認</button>
         <button class="sub-btn" id="flashBtn">FLASH OFF</button>
         <button class="sub-btn" id="switchBtn">カメラ切替</button>
         <button class="sub-btn" id="powerBtn">CAMERA ON</button>
-        <input type="range" id="zoomRange" min="1" max="3" step="0.1" value="1">
+        <div style="text-align: center; width: 100%;">
+            <label style="font-size: 8px; color: #888;">ZOOM</label><br>
+            <input type="range" id="zoomRange" min="1" max="3" step="0.1" value="1">
+        </div>
     </div>
 
     <div class="right-section">
         <div class="counter" id="counter">34</div>
         <div style="font-size: 9px; color: #888; margin-bottom: 20px;">REMAINING</div>
-        <button id="shutter"></button>
-        <button class="sub-btn" id="timerBtn" style="width: 120px;">5秒タイマー</button>
+        <button id="shutter" disabled></button>
+        <button class="sub-btn" id="timerBtn" style="margin-top:20px; width:120px;">5秒タイマー</button>
     </div>
 
-    <div id="status-msg">LOADING...</div>
-    <div id="mission-overlay"></div>
+    <div id="status-msg">INITIALIZING...</div>
     <canvas id="canvas"></canvas>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getStorage, ref, uploadBytes } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
-        import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
-        // Firebase設定
-        const firebaseConfig = { apiKey: "AIzaSyDHqQDeEMrFV09YI0n_ARr1Tzta5aqmE2U",
-                                authDomain: "my-retro-cam.firebaseapp.com",
-                                projectId: "my-retro-cam",
-                                storageBucket: "my-retro-cam.firebasestorage.app",
-                                messagingSenderId: "700098109654",
-                                appId: "1:700098109654:web:9d679cbd092c1376642977"
-                               };
+        // --- 1. Firebase情報を入力してください ---
+        const firebaseConfig = {
+            apiKey: "AIzaSyDHqQDeEMrFV09YI0n_ARr1Tzta5aqmE2U",
+            authDomain: "my-retro-cam.firebaseapp.com",
+            projectId: "my-retro-cam",
+            storageBucket: "my-retro-cam.firebasestorage.app",
+            messagingSenderId: "700098109654",
+            appId: "1:700098109654:web:9d679cbd092c1376642977"
+        };
+
         const app = initializeApp(firebaseConfig);
         const storage = getStorage(app);
         const auth = getAuth(app);
 
-        // IndexedDB 設定 (オフライン保存用)
-        const dbName = "RetroCamDB";
-        const storeName = "offline_photos";
+        // --- 2. データベース設定 (オフライン対応) ---
+        const dbName = "RetroCamUltraDB";
+        const storeName = "photoQueue";
         let db;
+        const dbRequest = indexedDB.open(dbName, 1);
+        dbRequest.onupgradeneeded = e => e.target.result.createObjectStore(storeName, { keyPath: "id", autoIncrement: true });
+        dbRequest.onsuccess = e => { db = e.target.result; syncPhotos(); };
 
-        const request = indexedDB.open(dbName, 1);
-        request.onupgradeneeded = e => e.target.result.createObjectStore(storeName, { keyPath: "id", autoIncrement: true });
-        request.onsuccess = e => { db = e.target.result; checkOfflineQueue(); };
+        // ミッション定義
+        const missionMap = [
+            { id: "01", threshold: 31, title: "1.会議：【露出実験】" },
+            { id: "02", threshold: 27, title: "2.昼食：【あーん】" },
+            { id: "03", threshold: 24, title: "3.天道：【ジャンプ】" },
+            { id: "04", threshold: 21, title: "4.買出：【大量捕獲】" },
+            { id: "05", threshold: 16, title: "5.自然：【森の精霊】" },
+            { id: "06", threshold: 10, title: "6.夕食：【シェフの魂】" },
+            { id: "07", threshold: 7, title: "7.朝食：【無防備な朝】" },
+            { id: "08", threshold: 3, title: "8.遊覧船：【限界耐風】" },
+            { id: "09", threshold: 0, title: "9.空港：【名残惜しさ】" }
+        ];
 
         const video = document.getElementById('video');
         const canvas = document.getElementById('canvas');
         const shutterBtn = document.getElementById('shutter');
-        const counterDisplay = document.getElementById('counter');
+        const guideTitle = document.getElementById('guide-title');
+        const carSelect = document.getElementById('carSelect');
         const statusMsg = document.getElementById('status-msg');
+        const counterDisplay = document.getElementById('counter');
 
         let shotCount = parseInt(localStorage.getItem('retro_count')) || 0;
         let selectedCar = localStorage.getItem('retro_car') || null;
-        let isFlashOn = false;
         let currentFacingMode = "environment";
+        let isFlashOn = false;
+        let isCameraOn = false;
+        let isTimerActive = false;
         let stream = null;
+        let isAuthReady = false;
 
-        window.onload = () => { if(selectedCar) { document.getElementById('carSelect').value = selectedCar; document.getElementById('carSelect').disabled = true; } startCamera(); updateUI(); signInAnonymously(auth); };
+        onAuthStateChanged(auth, (user) => { if (user) { isAuthReady = true; syncPhotos(); } else { signInAnonymously(auth); } });
+
+        window.onload = () => {
+            if (selectedCar) { carSelect.value = selectedCar; carSelect.disabled = true; }
+            startCamera(); updateUI();
+        };
 
         async function startCamera() {
-            if(stream) stream.getTracks().forEach(t => t.stop());
+            if (stream) stream.getTracks().forEach(t => t.stop());
             try {
                 stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: currentFacingMode, width: { ideal: 3840 }, height: { ideal: 2160 } } });
                 video.srcObject = stream;
-                statusMsg.innerText = "READY";
-            } catch(e) { statusMsg.innerText = "ERROR"; }
+                isCameraOn = true; updateUI();
+                if (isFlashOn) toggleTorch(true);
+            } catch (e) { statusMsg.innerText = "CAMERA ERROR"; }
         }
 
-        // オフラインキューの確認とアップロード
-        async function checkOfflineQueue() {
-            if (!navigator.onLine || !db) return;
-            const tx = db.transaction(storeName, "readwrite");
-            const store = tx.objectStore(storeName);
-            const request = store.getAll();
-            request.onsuccess = async () => {
-                const photos = request.result;
-                if (photos.length > 0) statusMsg.innerText = `UPLOADING QUEUE (${photos.length})...`;
-                for (const photo of photos) {
-                    try {
-                        await uploadBytes(ref(storage, `photos/${photo.timestamp}.jpg`), photo.blob);
-                        db.transaction(storeName, "readwrite").objectStore(storeName).delete(photo.id);
-                    } catch (e) { break; }
-                }
-                statusMsg.innerText = "ALL SYNCED";
-            };
+        async function toggleTorch(on) { if (!stream || currentFacingMode === "user") return; const t = stream.getVideoTracks()[0]; if (t.getCapabilities().torch) await t.applyConstraints({ advanced: [{ torch: on }] }); }
+
+        function updateUI() {
+            const remaining = 34 - shotCount;
+            counterDisplay.innerText = remaining > 0 ? remaining : 0;
+            if (!selectedCar) {
+                guideTitle.innerText = "チームを選択してください";
+                shutterBtn.disabled = true;
+            } else {
+                const current = missionMap.find(m => remaining > m.threshold);
+                guideTitle.innerText = current ? current.title : "ミッション完了！";
+                shutterBtn.disabled = (remaining <= 0 || !isCameraOn);
+            }
         }
 
-        window.addEventListener('online', checkOfflineQueue);
+        carSelect.onchange = () => {
+            if (carSelect.value) {
+                selectedCar = carSelect.value;
+                localStorage.setItem('retro_car', selectedCar);
+                carSelect.disabled = true;
+                updateUI();
+            }
+        };
+
+        shutterBtn.onclick = () => {
+            if (isTimerActive) {
+                let tl = 5; document.getElementById('timer-display').style.visibility = "visible";
+                const c = setInterval(() => {
+                    document.getElementById('timer-display').innerText = --tl;
+                    if (tl <= 0) { clearInterval(c); document.getElementById('timer-display').style.visibility = "hidden"; takePicture(); }
+                }, 1000);
+            } else takePicture();
+        };
 
         function takePicture() {
-            if (shotCount >= 34) return;
+            shutterBtn.disabled = true;
+            const vw = video.videoWidth; const vh = video.videoHeight;
+            canvas.width = vw; canvas.height = vh;
             const ctx = canvas.getContext('2d');
-            // 高解像度対応: ビデオの本来のサイズを取得
-            const vw = video.videoWidth;
-            const vh = video.videoHeight;
-            canvas.width = vw;
-            canvas.height = vh;
+            const z = parseFloat(document.getElementById('zoomRange').value);
+            const sw = vw/z, sh = vh/z, sx = (vw-sw)/2, sy = (vh-sh)/2;
             
-            // 描画
-            ctx.drawImage(video, 0, 0, vw, vh);
-            
-            // エフェクト
+            ctx.drawImage(video, sx, sy, sw, sh, 0, 0, vw, vh);
+            if (currentFacingMode === "user") {
+                const t = document.createElement('canvas'); t.width = vw; t.height = vh;
+                const tc = t.getContext('2d'); tc.translate(vw, 0); tc.scale(-1, 1);
+                tc.drawImage(canvas, 0, 0); ctx.clearRect(0, 0, vw, vh); ctx.drawImage(t, 0, 0);
+            }
+
+            // エフェクト & 刻印
             applyEffects(ctx, vw, vh);
-            
-            // 文字の刻印 (視認性アップ)
-            const n = new Date();
-            const dateStr = `'${n.getFullYear().toString().slice(-2)} ${n.getMonth()+1}/${n.getDate()}`;
-            const teamStr = selectedCar ? `${selectedCar} TEAM` : "";
-            const fontSize = Math.floor(vw * 0.04);
-            
-            ctx.font = `bold ${fontSize}px "Courier New", monospace`;
-            ctx.textAlign = "right";
-            
-            // 文字の縁取り
-            ctx.strokeStyle = "black";
-            ctx.lineWidth = fontSize / 8;
-            ctx.strokeText(dateStr, vw * 0.95, vh * 0.95);
-            ctx.strokeText(teamStr, vw * 0.95, vh * 0.88);
-            
-            ctx.fillStyle = "#ff7b00";
-            ctx.fillText(dateStr, vw * 0.95, vh * 0.95);
-            ctx.fillText(teamStr, vw * 0.95, vh * 0.88);
+            addStamps(ctx, vw, vh);
 
             canvas.toBlob(async (blob) => {
-                const timestamp = Date.now();
-                // まずIndexedDBに保存
+                const now = new Date();
+                const timeStr = `${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}-${String(now.getHours()).padStart(2,'0')}${String(now.getMinutes()).padStart(2,'0')}${String(now.getSeconds()).padStart(2,'0')}`;
+                const mID = (missionMap.find(m => (34-shotCount) > m.threshold) || {id:"99"}).id;
+                const fileName = `team${selectedCar}_${mID}_${timeStr}.jpg`;
+
+                // DB保存 (オフライン担保)
                 const tx = db.transaction(storeName, "readwrite");
-                tx.objectStore(storeName).add({ blob, timestamp });
-                
-                checkOfflineQueue(); // アップロード試行
+                tx.objectStore(storeName).add({ blob, fileName });
                 
                 shotCount++;
                 localStorage.setItem('retro_count', shotCount);
                 updateUI();
+                syncPhotos();
+                setTimeout(() => { if(34-shotCount > 0) shutterBtn.disabled = false; }, 3000);
             }, 'image/jpeg', 1.0);
+        }
+
+        async function syncPhotos() {
+            if (!navigator.onLine || !db || !isAuthReady) return;
+            const store = db.transaction(storeName, "readwrite").objectStore(storeName);
+            const request = store.getAll();
+            request.onsuccess = async () => {
+                const items = request.result;
+                if(items.length > 0) statusMsg.innerText = `SYNCING ${items.length}...`;
+                for (const item of items) {
+                    try {
+                        await uploadBytes(ref(storage, `photos/${item.fileName}`), item.blob);
+                        db.transaction(storeName, "readwrite").objectStore(storeName).delete(item.id);
+                    } catch (e) { break; }
+                }
+                statusMsg.innerText = items.length === 0 ? "READY" : statusMsg.innerText;
+            };
         }
 
         function applyEffects(ctx, w, h) {
             ctx.globalCompositeOperation = 'overlay';
-            ctx.fillStyle = 'rgba(0, 255, 120, 0.08)'; // シネマグリーン
-            ctx.fillRect(0, 0, w, h);
+            ctx.fillStyle = 'rgba(0, 255, 120, 0.08)'; ctx.fillRect(0, 0, w, h); // Cinema Green
+            ctx.fillStyle = isFlashOn ? 'rgba(255, 255, 255, 0.2)' : 'rgba(255, 180, 50, 0.12)'; ctx.fillRect(0, 0, w, h);
             ctx.globalCompositeOperation = 'source-over';
-            // ビネット
+            const grain = (w * h) / 3;
+            for (let i = 0; i < grain; i++) {
+                const x = Math.random() * w; const y = Math.random() * h;
+                const opacity = Math.random() * 0.08; ctx.fillStyle = `rgba(255, 255, 255, ${opacity})`; ctx.fillRect(x, y, 1.2, 1.2);
+            }
             const g = ctx.createRadialGradient(w/2, h/2, w/4, w/2, h/2, w/0.8);
             g.addColorStop(0, 'transparent'); g.addColorStop(1, 'rgba(0,0,0,0.6)');
             ctx.fillStyle = g; ctx.fillRect(0, 0, w, h);
         }
 
-        shutterBtn.onclick = takePicture;
-        function updateUI() { counterDisplay.innerText = 34 - shotCount; }
-        // ... 他のボタン類（カメラ切替、フラッシュ等）のイベントは前回同様に実装
+        function addStamps(ctx, w, h) {
+            const n = new Date();
+            const d = `'${n.getFullYear().toString().slice(-2)}.${String(n.getMonth()+1).padStart(2,'0')}.${String(n.getDate()).padStart(2,'0')} ${String(n.getHours()).padStart(2,'0')}:${String(n.getMinutes()).padStart(2,'0')}`;
+            const t = `${selectedCar} TEAM`;
+            const fs = Math.floor(w * 0.045);
+            ctx.font = `bold ${fs}px "Courier New", monospace`;
+            ctx.lineWidth = fs/6; ctx.strokeStyle = "rgba(0,0,0,0.8)";
+            ctx.textAlign = "right"; ctx.strokeText(d, w*0.95, h*0.95); ctx.fillStyle = "#ff7b00"; ctx.fillText(d, w*0.95, h*0.95);
+            ctx.textAlign = "left"; ctx.strokeText(t, w*0.05, h*0.95); ctx.fillText(t, w*0.05, h*0.95);
+        }
+
+        document.getElementById('flashBtn').onclick = () => { isFlashOn = !isFlashOn; flashBtn.innerText = isFlashOn ? "FLASH ON" : "FLASH OFF"; flashBtn.classList.toggle('flash-on', isFlashOn); toggleTorch(isFlashOn); };
+        document.getElementById('timerBtn').onclick = () => { isTimerActive = !isTimerActive; timerBtn.classList.toggle('flash-on', isTimerActive); };
+        document.getElementById('switchBtn').onclick = () => { currentFacingMode = (currentFacingMode === "environment") ? "user" : "environment"; startCamera(); };
+        document.getElementById('powerBtn').onclick = () => { if (isCameraOn) stopCamera(); else startCamera(); };
+        document.getElementById('zoomRange').oninput = (e) => video.style.setProperty('--zoom-level', e.target.value);
+        window.addEventListener('online', syncPhotos);
     </script>
 </body>
 </html>
