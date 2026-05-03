@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Retro Cam - Shiretoko Final v2</title>
+    <title>Retro Cam - Shiretoko Ultimate Final</title>
     <style>
         :root { --body-bg: #1a1a1a; --accent: #ffae00; --panel-bg: #252525; }
         body { margin: 0; padding: 0; background-color: var(--body-bg); color: white; font-family: 'Courier New', Courier, monospace; display: flex; height: 100dvh; width: 100dvw; overflow: hidden; flex-direction: row; }
@@ -14,28 +14,40 @@
         video { width: 100%; height: 100%; object-fit: cover; transform: scale(var(--zoom-level, 1)); }
         video.selfie { transform: scale(var(--zoom-level, 1)) scaleX(-1); }
 
-        /* 常時ミッションガイド（はみ出し防止修正） */
+        /* 常時ミッションガイド */
         #mission-guide {
-            position: absolute; top: 10px; width: 85%; max-width: 280px; 
+            position: absolute; top: 10px; width: 85%; max-width: 260px; 
             background: rgba(0,0,0,0.85); border: 1px solid var(--accent); border-radius: 5px; 
-            padding: 6px 10px; text-align: center; z-index: 10; pointer-events: none;
-            box-sizing: border-box;
+            padding: 6px 10px; text-align: center; z-index: 10; pointer-events: none; box-sizing: border-box;
         }
         .guide-label { font-size: 8px; color: var(--accent); margin-bottom: 2px; letter-spacing: 1px; }
         .guide-title { font-size: 11px; font-weight: bold; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
-        /* 中：設定 */
-        .mid-section { width: 190px; background-color: var(--panel-bg); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 15px; border-left: 1px solid #111; border-right: 1px solid #111; }
+        /* 中：設定エリア */
+        .mid-section { width: 190px; background-color: var(--panel-bg); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; border-left: 1px solid #111; border-right: 1px solid #111; }
         .sub-btn { background: #444; color: #eee; border: 1px solid #666; padding: 10px; border-radius: 6px; font-size: 10px; cursor: pointer; width: 85%; }
         .car-select { background: #000; color: var(--accent); border: 1px solid var(--accent); padding: 8px; border-radius: 4px; font-size: 12px; width: 85%; text-align: center; }
         .flash-on { background: var(--accent) !important; color: #000 !important; font-weight: bold; }
 
-        /* 右：撮影 */
+        /* 右：撮影エリア */
         .right-section { width: 180px; display: flex; flex-direction: column; align-items: center; justify-content: center; background-color: var(--panel-bg); padding-right: env(safe-area-inset-right); }
         .counter-group { text-align: center; cursor: pointer; user-select: none; -webkit-tap-highlight-color: transparent; }
         .counter { font-size: 2.5rem; color: var(--accent); font-weight: bold; line-height: 1; }
         #shutter { width: 85px; height: 85px; border-radius: 50%; border: 6px solid #222; background: #d00; box-shadow: 0 6px 0 #600; cursor: pointer; margin-top: 20px; }
         #shutter:disabled { background: #333; box-shadow: none; opacity: 0.3; filter: grayscale(1); }
+
+        /* ミッション確認オーバーレイ */
+        #mission-overlay { 
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+            background: rgba(0,0,0,0.95); z-index: 1000; display: none; 
+            padding: 30px; box-sizing: border-box; overflow-y: auto; 
+        }
+        .mission-modal { max-width: 500px; margin: 0 auto; color: white; }
+        .mission-modal h2 { color: var(--accent); border-bottom: 1px solid var(--accent); padding-bottom: 10px; font-size: 18px; }
+        .mission-modal-item { margin-bottom: 15px; border-bottom: 1px solid #333; padding-bottom: 10px; }
+        .m-cat { font-size: 10px; color: #888; }
+        .m-title { font-size: 14px; font-weight: bold; color: var(--accent); margin: 4px 0; }
+        .m-task { font-size: 12px; line-height: 1.4; color: #ddd; }
 
         #status-msg { position: fixed; bottom: 5px; width: 100%; text-align: center; font-size: 9px; color: #888; pointer-events: none; }
         canvas { display: none; }
@@ -43,13 +55,21 @@
 </head>
 <body>
 
+    <div id="mission-overlay">
+        <div class="mission-modal">
+            <h2 id="modal-team-name">MISSION LIST</h2>
+            <div id="mission-list-content"></div>
+            <p style="text-align: center; font-size: 10px; color: #666; margin-top: 30px;">(画面タップで閉じる)</p>
+        </div>
+    </div>
+
     <div class="left-section">
         <div id="mission-guide">
             <div class="guide-label">CURRENT MISSION</div>
             <div id="guide-title" class="guide-title">チームを選択してください</div>
         </div>
         <div class="viewfinder-container"><video id="video" autoplay playsinline></video></div>
-        <div id="timer-display" style="visibility: hidden; position: absolute; font-size: 3rem; color: var(--accent); z-index: 20;">5</div>
+        <div id="timer-display" style="visibility: hidden; position: absolute; font-size: 3rem; color: var(--accent); z-index: 20; font-weight: bold;">5</div>
     </div>
 
     <div class="mid-section">
@@ -84,8 +104,7 @@
         import { getStorage, ref, uploadBytes } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
         import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
-        // Firebase Config (適宜入力)
-         // --- 1. Firebase情報を入力してください ---
+ // --- 1. Firebase情報を入力してください ---
         const firebaseConfig = {
             apiKey: "AIzaSyDHqQDeEMrFV09YI0n_ARr1Tzta5aqmE2U",
             authDomain: "my-retro-cam.firebaseapp.com",
@@ -94,34 +113,37 @@
             messagingSenderId: "700098109654",
             appId: "1:700098109654:web:9d679cbd092c1376642977"
         };
+
         const app = initializeApp(firebaseConfig);
         const storage = getStorage(app);
         const auth = getAuth(app);
 
-        // IndexedDB
-        const dbName = "RetroCamFinalDB";
+        // --- 2. データベース設定 ---
+        const dbName = "ShiretokoFinalDB_Final";
         const storeName = "photoQueue";
         let db;
         const dbRequest = indexedDB.open(dbName, 1);
         dbRequest.onupgradeneeded = e => e.target.result.createObjectStore(storeName, { keyPath: "id", autoIncrement: true });
         dbRequest.onsuccess = e => { db = e.target.result; syncPhotos(); };
 
+        // ミッション定義
         const missionMap = [
-            { id: "01", threshold: 31, title: "1.会議：【露出実験】" },
-            { id: "02", threshold: 27, title: "2.昼食：【あーん】" },
-            { id: "03", threshold: 24, title: "3.天道：【ジャンプ】" },
-            { id: "04", threshold: 21, title: "4.買出：【大量捕獲】" },
-            { id: "05", threshold: 16, title: "5.自然：【森の精霊】" },
-            { id: "06", threshold: 10, title: "6.夕食：【シェフの魂】" },
-            { id: "07", threshold: 7, title: "7.朝食：【無防備な朝】" },
-            { id: "08", threshold: 3, title: "8.遊覧船：【限界耐風】" },
-            { id: "09", threshold: 0, title: "9.空港：【名残惜しさ】" }
+            { id: "01", threshold: 31, title: "1.会議：【露出実験】", task: "フラッシュなしとありで同じ場所を撮り比べ。光の特性を検証せよ。" },
+            { id: "02", threshold: 27, title: "2.昼食：【あーん】", task: "メンバー同士の食べさせ合いショット。最高の笑顔を狙え。" },
+            { id: "03", threshold: 24, title: "3.天道：【ジャンプ】", task: "空に浮いているような飛躍ショット。全員同時に飛べ。" },
+            { id: "04", threshold: 21, title: "4.買出：【大量捕獲】", task: "カゴいっぱいの食材を抱え、強欲な笑顔を見せよ。" },
+            { id: "05", threshold: 16, title: "5.自然：【森の精霊】", task: "木の陰からひょっこり覗くショット。11名全員参加推奨。" },
+            { id: "06", threshold: 10, title: "6.夕食：【シェフの魂】", task: "躍動感ある調理シーン。プロっぽい手つきを記録せよ。" },
+            { id: "07", threshold: 7, title: "7.朝食：【無防備な朝】", task: "歯ブラシ姿などリアルな寝起き風景。戦友の素顔を。" },
+            { id: "08", threshold: 3, title: "8.遊覧船：【限界耐風】", task: "強風を受け、顔のゆがみを恐れず立ち向かう根性顔。" },
+            { id: "09", threshold: 0, title: "9.空港：【名残惜しさ】", task: "柱にしがみつき、帰りたくないと泣き真似をする惜別。" }
         ];
 
         let shotCount = parseInt(localStorage.getItem('retro_count')) || 0;
         let selectedCar = localStorage.getItem('retro_car') || null;
         let resetClickCount = 0;
         let isFlashOn = false, isCameraOn = false, isTimerActive = false, isAuthReady = false;
+        let currentFacingMode = "environment";
         let stream = null;
 
         const video = document.getElementById('video');
@@ -131,6 +153,8 @@
         const carSelect = document.getElementById('carSelect');
         const counterDisplay = document.getElementById('counter');
         const statusMsg = document.getElementById('status-msg');
+        const missionOverlay = document.getElementById('mission-overlay');
+        const missionBtn = document.getElementById('missionBtn');
 
         onAuthStateChanged(auth, (user) => { if (user) { isAuthReady = true; syncPhotos(); } else { signInAnonymously(auth); } });
 
@@ -139,16 +163,70 @@
             startCamera(); updateUI();
         };
 
+        // --- 3. カメラ・フラッシュ機能 ---
         async function startCamera() {
             if (stream) stream.getTracks().forEach(t => t.stop());
             try {
-                // 画質を落とすためあえてidealを少し低めに設定 (2K相当)
-                stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment", width: { ideal: 2560 }, height: { ideal: 1440 } } });
+                const constraints = { 
+                    video: { facingMode: currentFacingMode, width: { ideal: 2048 }, height: { ideal: 1536 } },
+                    audio: false 
+                };
+                stream = await navigator.mediaDevices.getUserMedia(constraints);
                 video.srcObject = stream;
-                isCameraOn = true; updateUI();
+                video.classList.toggle('selfie', currentFacingMode === "user");
+                isCameraOn = true; 
+                updateUI();
+                // カメラ起動後にフラッシュ状態を適用（背面のみ）
+                if (isFlashOn && currentFacingMode === "environment") setTimeout(() => toggleTorch(true), 500);
             } catch (e) { statusMsg.innerText = "CAMERA ERROR"; }
         }
 
+        async function toggleTorch(on) {
+            if (!stream || currentFacingMode === "user") return;
+            const track = stream.getVideoTracks()[0];
+            const caps = track.getCapabilities();
+            if (caps.torch) {
+                try { await track.applyConstraints({ advanced: [{ torch: on }] }); } catch(e) {}
+            }
+        }
+
+        document.getElementById('switchBtn').onclick = () => {
+            currentFacingMode = (currentFacingMode === "environment") ? "user" : "environment";
+            startCamera();
+        };
+
+        document.getElementById('flashBtn').onclick = () => {
+            if (currentFacingMode === "user") { alert("前面カメラではフラッシュは使えません"); return; }
+            isFlashOn = !isFlashOn;
+            document.getElementById('flashBtn').innerText = isFlashOn ? "FLASH ON" : "FLASH OFF";
+            document.getElementById('flashBtn').classList.toggle('flash-on', isFlashOn);
+            toggleTorch(isFlashOn);
+        };
+
+        document.getElementById('powerBtn').onclick = () => {
+            if (isCameraOn) { if (stream) stream.getTracks().forEach(t => t.stop()); isCameraOn = false; } 
+            else { startCamera(); }
+            updateUI();
+        };
+
+        // --- 4. ミッション一覧表示機能 ---
+        missionBtn.onclick = () => {
+            if (!selectedCar) { alert("先にチームを選択してください"); return; }
+            document.getElementById('modal-team-name').innerText = `${selectedCar}チーム MISSION LIST`;
+            const listContent = document.getElementById('mission-list-content');
+            listContent.innerHTML = "";
+            missionMap.forEach(m => {
+                const div = document.createElement('div');
+                div.className = "mission-modal-item";
+                div.innerHTML = `<div class="m-cat">MISSION ${m.id}</div><div class="m-title">${m.title}</div><div class="m-task">${m.task}</div>`;
+                listContent.appendChild(div);
+            });
+            missionOverlay.style.display = "block";
+        };
+
+        missionOverlay.onclick = () => { missionOverlay.style.display = "none"; };
+
+        // --- 5. UI更新・撮影機能 ---
         function updateUI() {
             const remaining = 34 - shotCount;
             counterDisplay.innerText = remaining > 0 ? remaining : 0;
@@ -173,7 +251,8 @@
 
         shutterBtn.onclick = () => {
             if (isTimerActive) {
-                let tl = 5; document.getElementById('timer-display').style.visibility = "visible";
+                let tl = 5; document.getElementById('timer-display').innerText = tl;
+                document.getElementById('timer-display').style.visibility = "visible";
                 const c = setInterval(() => {
                     document.getElementById('timer-display').innerText = --tl;
                     if (tl <= 0) { clearInterval(c); document.getElementById('timer-display').style.visibility = "hidden"; takePicture(); }
@@ -190,26 +269,31 @@
             const sw = vw/z, sh = vh/z, sx = (vw-sw)/2, sy = (vh-sh)/2;
             
             ctx.drawImage(video, sx, sy, sw, sh, 0, 0, vw, vh);
+            if (currentFacingMode === "user") {
+                const t = document.createElement('canvas'); t.width = vw; t.height = vh;
+                const tc = t.getContext('2d'); tc.translate(vw, 0); tc.scale(-1, 1);
+                tc.drawImage(canvas, 0, 0); ctx.clearRect(0, 0, vw, vh); ctx.drawImage(t, 0, 0);
+            }
 
-            // エフェクト & 刻印
             applyEffects(ctx, vw, vh);
             addStamps(ctx, vw, vh);
 
-            // 画質設定を0.85に落としてフィルム感を出す
             canvas.toBlob(async (blob) => {
                 const now = new Date();
                 const timeStr = `${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}-${String(now.getHours()).padStart(2,'0')}${String(now.getMinutes()).padStart(2,'0')}${String(now.getSeconds()).padStart(2,'0')}`;
                 const mID = (missionMap.find(m => (34-shotCount) > m.threshold) || {id:"99"}).id;
                 const fileName = `team${selectedCar}_${mID}_${timeStr}.jpg`;
 
-                const tx = db.transaction(storeName, "readwrite");
-                tx.objectStore(storeName).add({ blob, fileName });
+                if (db) {
+                    const tx = db.transaction(storeName, "readwrite");
+                    tx.objectStore(storeName).add({ blob, fileName });
+                }
                 
                 shotCount++;
                 localStorage.setItem('retro_count', shotCount);
                 updateUI();
                 syncPhotos();
-                setTimeout(() => { if(34-shotCount > 0) shutterBtn.disabled = false; }, 3000);
+                setTimeout(() => { if(34-shotCount > 0 && isCameraOn) shutterBtn.disabled = false; }, 3000);
             }, 'image/jpeg', 0.85);
         }
 
@@ -232,19 +316,15 @@
 
         function applyEffects(ctx, w, h) {
             ctx.globalCompositeOperation = 'overlay';
-            ctx.fillStyle = 'rgba(0, 255, 120, 0.1)'; ctx.fillRect(0, 0, w, h); // 少し強めのCinema Green
+            ctx.fillStyle = 'rgba(0, 255, 120, 0.12)'; ctx.fillRect(0, 0, w, h);
             ctx.fillStyle = isFlashOn ? 'rgba(255, 255, 255, 0.2)' : 'rgba(255, 180, 50, 0.15)'; ctx.fillRect(0, 0, w, h);
             ctx.globalCompositeOperation = 'source-over';
-            
-            // 粒子ノイズを少し大きく、濃くする
-            const grain = (w * h) / 4;
+            const grain = (w * h) / 3;
             for (let i = 0; i < grain; i++) {
                 const x = Math.random() * w; const y = Math.random() * h;
-                const opacity = Math.random() * 0.12; 
-                ctx.fillStyle = `rgba(255, 255, 255, ${opacity})`; 
-                ctx.fillRect(x, y, 1.5, 1.5);
+                const opacity = Math.random() * 0.15; 
+                ctx.fillStyle = `rgba(255, 255, 255, ${opacity})`; ctx.fillRect(x, y, 1.8, 1.8);
             }
-            
             const g = ctx.createRadialGradient(w/2, h/2, w/4, w/2, h/2, w/0.8);
             g.addColorStop(0, 'transparent'); g.addColorStop(1, 'rgba(0,0,0,0.65)');
             ctx.fillStyle = g; ctx.fillRect(0, 0, w, h);
@@ -261,11 +341,11 @@
             ctx.textAlign = "left"; ctx.strokeText(t, w*0.05, h*0.95); ctx.fillText(t, w*0.05, h*0.95);
         }
 
-        // リセット機能（連打対応）
+        // --- 6. リセット機能 ---
         document.getElementById('resetTrigger').onclick = () => {
             resetClickCount++;
             if (resetClickCount >= 5) {
-                if(confirm("リセット（枚数・チーム解除）しますか？")) {
+                if(confirm("全リセット（枚数・チーム選択解除）しますか？")) {
                     shotCount = 0; selectedCar = null;
                     localStorage.setItem('retro_count', 0); localStorage.removeItem('retro_car');
                     carSelect.disabled = false; carSelect.value = "";
@@ -276,10 +356,7 @@
             setTimeout(() => { resetClickCount = 0; }, 2000);
         };
 
-        // その他ボタン
-        document.getElementById('flashBtn').onclick = () => { isFlashOn = !isFlashOn; flashBtn.innerText = isFlashOn ? "FLASH ON" : "FLASH OFF"; flashBtn.classList.toggle('flash-on', isFlashOn); };
         document.getElementById('timerBtn').onclick = () => { isTimerActive = !isTimerActive; timerBtn.classList.toggle('flash-on', isTimerActive); };
-        document.getElementById('switchBtn').onclick = () => { /* カメラ切替ロジック */ };
         document.getElementById('zoomRange').oninput = (e) => video.style.setProperty('--zoom-level', e.target.value);
         window.addEventListener('online', syncPhotos);
     </script>
