@@ -3,11 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Retro Cam - Shiretoko 3:2 Final</title>
+    <title>Retro Cam - Shiretoko Final Adjust</title>
     <style>
         :root { --body-bg: #1a1a1a; --accent: #ffae00; --panel-bg: #252525; }
         body { margin: 0; padding: 0; background-color: var(--body-bg); color: white; font-family: 'Courier New', Courier, monospace; display: flex; height: 100dvh; width: 100dvw; overflow: hidden; flex-direction: row; }
 
+        /* 左：プレビュー */
         .left-section { flex: 1.2; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; background: #000; padding-left: env(safe-area-inset-left); }
         .viewfinder-container { width: 180px; height: 120px; border: 2px solid #444; border-radius: 4px; overflow: hidden; position: relative; }
         video { width: 100%; height: 100%; object-fit: cover; transform: scale(var(--zoom-level, 1)); }
@@ -21,30 +22,23 @@
         .guide-label { font-size: 8px; color: var(--accent); margin-bottom: 2px; }
         .guide-title { font-size: 11px; font-weight: bold; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
+        /* 中：設定 */
         .mid-section { width: 190px; background-color: var(--panel-bg); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; border-left: 1px solid #111; border-right: 1px solid #111; }
         .sub-btn { background: #444; color: #eee; border: 1px solid #666; padding: 10px; border-radius: 6px; font-size: 10px; cursor: pointer; width: 85%; }
         .car-select { background: #000; color: var(--accent); border: 1px solid var(--accent); padding: 8px; border-radius: 4px; font-size: 12px; width: 85%; text-align: center; }
         .active-mode { background: var(--accent) !important; color: #000 !important; font-weight: bold; }
 
+        /* 右：撮影 */
         .right-section { width: 180px; display: flex; flex-direction: column; align-items: center; justify-content: center; background-color: var(--panel-bg); padding-right: env(safe-area-inset-right); }
         .counter { font-size: 2.5rem; color: var(--accent); font-weight: bold; line-height: 1; }
-        #shutter { width: 85px; height: 85px; border-radius: 50%; border: 6px solid #222; background: #d00; box-shadow: 0 6px 0 #600; cursor: pointer; margin-top: 15px; }
+        #shutter { width: 85px; height: 85px; border-radius: 50%; border: 6px solid #222; background: #d00; box-shadow: 0 6px 0 #600; cursor: pointer; margin-top: 15px; transition: opacity 0.2s; }
         #shutter:disabled { background: #333; box-shadow: none; opacity: 0.3; cursor: default; }
 
-        #mission-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 1000; display: none; padding: 20px; box-sizing: border-box; overflow-y: auto; }
         #status-msg { position: fixed; bottom: 5px; width: 100%; text-align: center; font-size: 9px; color: #888; pointer-events: none; }
         canvas { display: none; }
     </style>
 </head>
 <body>
-
-    <div id="mission-overlay">
-        <div style="max-width: 500px; margin: 0 auto; color: white;">
-            <h2 id="modal-team-name" style="color: var(--accent); border-bottom: 1px solid var(--accent);">MISSION LIST</h2>
-            <div id="mission-list-content"></div>
-            <p style="text-align: center; font-size: 9px; color: #666; margin-top: 20px;">(タップして閉じる)</p>
-        </div>
-    </div>
 
     <div class="left-section">
         <div id="mission-guide">
@@ -52,12 +46,12 @@
             <div id="guide-title" class="guide-title">チームを選択</div>
         </div>
         <div class="viewfinder-container"><video id="video" autoplay playsinline></video></div>
-        <div id="timer-display" style="visibility: hidden; position: absolute; font-size: 4rem; color: var(--accent); z-index: 20; font-weight: bold; text-shadow: 0 0 10px #000;">3</div>
+        <div id="timer-display" style="visibility: hidden; position: absolute; font-size: 4rem; color: var(--accent); z-index: 20; font-weight: bold; text-shadow: 0 0 10px #000;">5</div>
     </div>
 
     <div class="mid-section">
         <select id="carSelect" class="car-select">
-            <option value="">チーム選択</option>
+            <option value="">チーム未選択</option>
             <option value="A">Aチーム</option><option value="B">Bチーム</option><option value="C">Cチーム</option>
         </select>
         <button class="sub-btn" id="missionBtn">ミッション一覧</button>
@@ -73,7 +67,7 @@
             <div style="font-size: 9px; color: #888;">REMAINING</div>
         </div>
         <button id="shutter" disabled></button>
-        <button class="sub-btn" id="timerBtn" style="margin-top:15px; width:120px;">3秒タイマー</button>
+        <button class="sub-btn" id="timerBtn" style="margin-top:15px; width:120px;">5秒タイマー</button>
     </div>
 
     <div id="status-msg">READY</div>
@@ -84,7 +78,6 @@
         import { getStorage, ref, uploadBytes } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
         import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
-        
          // --- 1. Firebase情報を入力してください ---
         const firebaseConfig = {
             apiKey: "AIzaSyDHqQDeEMrFV09YI0n_ARr1Tzta5aqmE2U",
@@ -98,24 +91,19 @@
         const storage = getStorage(app);
         const auth = getAuth(app);
 
-        const dbName = "Shiretoko32FinalDB";
+        const dbName = "ShiretokoFinalDB_Final";
         const storeName = "photoQueue";
         let db, isAuthReady = false, stream = null;
-
         const dbRequest = indexedDB.open(dbName, 1);
         dbRequest.onupgradeneeded = e => e.target.result.createObjectStore(storeName, { keyPath: "id", autoIncrement: true });
         dbRequest.onsuccess = e => { db = e.target.result; syncPhotos(); };
 
         const missionMap = [
-            { id: "01", threshold: 31, title: "1.会議：【露出実験】", task: "フラッシュの有無を検証。" },
-            { id: "02", threshold: 27, title: "2.昼食：【あーん】", task: "食べさせ合いショット。" },
-            { id: "03", threshold: 24, title: "3.天道：【ジャンプ】", task: "全員浮遊ショット。" },
-            { id: "04", threshold: 21, title: "4.買出：【大量捕獲】", task: "食材と笑顔。" },
-            { id: "05", threshold: 16, title: "5.自然：【森の精霊】", task: "木の陰から。" },
-            { id: "06", threshold: 10, title: "6.夕食：【シェフの魂】", task: "調理シーン。" },
-            { id: "07", threshold: 7, title: "7.朝食：【無防備な朝】", task: "寝起き姿。" },
-            { id: "08", threshold: 3, title: "8.遊覧船：【限界耐風】", task: "強風根性顔。" },
-            { id: "09", threshold: 0, title: "9.空港：【名残惜しさ】", task: "惜別の泣き真似。" }
+            { id: "01", threshold: 31, title: "1.会議：【露出実験】" }, { id: "02", threshold: 27, title: "2.昼食：【あーん】" },
+            { id: "03", threshold: 24, title: "3.天道：【ジャンプ】" }, { id: "04", threshold: 21, title: "4.買出：【大量捕獲】" },
+            { id: "05", threshold: 16, title: "5.自然：【森の精霊】" }, { id: "06", threshold: 10, title: "6.夕食：【シェフの魂】" },
+            { id: "07", threshold: 7, title: "7.朝食：【無防備な朝】" }, { id: "08", threshold: 3, title: "8.遊覧船：【限界耐風】" },
+            { id: "09", threshold: 0, title: "9.空港：【名残惜しさ】" }
         ];
 
         let shotCount = parseInt(localStorage.getItem('retro_count')) || 0;
@@ -145,17 +133,8 @@
             try {
                 stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: currentFacingMode, width: { ideal: 1920 }, height: { ideal: 1080 } } });
                 video.srcObject = stream;
-                video.classList.toggle('selfie', currentFacingMode === "user");
                 isCameraOn = true; updateUI();
-                if (isFlashOn && currentFacingMode === "environment") setTimeout(() => toggleTorch(true), 500);
             } catch (e) { statusMsg.innerText = "CAMERA ERROR"; }
-        }
-
-        async function toggleTorch(on) {
-            if (!stream || currentFacingMode === "user") return;
-            const t = stream.getVideoTracks()[0];
-            const caps = t.getCapabilities();
-            if (caps.torch) try { await t.applyConstraints({ advanced: [{ torch: on }] }); } catch(e) {}
         }
 
         function updateUI() {
@@ -171,52 +150,47 @@
 
         carSelect.onchange = () => { if (carSelect.value) { selectedCar = carSelect.value; localStorage.setItem('retro_car', selectedCar); carSelect.disabled = true; updateUI(); } };
 
-        document.getElementById('switchBtn').onclick = () => { currentFacingMode = (currentFacingMode === "environment") ? "user" : "environment"; startCamera(); };
-        document.getElementById('flashBtn').onclick = () => { isFlashOn = !isFlashOn; flashBtn.innerText = isFlashOn ? "FLASH ON" : "FLASH OFF"; flashBtn.classList.toggle('active-mode', isFlashOn); toggleTorch(isFlashOn); };
-        document.getElementById('timerBtn').onclick = () => { isTimerActive = !isTimerActive; timerBtn.classList.toggle('active-mode', isTimerActive); };
-        document.getElementById('powerBtn').onclick = () => { if (isCameraOn) { if (stream) stream.getTracks().forEach(t => t.stop()); isCameraOn = false; } else startCamera(); updateUI(); };
-
-        document.getElementById('missionBtn').onclick = () => {
-            if (!selectedCar) return;
-            const list = document.getElementById('mission-list-content');
-            list.innerHTML = "";
-            missionMap.forEach(m => {
-                const div = document.createElement('div'); div.innerHTML = `<b style="color:var(--accent)">${m.title}</b><p style="font-size:11px;margin:5px 0 15px 0;">${m.task}</p>`;
-                list.appendChild(div);
-            });
-            document.getElementById('mission-overlay').style.display = "block";
-        };
-        document.getElementById('mission-overlay').onclick = () => document.getElementById('mission-overlay').style.display = "none";
-
+        // --- 修正箇所: タイマー(5秒)と連写防止(3秒) ---
         shutterBtn.onclick = () => {
+            if (shutterBtn.disabled) return;
+            shutterBtn.disabled = true; // 即座にロック
+
             if (isTimerActive) {
-                shutterBtn.disabled = true; // 重複防止
-                let tl = 3; 
-                timerDisplay.innerText = tl; 
+                let count = 5; // 5秒に変更
+                timerDisplay.innerText = count;
                 timerDisplay.style.visibility = "visible";
-                const c = setInterval(() => {
-                    tl--;
-                    if (tl > 0) {
-                        timerDisplay.innerText = tl;
-                    } else { 
-                        clearInterval(c); 
-                        timerDisplay.style.visibility = "hidden"; 
-                        takePicture(); 
-                        isTimerActive = false; 
-                        timerBtn.classList.remove('active-mode'); 
+                const itv = setInterval(() => {
+                    count--;
+                    if (count > 0) {
+                        timerDisplay.innerText = count;
+                    } else {
+                        clearInterval(itv);
+                        timerDisplay.style.visibility = "hidden";
+                        executeCapture();
+                        isTimerActive = false;
+                        timerBtn.classList.remove('active-mode');
                     }
                 }, 1000);
             } else {
-                takePicture();
+                executeCapture();
             }
         };
 
+        function executeCapture() {
+            takePicture();
+            // 撮影後、3秒間強制的にシャッターを無効化
+            statusMsg.innerText = "CHARGING...";
+            setTimeout(() => {
+                statusMsg.innerText = "READY";
+                updateUI(); // 枚数制限を確認して再有効化
+            }, 3000); 
+        }
+
         function takePicture() {
-            shutterBtn.disabled = true;
-            const targetW = 1500; const targetH = 1000;
+            const targetW = 1500, targetH = 1000;
             canvas.width = targetW; canvas.height = targetH;
             const ctx = canvas.getContext('2d');
-            const vw = video.videoWidth; const vh = video.videoHeight;
+            const vw = video.videoWidth, vh = video.videoHeight;
             const zoom = parseFloat(document.getElementById('zoomRange').value);
             
             let sH = vh / zoom, sW = (sH * 1.5);
@@ -224,12 +198,6 @@
             const sX = (vw - sW) / 2, sY = (vh - sH) / 2;
 
             ctx.drawImage(video, sX, sY, sW, sH, 0, 0, targetW, targetH);
-            if (currentFacingMode === "user") {
-                const t = document.createElement('canvas'); t.width = targetW; t.height = targetH;
-                const tc = t.getContext('2d'); tc.translate(targetW, 0); tc.scale(-1, 1);
-                tc.drawImage(canvas, 0, 0); ctx.clearRect(0, 0, targetW, targetH); ctx.drawImage(t, 0, 0);
-            }
-
             applyEffects(ctx, targetW, targetH);
             addStamps(ctx, targetW, targetH);
 
@@ -239,16 +207,12 @@
                 const mID = (missionMap.find(m => (34-shotCount) > m.threshold) || {id:"99"}).id;
                 const fileName = `team${selectedCar}_${mID}_${timeStr}.jpg`;
 
-                if (db) {
-                    const tx = db.transaction(storeName, "readwrite");
-                    tx.objectStore(storeName).add({ blob, fileName });
-                }
+                const tx = db.transaction(storeName, "readwrite");
+                tx.objectStore(storeName).add({ blob, fileName });
                 
                 shotCount++;
                 localStorage.setItem('retro_count', shotCount);
-                updateUI();
                 syncPhotos();
-                setTimeout(() => { if(34-shotCount > 0 && isCameraOn) shutterBtn.disabled = false; }, 3000);
             }, 'image/jpeg', 0.85);
         }
 
@@ -259,14 +223,12 @@
             const req = store.getAll();
             req.onsuccess = async () => {
                 const items = req.result;
-                if(items.length > 0) statusMsg.innerText = `SYNCING ${items.length}...`;
                 for (const item of items) {
                     try {
                         await uploadBytes(ref(storage, `photos/${item.fileName}`), item.blob);
                         db.transaction(storeName, "readwrite").objectStore(storeName).delete(item.id);
                     } catch (e) { break; }
                 }
-                statusMsg.innerText = items.length === 0 ? "READY" : statusMsg.innerText;
             };
         }
 
@@ -276,11 +238,10 @@
             ctx.fillStyle = isFlashOn ? 'rgba(255, 255, 255, 0.2)' : 'rgba(255, 180, 50, 0.15)'; ctx.fillRect(0, 0, w, h);
             ctx.globalCompositeOperation = 'source-over';
             
-            // 粒子ノイズを控えめに戻す
-            const grain = (w * h) / 1.5; // 密度を以前の設定付近へ
+            // 粒子ノイズ控えめ設定
+            const grain = (w * h) / 1.5; 
             for (let i = 0; i < grain; i++) {
-                const x = Math.random() * w; const y = Math.random() * h;
-                const opacity = Math.random() * 0.08; // 透明度も下げて見やすく
+                const x = Math.random() * w, y = Math.random() * h, opacity = Math.random() * 0.08;
                 ctx.fillStyle = `rgba(255, 255, 255, ${opacity})`; ctx.fillRect(x, y, 1.2, 1.2);
             }
             const g = ctx.createRadialGradient(w/2, h/2, w/4, w/2, h/2, w/0.8);
@@ -299,6 +260,11 @@
             ctx.textAlign = "left"; ctx.strokeText(t, w*0.05, h*0.95); ctx.fillText(t, w*0.05, h*0.95);
         }
 
+        // その他イベント
+        document.getElementById('switchBtn').onclick = () => { currentFacingMode = (currentFacingMode === "environment") ? "user" : "environment"; startCamera(); };
+        document.getElementById('flashBtn').onclick = () => { isFlashOn = !isFlashOn; flashBtn.innerText = isFlashOn ? "FLASH ON" : "FLASH OFF"; flashBtn.classList.toggle('active-mode', isFlashOn); };
+        document.getElementById('timerBtn').onclick = () => { isTimerActive = !isTimerActive; timerBtn.classList.toggle('active-mode', isTimerActive); };
+        document.getElementById('powerBtn').onclick = () => { if (isCameraOn) { if (stream) stream.getTracks().forEach(t => t.stop()); isCameraOn = false; } else startCamera(); updateUI(); };
         document.getElementById('resetTrigger').onclick = () => {
             resetClickCount++;
             if (resetClickCount >= 5) {
