@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Retro Cam - Shiretoko 2Days Final Fix</title>
+    <title>Retro Cam - Shiretoko Final Adjust</title>
     <style>
         :root { --body-bg: #1a1a1a; --accent: #ffae00; --panel-bg: #252525; }
         body { margin: 0; padding: 0; background-color: var(--body-bg); color: white; font-family: 'Courier New', Courier, monospace; display: flex; height: 100dvh; width: 100dvw; overflow: hidden; flex-direction: row; }
@@ -30,7 +30,6 @@
         .right-section { width: 180px; display: flex; flex-direction: column; align-items: center; justify-content: center; background-color: var(--panel-bg); padding-right: env(safe-area-inset-right); }
         .counter { font-size: 2.5rem; color: var(--accent); font-weight: bold; line-height: 1; }
         #shutter { width: 85px; height: 85px; border-radius: 50%; border: 6px solid #222; background: #d00; box-shadow: 0 6px 0 #600; cursor: pointer; margin-top: 15px; }
-        /* 無効化（連写防止中）のスタイル */
         #shutter:disabled { background: #333; box-shadow: none; opacity: 0.3; cursor: default; }
         
         #mission-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 1000; display: none; padding: 20px; box-sizing: border-box; overflow-y: auto; }
@@ -93,8 +92,8 @@
         import { getStorage, ref, uploadBytes } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
         import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
-        
- // --- 1. Firebase情報を入力してください ---
+        // Firebase Config
+        // --- 1. Firebase情報を入力してください ---
         const firebaseConfig = {
             apiKey: "AIzaSyDHqQDeEMrFV09YI0n_ARr1Tzta5aqmE2U",
             authDomain: "my-retro-cam.firebaseapp.com",
@@ -102,19 +101,19 @@
             storageBucket: "my-retro-cam.firebasestorage.app",
             messagingSenderId: "700098109654",
             appId: "1:700098109654:web:9d679cbd092c1376642977"
-        };        
+        };
+        
         const app = initializeApp(firebaseConfig);
         const storage = getStorage(app);
         const auth = getAuth(app);
 
-        const dbName = "Shiretoko2DaysFinalDB";
+        const dbName = "ShiretokoDayTransDB";
         const storeName = "photoQueue";
         let db, isAuthReady = false, stream = null;
         const dbRequest = indexedDB.open(dbName, 1);
         dbRequest.onupgradeneeded = e => e.target.result.createObjectStore(storeName, { keyPath: "id", autoIncrement: true });
         dbRequest.onsuccess = e => { db = e.target.result; syncPhotos(); };
 
-       
         // --- ミッションデータ設定 ---
         const config = {
             "1": {
@@ -152,20 +151,20 @@
                     "A": [
                         { id: "07", threshold: 11, title: "7.朝食：【無防備な朝】", task: "リアルな寝起き姿。" },
                         { id: "08", threshold: 7, title: "8.遊覧船：【限界耐風】", task: "強風に立ち向かう根性顔。" },
-                        { id: "09", threshold: 4, title: "9.昼食：【完食の証】", task: "食べ終わった後の、米粒一つ残っていない「空っぽの皿」を背景に、満足げな表情で爪楊枝を使う（またはお茶を飲む）姿。" },
-                        { id: "10", threshold: 0, title: "10.空港：【名残惜しさ】", task: "帰りたくない泣き真似。" }
+                        { id: "09", threshold: 4, title: "7.昼食：【完食の証】", task: "食べ終わった後の、米粒一つ残っていない「空っぽの皿」を背景に、満足げな表情で爪楊枝を使う（またはお茶を飲む）姿。" },
+                        { id: "10", threshold: 0, title: "9.空港：【名残惜しさ】", task: "帰りたくない泣き真似。" }
                     ],
                     "B": [
                         { id: "07", threshold: 11, title: "7.朝食：【出発の敬礼】", task: "今日への決意の礼。" },
                         { id: "08", threshold: 7, title: "8.遊覧船：【発見！知床】", task: "全員で同じ方向を指差す。" },
-                        { id: "09", threshold: 4, title: "9.昼食：【完食の証】", task: "食べ終わった後の、米粒一つ残っていない「空っぽの皿」を背景に、満足げな表情で爪楊枝を使う（またはお茶を飲む）姿。" },
-                        { id: "10", threshold: 0, title: "10.空港：【任務完了】", task: "満足げなサムズアップ。" }
+                        { id: "09", threshold: 4, title: "7.昼食：【完食の証】", task: "食べ終わった後の、米粒一つ残っていない「空っぽの皿」を背景に、満足げな表情で爪楊枝を使う（またはお茶を飲む）姿。" },
+                        { id: "10", threshold: 0, title: "9.空港：【任務完了】", task: "満足げなサムズアップ。" }
                     ],
                     "C": [
                         { id: "07", threshold: 11, title: "7.朝食：【爽やかモデル】", task: "朝日とコーヒーで大人の余裕。" },
                         { id: "08", threshold: 7, title: "8.遊覧船：【知床の王】", task: "船首で仁王立ちショット。" },
-                        { id: "09", threshold: 4, title: "9.遊覧船：【知床の風を感じて】", task: "屋外や窓際の場合、料理を片手に遠くの海や山を見つめ、「俺たちはまだ、知床にいる…」という遠い目をする。" },
-                        { id: "10", threshold: 0, title: "10.空港：【また会おう】", task: "ゲートへ消えるヒーローの別れ。" }
+                        { id: "09", threshold: 4, title: "8.遊覧船：【知床の風を感じて】", task: "屋外や窓際の場合、料理を片手に遠くの海や山を見つめ、「俺たちはまだ、知床にいる…」という遠い目をする。" },
+                        { id: "10", threshold: 0, title: "9.空港：【また会おう】", task: "ゲートへ消えるヒーローの別れ。" }
                     ]
                 }
             }
@@ -177,6 +176,7 @@
         const shutterBtn = document.getElementById('shutter');
         const guideTitle = document.getElementById('guide-title');
         const statusMsg = document.getElementById('status-msg');
+        const flashBtn = document.getElementById('flashBtn');
         
         let selectedDay = localStorage.getItem('retro_day') || "";
         let selectedCar = localStorage.getItem('retro_car') || "";
@@ -205,19 +205,16 @@
         function updateUI() {
             if(!selectedDay || !selectedCar) {
                 counterDisplay.innerText = "--";
-                guideTitle.innerText = "日程とチームを選択してください";
+                guideTitle.innerText = "設定を選択してください";
                 shutterBtn.disabled = true;
                 return;
             }
             const dayConf = config[selectedDay];
             const remaining = dayConf.maxShots - shotCount;
             counterDisplay.innerText = remaining > 0 ? remaining : 0;
-            
             const mList = dayConf.missions[selectedCar];
             const current = mList.find(m => remaining > m.threshold);
             guideTitle.innerText = current ? current.title : "ミッション完了！";
-            
-            // 撮影中でなく、枚数が残っていればボタン有効
             shutterBtn.disabled = (isCapturing || remaining <= 0 || !isCameraOn);
         }
 
@@ -238,41 +235,47 @@
                 stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: currentFacingMode, width: { ideal: 1920 }, height: { ideal: 1080 } } });
                 document.getElementById('video').srcObject = stream;
                 isCameraOn = true; updateUI();
+                if(isFlashOn) setTimeout(() => applyTorch(true), 1000);
             } catch (e) { statusMsg.innerText = "CAMERA ERROR"; }
         }
 
+        async function applyTorch(state) {
+            if (!stream || currentFacingMode === "user") return;
+            const track = stream.getVideoTracks()[0];
+            const capabilities = track.getCapabilities();
+            if (capabilities.torch) {
+                try { await track.applyConstraints({ advanced: [{ torch: state }] }); } catch (err) {}
+            }
+        }
+
+        flashBtn.onclick = () => {
+            if (currentFacingMode === "user") return;
+            isFlashOn = !isFlashOn;
+            flashBtn.innerText = isFlashOn ? "FLASH ON" : "FLASH OFF";
+            flashBtn.classList.toggle('active-mode', isFlashOn);
+            applyTorch(isFlashOn);
+        };
+
         shutterBtn.onclick = () => {
             if (isCapturing || shutterBtn.disabled) return;
-            isCapturing = true; 
-            shutterBtn.disabled = true; // 即座に無効化
-
+            isCapturing = true; shutterBtn.disabled = true;
             if (isTimerActive) {
                 let c = 5; document.getElementById('timer-display').innerText = c;
                 document.getElementById('timer-display').style.visibility = "visible";
                 const itv = setInterval(() => {
                     c--; if(c>0) document.getElementById('timer-display').innerText = c;
                     else { 
-                        clearInterval(itv); 
-                        document.getElementById('timer-display').style.visibility="hidden"; 
-                        executeCapture(); 
-                        isTimerActive=false; 
-                        document.getElementById('timerBtn').classList.remove('active-mode'); 
+                        clearInterval(itv); document.getElementById('timer-display').style.visibility="hidden"; 
+                        executeCapture(); isTimerActive=false; document.getElementById('timerBtn').classList.remove('active-mode'); 
                     }
                 }, 1000);
-            } else {
-                executeCapture();
-            }
+            } else { executeCapture(); }
         };
 
         function executeCapture() {
             takePicture();
             statusMsg.innerText = "CHARGING...";
-            // 3秒後にロック解除
-            setTimeout(() => {
-                isCapturing = false;
-                statusMsg.innerText = "READY";
-                updateUI();
-            }, 3000);
+            setTimeout(() => { isCapturing = false; statusMsg.innerText = "READY"; updateUI(); }, 3000);
         }
 
         function takePicture() {
@@ -297,19 +300,14 @@
                 const mList = config[selectedDay].missions[selectedCar];
                 const dayConf = config[selectedDay];
                 const mID = (mList.find(m => (dayConf.maxShots - shotCount) > m.threshold) || {id:"99"}).id;
-                
                 const fileName = `Day${selectedDay}_team${selectedCar}_${mID}_${timeStr}.jpg`;
 
                 const tx = db.transaction(storeName, "readwrite");
                 tx.objectStore(storeName).add({ blob, fileName });
-                
                 shotCount++;
                 localStorage.setItem(`retro_count_D${selectedDay}_${selectedCar}`, shotCount);
-                
-                // カウントダウン表示のみ即時更新
                 const remaining = dayConf.maxShots - shotCount;
                 counterDisplay.innerText = remaining > 0 ? remaining : 0;
-
                 syncPhotos();
             }, 'image/jpeg', 0.85);
         }
@@ -346,19 +344,27 @@
 
         function addStamps(ctx, w, h) {
             const n = new Date();
-            const d = `'${n.getFullYear().toString().slice(-2)}.${String(n.getMonth()+1).padStart(2,'0')}.${String(n.getDate()).padStart(2,'0')} ${String(n.getHours()).padStart(2,'0')}:${String(n.getMinutes()).padStart(2,'0')}`;
-            const t = `D${selectedDay}-${selectedCar} TEAM`;
+            const dateStr = `'${n.getFullYear().toString().slice(-2)}.${String(n.getMonth()+1).padStart(2,'0')}.${String(n.getDate()).padStart(2,'0')} ${String(n.getHours()).padStart(2,'0')}:${String(n.getMinutes()).padStart(2,'0')}`;
+            const teamStr = `Day${selectedDay}-${selectedCar} TEAM`;
             const fs = Math.floor(w * 0.045);
             ctx.font = `bold ${fs}px "Courier New", monospace`;
-            ctx.lineWidth = fs/6; ctx.strokeStyle = "rgba(0,0,0,0.8)";
-            ctx.textAlign = "right"; ctx.strokeText(d, w*0.95, h*0.95); ctx.fillStyle = "#ff7b00"; ctx.fillText(d, w*0.95, h*0.95);
-            ctx.textAlign = "left"; ctx.strokeText(t, w*0.05, h*0.95); ctx.fillText(t, w*0.05, h*0.95);
+            ctx.textAlign = "right";
+            ctx.globalAlpha = 0.7; // 文字の透過
+            ctx.lineWidth = fs/8;
+            ctx.strokeStyle = "rgba(0,0,0,0.5)";
+            ctx.strokeText(dateStr, w*0.95, h*0.95);
+            ctx.fillStyle = "#ff8c21";
+            ctx.fillText(dateStr, w*0.95, h*0.95);
+            ctx.textAlign = "left";
+            ctx.strokeText(teamStr, w*0.05, h*0.95);
+            ctx.fillText(teamStr, w*0.05, h*0.95);
+            ctx.globalAlpha = 1.0;
         }
 
         document.getElementById('resetTrigger').onclick = () => {
             resetClickCount++;
             if (resetClickCount >= 5) {
-                if(confirm("全リセット（日程・チーム・枚数解除）しますか？")) {
+                if(confirm("全リセットしますか？")) {
                     localStorage.clear(); shotCount = 0; selectedDay = ""; selectedCar = "";
                     daySelect.disabled = carSelect.disabled = false; daySelect.value = carSelect.value = "";
                     updateUI();
@@ -381,7 +387,6 @@
         };
         document.getElementById('mission-overlay').onclick = () => document.getElementById('mission-overlay').style.display = "none";
         document.getElementById('switchBtn').onclick = () => { currentFacingMode = (currentFacingMode === "environment") ? "user" : "environment"; startCamera(); };
-        document.getElementById('flashBtn').onclick = () => { isFlashOn = !isFlashOn; flashBtn.innerText = isFlashOn ? "FLASH ON" : "FLASH OFF"; flashBtn.classList.toggle('active-mode', isFlashOn); };
         document.getElementById('timerBtn').onclick = () => { isTimerActive = !isTimerActive; timerBtn.classList.toggle('active-mode', isTimerActive); };
         document.getElementById('powerBtn').onclick = () => { if (isCameraOn) { if (stream) stream.getTracks().forEach(t => t.stop()); isCameraOn = false; } else startCamera(); updateUI(); };
         document.getElementById('zoomRange').oninput = (e) => document.getElementById('video').style.setProperty('--zoom-level', e.target.value);
