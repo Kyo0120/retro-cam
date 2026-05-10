@@ -3,11 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Retro Cam - Team Specific Missions</title>
+    <title>Retro Cam - Shiretoko 2Days Edition</title>
     <style>
         :root { --body-bg: #1a1a1a; --accent: #ffae00; --panel-bg: #252525; }
         body { margin: 0; padding: 0; background-color: var(--body-bg); color: white; font-family: 'Courier New', Courier, monospace; display: flex; height: 100dvh; width: 100dvw; overflow: hidden; flex-direction: row; }
 
+        /* 左：プレビュー + ミッションガイド */
         .left-section { flex: 1.2; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; background: #000; padding-left: env(safe-area-inset-left); }
         .viewfinder-container { width: 180px; height: 120px; border: 2px solid #444; border-radius: 4px; overflow: hidden; position: relative; }
         video { width: 100%; height: 100%; object-fit: cover; transform: scale(var(--zoom-level, 1)); }
@@ -21,11 +22,14 @@
         .guide-label { font-size: 8px; color: var(--accent); margin-bottom: 2px; }
         .guide-title { font-size: 11px; font-weight: bold; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
-        .mid-section { width: 190px; background-color: var(--panel-bg); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; border-left: 1px solid #111; border-right: 1px solid #111; }
+        /* 中：設定 */
+        .mid-section { width: 200px; background-color: var(--panel-bg); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; border-left: 1px solid #111; border-right: 1px solid #111; }
+        .select-group { width: 90%; display: flex; flex-direction: column; gap: 5px; margin-bottom: 10px; }
         .sub-btn { background: #444; color: #eee; border: 1px solid #666; padding: 10px; border-radius: 6px; font-size: 10px; cursor: pointer; width: 85%; }
-        .car-select { background: #000; color: var(--accent); border: 1px solid var(--accent); padding: 8px; border-radius: 4px; font-size: 12px; width: 85%; text-align: center; }
+        .car-select { background: #000; color: var(--accent); border: 1px solid var(--accent); padding: 8px; border-radius: 4px; font-size: 11px; width: 100%; text-align: center; }
         .active-mode { background: var(--accent) !important; color: #000 !important; font-weight: bold; }
 
+        /* 右：撮影 */
         .right-section { width: 180px; display: flex; flex-direction: column; align-items: center; justify-content: center; background-color: var(--panel-bg); padding-right: env(safe-area-inset-right); }
         .counter { font-size: 2.5rem; color: var(--accent); font-weight: bold; line-height: 1; }
         #shutter { width: 85px; height: 85px; border-radius: 50%; border: 6px solid #222; background: #d00; box-shadow: 0 6px 0 #600; cursor: pointer; margin-top: 15px; }
@@ -49,17 +53,24 @@
     <div class="left-section">
         <div id="mission-guide">
             <div class="guide-label">CURRENT MISSION</div>
-            <div id="guide-title" class="guide-title">チームを選択</div>
+            <div id="guide-title" class="guide-title">設定を選択してください</div>
         </div>
         <div class="viewfinder-container"><video id="video" autoplay playsinline></video></div>
         <div id="timer-display" style="visibility: hidden; position: absolute; font-size: 4rem; color: var(--accent); z-index: 20; font-weight: bold; text-shadow: 0 0 10px #000;">5</div>
     </div>
 
     <div class="mid-section">
-        <select id="carSelect" class="car-select">
-            <option value="">チーム選択</option>
-            <option value="A">Aチーム</option><option value="B">Bチーム</option><option value="C">Cチーム</option>
-        </select>
+        <div class="select-group">
+            <select id="daySelect" class="car-select">
+                <option value="">日程を選択</option>
+                <option value="1">1日目 (ID01-06)</option>
+                <option value="2">2日目 (ID07-09)</option>
+            </select>
+            <select id="carSelect" class="car-select">
+                <option value="">チームを選択</option>
+                <option value="A">Aチーム</option><option value="B">Bチーム</option><option value="C">Cチーム</option>
+            </select>
+        </div>
         <button class="sub-btn" id="missionBtn">ミッション一覧</button>
         <button class="sub-btn" id="flashBtn">FLASH OFF</button>
         <button class="sub-btn" id="switchBtn">カメラ切替</button>
@@ -69,7 +80,7 @@
 
     <div class="right-section">
         <div id="resetTrigger" style="text-align: center; cursor: pointer;">
-            <div class="counter" id="counter">34</div>
+            <div class="counter" id="counter">--</div>
             <div style="font-size: 9px; color: #888;">REMAINING</div>
         </div>
         <button id="shutter" disabled></button>
@@ -93,157 +104,183 @@
             messagingSenderId: "700098109654",
             appId: "1:700098109654:web:9d679cbd092c1376642977"
         };
+        
         const app = initializeApp(firebaseConfig);
         const storage = getStorage(app);
         const auth = getAuth(app);
 
-        const dbName = "ShiretokoTeamMissionDB";
+        const dbName = "Shiretoko2DaysDB";
         const storeName = "photoQueue";
         let db, isAuthReady = false, stream = null;
         const dbRequest = indexedDB.open(dbName, 1);
         dbRequest.onupgradeneeded = e => e.target.result.createObjectStore(storeName, { keyPath: "id", autoIncrement: true });
         dbRequest.onsuccess = e => { db = e.target.result; syncPhotos(); };
 
-        // --- チーム別ミッションデータ ---
-        const missionsData = {
-            "A": [
-                { id: "01", threshold: 31, title: "1.会議：【露出実験】", task: "フラッシュの有無を検証。" },
-                { id: "02", threshold: 27, title: "2.昼食：【あーん】", task: "メンバー同士の食べさせ合いショット。" },
-                { id: "03", threshold: 24, title: "3.天道：【ジャンプ】", task: "全員浮遊ショット。" },
-                { id: "04", threshold: 21, title: "4.買出：【大量捕獲】", task: "食材満載のカゴと笑顔。" },
-                { id: "05", threshold: 16, title: "5.自然：【森の精霊】", task: "木の陰からひょっこり覗く。" },
-                { id: "06", threshold: 10, title: "6.夕食：【シェフの魂】", task: "躍動感ある調理シーン。" },
-                { id: "07", threshold: 7, title: "7.朝食：【無防備な朝】", task: "リアルな寝起きや歯ブラシ姿。" },
-                { id: "08", threshold: 3, title: "8.遊覧船：【限界耐風】", task: "強風に立ち向かう根性顔。" },
-                { id: "09", threshold: 0, title: "9.空港：【名残惜しさ】", task: "帰りたくない泣き真似姿。" }
-            ],
-            "B": [
-                { id: "01", threshold: 31, title: "1.会議：【構図実験】", task: "指入りと正しい構えを比較検証。" },
-                { id: "02", threshold: 27, title: "2.昼食：【孤独のグルメ】", task: "食に真剣に向き合う背中を撮影。" },
-                { id: "03", threshold: 24, title: "3.天道：【千手観音】", task: "全員重なり合う芸術的ポーズ。" },
-                { id: "04", threshold: 21, title: "4.買出：【目利き】", task: "成分表示をチェックするこだわり姿。" },
-                { id: "05", threshold: 16, title: "5.自然：【野生の呼吸】", task: "大地に向けてパワー吸収の深呼吸。" },
-                { id: "06", threshold: 10, title: "6.夕食：【大机の総督】", task: "11名のグラスが並ぶ大迫力乾杯。" },
-                { id: "07", threshold: 7, title: "7.朝食：【出発の敬礼】", task: "コテージ前で今日への決意の礼。" },
-                { id: "08", threshold: 3, title: "8.遊覧船：【発見！知床】", task: "全員で同じ方向を力強く指差す。" },
-                { id: "09", threshold: 0, title: "9.空港：【任務完了】", task: "満足げな任務達成サムズアップ。" }
-            ],
-            "C": [
-                { id: "01", threshold: 31, title: "1.会議：【距離実験】", task: "50cmと1mでピント限界を検証。" },
-                { id: "02", threshold: 27, title: "2.昼食：【CM出演依頼】", task: "最高の笑顔でグルメをアピール。" },
-                { id: "03", threshold: 24, title: "3.天道：【遠近法】", task: "遠くのメンバーを摘む、または乗せる。" },
-                { id: "04", threshold: 21, title: "4.買出：【潜入スタッフ】", task: "店員さんと一体化してなりすます。" },
-                { id: "05", threshold: 16, title: "5.自然：【自然への対話】", task: "巨木や岩にお辞儀をして感謝。" },
-                { id: "06", threshold: 10, title: "6.夕食：【次代への絆】", task: "肩を組み労い合う戦友ショット。" },
-                { id: "07", threshold: 7, title: "7.朝食：【爽やかモデル】", task: "朝日とコーヒーでキメる大人の余裕。" },
-                { id: "08", threshold: 3, title: "8.遊覧船：【知床の王】", task: "船首で仁王立ちする支配者ショット。" },
-                { id: "09", threshold: 0, title: "9.空港：【また会おう】", task: "ゲートへ消えるヒーローの別れ。" }
-            ]
+        // --- ミッションデータ設定 ---
+        const config = {
+            "1": {
+                maxShots: 20,
+                missions: {
+                    "A": [
+                        { id: "01", threshold: 17, title: "1.会議：【露出実験】", task: "フラッシュの有無を検証。" },
+                        { id: "02", threshold: 14, title: "2.昼食：【あーん】", task: "メンバー同士の食べさせ合い。" },
+                        { id: "03", threshold: 11, title: "3.天道：【ジャンプ】", task: "全員浮遊ショット。" },
+                        { id: "04", threshold: 8,  title: "4.買出：【大量捕獲】", task: "食材満載のカゴと笑顔。" },
+                        { id: "05", threshold: 4,  title: "5.自然：【森の精霊】", task: "木の陰からひょっこり覗く。" },
+                        { id: "06", threshold: 0,  title: "6.夕食：【シェフの魂】", task: "躍動感ある調理シーン。" }
+                    ],
+                    "B": [
+                        { id: "01", threshold: 17, title: "1.会議：【構図実験】", task: "指入りと正しい構えを比較検証。" },
+                        { id: "02", threshold: 14, title: "2.昼食：【孤独のグルメ】", task: "食に真剣に向き合う背中を撮影。" },
+                        { id: "03", threshold: 11, title: "3.天道：【千手観音】", task: "全員重なり合う芸術的ポーズ。" },
+                        { id: "04", threshold: 8,  title: "4.買出：【目利き】", task: "成分表示をチェックするこだわり姿。" },
+                        { id: "05", threshold: 4,  title: "5.自然：【野生の呼吸】", task: "大地に向けてパワー吸収の深呼吸。" },
+                        { id: "06", threshold: 0,  title: "6.夕食：【大机の総督】", task: "11名のグラスが並ぶ大迫力乾杯。" }
+                    ],
+                    "C": [
+                        { id: "01", threshold: 17, title: "1.会議：【距離実験】", task: "50cmと1mでピント限界を検証。" },
+                        { id: "02", threshold: 14, title: "2.昼食：【CM出演依頼】", task: "最高の笑顔でグルメをアピール。" },
+                        { id: "03", threshold: 11, title: "3.天道：【遠近法】", task: "遠くのメンバーを摘む、または乗せる。" },
+                        { id: "04", threshold: 8,  title: "4.買出：【潜入スタッフ】", task: "店員さんと一体化してなりすます。" },
+                        { id: "05", threshold: 4,  title: "5.自然：【自然への対話】", task: "巨木や岩にお辞儀をして感謝。" },
+                        { id: "06", threshold: 0,  title: "6.夕食：【次代への絆】", task: "肩を組み労い合う戦友ショット。" }
+                    ]
+                }
+            },
+            "2": {
+                maxShots: 14,
+                missions: {
+                    "A": [
+                        { id: "07", threshold: 9, title: "7.朝食：【無防備な朝】", task: "リアルな寝起き姿。" },
+                        { id: "08", threshold: 4, title: "8.遊覧船：【限界耐風】", task: "強風に立ち向かう根性顔。" },
+                        { id: "09", threshold: 0, title: "9.空港：【名残惜しさ】", task: "帰りたくない泣き真似。" }
+                    ],
+                    "B": [
+                        { id: "07", threshold: 9, title: "7.朝食：【出発の敬礼】", task: "今日への決意の礼。" },
+                        { id: "08", threshold: 4, title: "8.遊覧船：【発見！知床】", task: "全員で同じ方向を指差す。" },
+                        { id: "09", threshold: 0, title: "9.空港：【任務完了】", task: "満足げなサムズアップ。" }
+                    ],
+                    "C": [
+                        { id: "07", threshold: 9, title: "7.朝食：【爽やかモデル】", task: "朝日とコーヒーで大人の余裕。" },
+                        { id: "08", threshold: 4, title: "8.遊覧船：【知床の王】", task: "船首で仁王立ちショット。" },
+                        { id: "09", threshold: 0, title: "9.空港：【また会おう】", task: "ゲートへ消えるヒーローの別れ。" }
+                    ]
+                }
+            }
         };
 
-        let shotCount = parseInt(localStorage.getItem('retro_count')) || 0;
-        let selectedCar = localStorage.getItem('retro_car') || null;
-        let resetClickCount = 0, isFlashOn = false, isCameraOn = false, isTimerActive = false;
-        let currentFacingMode = "environment";
-
-        const video = document.getElementById('video');
-        const canvas = document.getElementById('canvas');
-        const shutterBtn = document.getElementById('shutter');
-        const guideTitle = document.getElementById('guide-title');
+        const daySelect = document.getElementById('daySelect');
         const carSelect = document.getElementById('carSelect');
         const counterDisplay = document.getElementById('counter');
-        const statusMsg = document.getElementById('status-msg');
-        const timerDisplay = document.getElementById('timer-display');
-        const timerBtn = document.getElementById('timerBtn');
+        const shutterBtn = document.getElementById('shutter');
+        const guideTitle = document.getElementById('guide-title');
+        
+        let selectedDay = localStorage.getItem('retro_day') || "";
+        let selectedCar = localStorage.getItem('retro_car') || "";
+        let shotCount = 0;
+        let isFlashOn = false, isCameraOn = false, isTimerActive = false;
+        let currentFacingMode = "environment";
+        let resetClickCount = 0;
 
-        onAuthStateChanged(auth, (user) => { if (user) { isAuthReady = true; syncPhotos(); } else { signInAnonymously(auth); } });
+        onAuthStateChanged(auth, (u) => { if(u) { isAuthReady=true; syncPhotos(); } else signInAnonymously(auth); });
 
         window.onload = () => {
-            if (selectedCar) { carSelect.value = selectedCar; carSelect.disabled = true; }
+            if(selectedDay && selectedCar) {
+                daySelect.value = selectedDay; daySelect.disabled = true;
+                carSelect.value = selectedCar; carSelect.disabled = true;
+                loadCount();
+            }
             startCamera(); updateUI();
+        };
+
+        function loadCount() {
+            if(!selectedDay || !selectedCar) return;
+            const key = `retro_count_D${selectedDay}_${selectedCar}`;
+            shotCount = parseInt(localStorage.getItem(key)) || 0;
+        }
+
+        function updateUI() {
+            if(!selectedDay || !selectedCar) {
+                counterDisplay.innerText = "--";
+                guideTitle.innerText = "日程とチームを選択してください";
+                shutterBtn.disabled = true;
+                return;
+            }
+            const dayConf = config[selectedDay];
+            const remaining = dayConf.maxShots - shotCount;
+            counterDisplay.innerText = remaining > 0 ? remaining : 0;
+            
+            const mList = dayConf.missions[selectedCar];
+            const current = mList.find(m => remaining > m.threshold);
+            guideTitle.innerText = current ? current.title : "ミッション完了！";
+            shutterBtn.disabled = (remaining <= 0 || !isCameraOn);
+        }
+
+        daySelect.onchange = carSelect.onchange = () => {
+            if(daySelect.value && carSelect.value) {
+                selectedDay = daySelect.value;
+                selectedCar = carSelect.value;
+                localStorage.setItem('retro_day', selectedDay);
+                localStorage.setItem('retro_car', selectedCar);
+                daySelect.disabled = carSelect.disabled = true;
+                loadCount(); updateUI();
+            }
         };
 
         async function startCamera() {
             if (stream) stream.getTracks().forEach(t => t.stop());
             try {
                 stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: currentFacingMode, width: { ideal: 1920 }, height: { ideal: 1080 } } });
-                video.srcObject = stream;
+                document.getElementById('video').srcObject = stream;
                 isCameraOn = true; updateUI();
-            } catch (e) { statusMsg.innerText = "CAMERA ERROR"; }
+            } catch (e) { document.getElementById('status-msg').innerText = "CAMERA ERROR"; }
         }
-
-        function updateUI() {
-            const remaining = 34 - shotCount;
-            counterDisplay.innerText = remaining > 0 ? remaining : 0;
-            if (!selectedCar) { guideTitle.innerText = "チームを選択"; shutterBtn.disabled = true; }
-            else {
-                const teamMissions = missionsData[selectedCar];
-                const current = teamMissions.find(m => remaining > m.threshold);
-                guideTitle.innerText = current ? current.title : "FINISH!";
-                shutterBtn.disabled = (remaining <= 0 || !isCameraOn);
-            }
-        }
-
-        carSelect.onchange = () => { if (carSelect.value) { selectedCar = carSelect.value; localStorage.setItem('retro_car', selectedCar); carSelect.disabled = true; updateUI(); } };
 
         shutterBtn.onclick = () => {
-            if (shutterBtn.disabled) return;
-            shutterBtn.disabled = true;
-
             if (isTimerActive) {
-                let count = 5;
-                timerDisplay.innerText = count;
-                timerDisplay.style.visibility = "visible";
+                shutterBtn.disabled = true;
+                let c = 5; document.getElementById('timer-display').innerText = c;
+                document.getElementById('timer-display').style.visibility = "visible";
                 const itv = setInterval(() => {
-                    count--;
-                    if (count > 0) {
-                        timerDisplay.innerText = count;
-                    } else {
-                        clearInterval(itv);
-                        timerDisplay.style.visibility = "hidden";
-                        executeCapture();
-                        isTimerActive = false;
-                        timerBtn.classList.remove('active-mode');
-                    }
+                    c--; if(c>0) document.getElementById('timer-display').innerText = c;
+                    else { clearInterval(itv); document.getElementById('timer-display').style.visibility="hidden"; takePicture(); isTimerActive=false; document.getElementById('timerBtn').classList.remove('active-mode'); }
                 }, 1000);
-            } else {
-                executeCapture();
-            }
+            } else takePicture();
         };
-
-        function executeCapture() {
-            takePicture();
-            statusMsg.innerText = "CHARGING...";
-            setTimeout(() => { statusMsg.innerText = "READY"; updateUI(); }, 3000);
-        }
 
         function takePicture() {
             const targetW = 1500, targetH = 1000;
+            const canvas = document.getElementById('canvas');
             canvas.width = targetW; canvas.height = targetH;
             const ctx = canvas.getContext('2d');
-            const vw = video.videoWidth, vh = video.videoHeight;
+            const v = document.getElementById('video');
+            const vw = v.videoWidth, vh = v.videoHeight;
             const zoom = parseFloat(document.getElementById('zoomRange').value);
-            
             let sH = vh / zoom, sW = (sH * 1.5);
             if (sW > vw) { sW = vw / zoom; sH = sW / 1.5; }
             const sX = (vw - sW) / 2, sY = (vh - sH) / 2;
 
-            ctx.drawImage(video, sX, sY, sW, sH, 0, 0, targetW, targetH);
+            ctx.drawImage(v, sX, sY, sW, sH, 0, 0, targetW, targetH);
             applyEffects(ctx, targetW, targetH);
             addStamps(ctx, targetW, targetH);
 
             canvas.toBlob(async (blob) => {
                 const now = new Date();
                 const timeStr = `${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}-${String(now.getHours()).padStart(2,'0')}${String(now.getMinutes()).padStart(2,'0')}${String(now.getSeconds()).padStart(2,'0')}`;
-                const teamMissions = missionsData[selectedCar];
-                const mID = (teamMissions.find(m => (34-shotCount) > m.threshold) || {id:"99"}).id;
-                const fileName = `team${selectedCar}_${mID}_${timeStr}.jpg`;
+                const mList = config[selectedDay].missions[selectedCar];
+                const mID = (mList.find(m => (config[selectedDay].maxShots - shotCount) > m.threshold) || {id:"99"}).id;
+                
+                // ファイル名にDayを含める
+                const fileName = `Day${selectedDay}_team${selectedCar}_${mID}_${timeStr}.jpg`;
 
                 const tx = db.transaction(storeName, "readwrite");
                 tx.objectStore(storeName).add({ blob, fileName });
                 
                 shotCount++;
-                localStorage.setItem('retro_count', shotCount);
+                localStorage.setItem(`retro_count_D${selectedDay}_${selectedCar}`, shotCount);
+                
+                document.getElementById('status-msg').innerText = "CHARGING...";
+                setTimeout(() => { document.getElementById('status-msg').innerText = "READY"; updateUI(); }, 3000);
                 syncPhotos();
             }, 'image/jpeg', 0.85);
         }
@@ -281,7 +318,7 @@
         function addStamps(ctx, w, h) {
             const n = new Date();
             const d = `'${n.getFullYear().toString().slice(-2)}.${String(n.getMonth()+1).padStart(2,'0')}.${String(n.getDate()).padStart(2,'0')} ${String(n.getHours()).padStart(2,'0')}:${String(n.getMinutes()).padStart(2,'0')}`;
-            const t = `${selectedCar} TEAM`;
+            const t = `D${selectedDay}-${selectedCar} TEAM`;
             const fs = Math.floor(w * 0.045);
             ctx.font = `bold ${fs}px "Courier New", monospace`;
             ctx.lineWidth = fs/6; ctx.strokeStyle = "rgba(0,0,0,0.8)";
@@ -289,32 +326,36 @@
             ctx.textAlign = "left"; ctx.strokeText(t, w*0.05, h*0.95); ctx.fillText(t, w*0.05, h*0.95);
         }
 
+        document.getElementById('resetTrigger').onclick = () => {
+            resetClickCount++;
+            if (resetClickCount >= 5) {
+                if(confirm("全リセット（日程・チーム・枚数解除）しますか？")) {
+                    localStorage.clear(); shotCount = 0; selectedDay = ""; selectedCar = "";
+                    daySelect.disabled = carSelect.disabled = false; daySelect.value = carSelect.value = "";
+                    updateUI();
+                }
+                resetClickCount = 0;
+            }
+            setTimeout(() => { resetClickCount = 0; }, 2000);
+        };
+        
         document.getElementById('missionBtn').onclick = () => {
-            if (!selectedCar) return;
+            if(!selectedDay || !selectedCar) return;
             const list = document.getElementById('mission-list-content');
             list.innerHTML = "";
-            missionsData[selectedCar].forEach(m => {
-                const div = document.createElement('div'); 
+            config[selectedDay].missions[selectedCar].forEach(m => {
+                const div = document.createElement('div');
                 div.innerHTML = `<b style="color:var(--accent)">MISSION ${m.id}: ${m.title}</b><p style="font-size:11px;margin:5px 0 15px 0;">${m.task}</p>`;
                 list.appendChild(div);
             });
             document.getElementById('mission-overlay').style.display = "block";
         };
         document.getElementById('mission-overlay').onclick = () => document.getElementById('mission-overlay').style.display = "none";
-
         document.getElementById('switchBtn').onclick = () => { currentFacingMode = (currentFacingMode === "environment") ? "user" : "environment"; startCamera(); };
         document.getElementById('flashBtn').onclick = () => { isFlashOn = !isFlashOn; flashBtn.innerText = isFlashOn ? "FLASH ON" : "FLASH OFF"; flashBtn.classList.toggle('active-mode', isFlashOn); };
         document.getElementById('timerBtn').onclick = () => { isTimerActive = !isTimerActive; timerBtn.classList.toggle('active-mode', isTimerActive); };
         document.getElementById('powerBtn').onclick = () => { if (isCameraOn) { if (stream) stream.getTracks().forEach(t => t.stop()); isCameraOn = false; } else startCamera(); updateUI(); };
-        document.getElementById('resetTrigger').onclick = () => {
-            resetClickCount++;
-            if (resetClickCount >= 5) {
-                if(confirm("全リセットしますか？")) { shotCount = 0; selectedCar = null; localStorage.setItem('retro_count', 0); localStorage.removeItem('retro_car'); carSelect.disabled = false; carSelect.value = ""; updateUI(); }
-                resetClickCount = 0;
-            }
-            setTimeout(() => { resetClickCount = 0; }, 2000);
-        };
-        document.getElementById('zoomRange').oninput = (e) => video.style.setProperty('--zoom-level', e.target.value);
+        document.getElementById('zoomRange').oninput = (e) => document.getElementById('video').style.setProperty('--zoom-level', e.target.value);
         window.addEventListener('online', syncPhotos);
     </script>
 </body>
