@@ -3,12 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Retro Cam - Shiretoko 2Days Edition</title>
+    <title>Retro Cam - Shiretoko 2Days Final Fix</title>
     <style>
         :root { --body-bg: #1a1a1a; --accent: #ffae00; --panel-bg: #252525; }
         body { margin: 0; padding: 0; background-color: var(--body-bg); color: white; font-family: 'Courier New', Courier, monospace; display: flex; height: 100dvh; width: 100dvw; overflow: hidden; flex-direction: row; }
 
-        /* 左：プレビュー + ミッションガイド */
         .left-section { flex: 1.2; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; background: #000; padding-left: env(safe-area-inset-left); }
         .viewfinder-container { width: 180px; height: 120px; border: 2px solid #444; border-radius: 4px; overflow: hidden; position: relative; }
         video { width: 100%; height: 100%; object-fit: cover; transform: scale(var(--zoom-level, 1)); }
@@ -22,19 +21,18 @@
         .guide-label { font-size: 8px; color: var(--accent); margin-bottom: 2px; }
         .guide-title { font-size: 11px; font-weight: bold; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
-        /* 中：設定 */
         .mid-section { width: 200px; background-color: var(--panel-bg); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; border-left: 1px solid #111; border-right: 1px solid #111; }
         .select-group { width: 90%; display: flex; flex-direction: column; gap: 5px; margin-bottom: 10px; }
         .sub-btn { background: #444; color: #eee; border: 1px solid #666; padding: 10px; border-radius: 6px; font-size: 10px; cursor: pointer; width: 85%; }
         .car-select { background: #000; color: var(--accent); border: 1px solid var(--accent); padding: 8px; border-radius: 4px; font-size: 11px; width: 100%; text-align: center; }
         .active-mode { background: var(--accent) !important; color: #000 !important; font-weight: bold; }
 
-        /* 右：撮影 */
         .right-section { width: 180px; display: flex; flex-direction: column; align-items: center; justify-content: center; background-color: var(--panel-bg); padding-right: env(safe-area-inset-right); }
         .counter { font-size: 2.5rem; color: var(--accent); font-weight: bold; line-height: 1; }
         #shutter { width: 85px; height: 85px; border-radius: 50%; border: 6px solid #222; background: #d00; box-shadow: 0 6px 0 #600; cursor: pointer; margin-top: 15px; }
+        /* 無効化（連写防止中）のスタイル */
         #shutter:disabled { background: #333; box-shadow: none; opacity: 0.3; cursor: default; }
-
+        
         #mission-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 1000; display: none; padding: 20px; box-sizing: border-box; overflow-y: auto; }
         #status-msg { position: fixed; bottom: 5px; width: 100%; text-align: center; font-size: 9px; color: #888; pointer-events: none; }
         canvas { display: none; }
@@ -95,7 +93,8 @@
         import { getStorage, ref, uploadBytes } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
         import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
-         // --- 1. Firebase情報を入力してください ---
+        
+ // --- 1. Firebase情報を入力してください ---
         const firebaseConfig = {
             apiKey: "AIzaSyDHqQDeEMrFV09YI0n_ARr1Tzta5aqmE2U",
             authDomain: "my-retro-cam.firebaseapp.com",
@@ -103,19 +102,19 @@
             storageBucket: "my-retro-cam.firebasestorage.app",
             messagingSenderId: "700098109654",
             appId: "1:700098109654:web:9d679cbd092c1376642977"
-        };
-        
+        };        
         const app = initializeApp(firebaseConfig);
         const storage = getStorage(app);
         const auth = getAuth(app);
 
-        const dbName = "Shiretoko2DaysDB";
+        const dbName = "Shiretoko2DaysFinalDB";
         const storeName = "photoQueue";
         let db, isAuthReady = false, stream = null;
         const dbRequest = indexedDB.open(dbName, 1);
         dbRequest.onupgradeneeded = e => e.target.result.createObjectStore(storeName, { keyPath: "id", autoIncrement: true });
         dbRequest.onsuccess = e => { db = e.target.result; syncPhotos(); };
 
+       
         // --- ミッションデータ設定 ---
         const config = {
             "1": {
@@ -177,11 +176,12 @@
         const counterDisplay = document.getElementById('counter');
         const shutterBtn = document.getElementById('shutter');
         const guideTitle = document.getElementById('guide-title');
+        const statusMsg = document.getElementById('status-msg');
         
         let selectedDay = localStorage.getItem('retro_day') || "";
         let selectedCar = localStorage.getItem('retro_car') || "";
         let shotCount = 0;
-        let isFlashOn = false, isCameraOn = false, isTimerActive = false;
+        let isFlashOn = false, isCameraOn = false, isTimerActive = false, isCapturing = false;
         let currentFacingMode = "environment";
         let resetClickCount = 0;
 
@@ -216,7 +216,9 @@
             const mList = dayConf.missions[selectedCar];
             const current = mList.find(m => remaining > m.threshold);
             guideTitle.innerText = current ? current.title : "ミッション完了！";
-            shutterBtn.disabled = (remaining <= 0 || !isCameraOn);
+            
+            // 撮影中でなく、枚数が残っていればボタン有効
+            shutterBtn.disabled = (isCapturing || remaining <= 0 || !isCameraOn);
         }
 
         daySelect.onchange = carSelect.onchange = () => {
@@ -236,20 +238,42 @@
                 stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: currentFacingMode, width: { ideal: 1920 }, height: { ideal: 1080 } } });
                 document.getElementById('video').srcObject = stream;
                 isCameraOn = true; updateUI();
-            } catch (e) { document.getElementById('status-msg').innerText = "CAMERA ERROR"; }
+            } catch (e) { statusMsg.innerText = "CAMERA ERROR"; }
         }
 
         shutterBtn.onclick = () => {
+            if (isCapturing || shutterBtn.disabled) return;
+            isCapturing = true; 
+            shutterBtn.disabled = true; // 即座に無効化
+
             if (isTimerActive) {
-                shutterBtn.disabled = true;
                 let c = 5; document.getElementById('timer-display').innerText = c;
                 document.getElementById('timer-display').style.visibility = "visible";
                 const itv = setInterval(() => {
                     c--; if(c>0) document.getElementById('timer-display').innerText = c;
-                    else { clearInterval(itv); document.getElementById('timer-display').style.visibility="hidden"; takePicture(); isTimerActive=false; document.getElementById('timerBtn').classList.remove('active-mode'); }
+                    else { 
+                        clearInterval(itv); 
+                        document.getElementById('timer-display').style.visibility="hidden"; 
+                        executeCapture(); 
+                        isTimerActive=false; 
+                        document.getElementById('timerBtn').classList.remove('active-mode'); 
+                    }
                 }, 1000);
-            } else takePicture();
+            } else {
+                executeCapture();
+            }
         };
+
+        function executeCapture() {
+            takePicture();
+            statusMsg.innerText = "CHARGING...";
+            // 3秒後にロック解除
+            setTimeout(() => {
+                isCapturing = false;
+                statusMsg.innerText = "READY";
+                updateUI();
+            }, 3000);
+        }
 
         function takePicture() {
             const targetW = 1500, targetH = 1000;
@@ -271,9 +295,9 @@
                 const now = new Date();
                 const timeStr = `${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}-${String(now.getHours()).padStart(2,'0')}${String(now.getMinutes()).padStart(2,'0')}${String(now.getSeconds()).padStart(2,'0')}`;
                 const mList = config[selectedDay].missions[selectedCar];
-                const mID = (mList.find(m => (config[selectedDay].maxShots - shotCount) > m.threshold) || {id:"99"}).id;
+                const dayConf = config[selectedDay];
+                const mID = (mList.find(m => (dayConf.maxShots - shotCount) > m.threshold) || {id:"99"}).id;
                 
-                // ファイル名にDayを含める
                 const fileName = `Day${selectedDay}_team${selectedCar}_${mID}_${timeStr}.jpg`;
 
                 const tx = db.transaction(storeName, "readwrite");
@@ -282,8 +306,10 @@
                 shotCount++;
                 localStorage.setItem(`retro_count_D${selectedDay}_${selectedCar}`, shotCount);
                 
-                document.getElementById('status-msg').innerText = "CHARGING...";
-                setTimeout(() => { document.getElementById('status-msg').innerText = "READY"; updateUI(); }, 3000);
+                // カウントダウン表示のみ即時更新
+                const remaining = dayConf.maxShots - shotCount;
+                counterDisplay.innerText = remaining > 0 ? remaining : 0;
+
                 syncPhotos();
             }, 'image/jpeg', 0.85);
         }
