@@ -359,7 +359,7 @@
         function addStamps(ctx, w, h) {
             const n = new Date();
             const dateStr = `'${n.getFullYear().toString().slice(-2)}.${String(n.getMonth()+1).padStart(2,'0')}.${String(n.getDate()).padStart(2,'0')} ${String(n.getHours()).padStart(2,'0')}:${String(n.getMinutes()).padStart(2,'0')}`;
-            const teamStr = `TEAM-${selectedCar} (CURRY GP)`;
+            const teamStr = `TEAM-${selectedCar}`;
             const fs = Math.floor(w * 0.045);
 
             ctx.font = `bold ${fs}px "Courier New", monospace`;
