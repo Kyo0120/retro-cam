@@ -213,7 +213,7 @@
             cursor: pointer;
             user-select: none;
         }
-        .counter-label { font-size: 9px; color: var(--text-sub); font-weight: 700; }
+        .counter-label { font-size: 9.5px; color: var(--text-sub); font-weight: 700; letter-spacing: 0.5px; }
         .counter-badge {
             font-size: 1.6rem;
             font-weight: 800;
@@ -503,7 +503,7 @@
                 <div id="teamDisplayName" class="team-display-name"></div>
             </div>
             <div class="counter-card" id="resetTrigger">
-                <span class="counter-label" id="counterLabel">REMAINING FILMS</span>
+                <span class="counter-label" id="counterLabel">残り枚数</span>
                 <div class="counter-badge" id="counter">20</div>
             </div>
         </div>
@@ -619,7 +619,7 @@
         function updateUI() {
             if (!selectedCar) {
                 counterDisplay.innerText = MAX_SHOTS;
-                counterLabel.innerText = "REMAINING FILMS";
+                counterLabel.innerText = "残り枚数";
                 guideTitle.innerText = "グループを選択してください";
                 guideTask.innerText = "";
                 shutterBtn.disabled = true;
@@ -629,16 +629,18 @@
             const mList = missionsData[selectedCar];
 
             if (remaining > 0) {
+                // ミッション中
                 counterDisplay.innerText = remaining;
-                counterLabel.innerText = "REMAINING FILMS";
+                counterLabel.innerText = "残り枚数";
                 const current = mList.find(m => remaining > m.threshold);
                 if (current) {
                     guideTitle.innerText = current.title;
                     guideTask.innerText = current.task;
                 }
             } else {
-                counterDisplay.innerText = "FREE";
-                counterLabel.innerText = "FREE SHOT MODE";
+                // フリー撮影モード中
+                counterDisplay.innerText = shotCount; // 撮影したトータル枚数を表示（21, 22...）
+                counterLabel.innerText = "撮影枚数";
                 guideTitle.innerText = "フリー撮影モード";
                 guideTask.innerText = "全ミッション達成！自由に思い出を記録しよう！";
             }
