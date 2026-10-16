@@ -610,6 +610,73 @@
             box-shadow: 0 4px 15px var(--accent-glow);
         }
 
+        /* カスタム入力モーダル（alert/prompt代替） */
+        #custom-prompt-modal {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.75);
+            backdrop-filter: blur(10px);
+            z-index: 3000;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+        }
+        .prompt-card {
+            background: #181d26;
+            border: 1px solid var(--surface-border);
+            border-radius: 14px;
+            padding: 18px;
+            width: 100%;
+            max-width: 320px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.8);
+        }
+        .prompt-title {
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--accent-color);
+            margin-bottom: 8px;
+        }
+        .prompt-desc {
+            font-size: 11px;
+            color: var(--text-sub);
+            margin-bottom: 12px;
+            line-height: 1.4;
+        }
+        .prompt-input {
+            width: 100%;
+            background: rgba(0,0,0,0.5);
+            border: 1px solid var(--surface-border);
+            border-radius: 6px;
+            color: #fff;
+            padding: 8px 10px;
+            font-size: 14px;
+            outline: none;
+            box-sizing: border-box;
+            margin-bottom: 14px;
+        }
+        .prompt-buttons {
+            display: flex;
+            gap: 8px;
+            justify-content: flex-end;
+        }
+        .prompt-btn {
+            padding: 7px 14px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 700;
+            cursor: pointer;
+            border: none;
+        }
+        .prompt-cancel {
+            background: rgba(255,255,255,0.1);
+            color: #fff;
+        }
+        .prompt-ok {
+            background: var(--accent-color);
+            color: #0c0e12;
+        }
+
         canvas { display: none; }
     </style>
 </head>
@@ -633,6 +700,19 @@
             </div>
             <div id="mission-list-content"></div>
             <p style="text-align: center; font-size: 10px; color: var(--text-sub); margin-top: 14px;">(タップして閉じる)</p>
+        </div>
+    </div>
+
+    <!-- カスタムプロンプトモーダル（テスト用枚数ジャンプ入力） -->
+    <div id="custom-prompt-modal">
+        <div class="prompt-card">
+            <div class="prompt-title">残り枚数の変更（テスト用）</div>
+            <div class="prompt-desc">設定したい『残り枚数』を入力してください（0〜20）。<br>※ 0 を入力するとフリーモードになります。</div>
+            <input type="number" id="prompt-input" class="prompt-input" min="0" max="20" value="3">
+            <div class="prompt-buttons">
+                <button id="prompt-cancel-btn" class="prompt-btn prompt-cancel">キャンセル</button>
+                <button id="prompt-ok-btn" class="prompt-btn prompt-ok">設定する</button>
+            </div>
         </div>
     </div>
 
@@ -707,6 +787,14 @@
             <button class="deck-btn" id="switchBtn">🔄 カメラ切替</button>
             <button class="deck-btn" id="timerBtn">⏱️ 5秒タイマー</button>
             <button class="deck-btn" id="powerBtn">📷 CAMERA ON</button>
+
+            <!-- =======================================================
+                 【テスト用UIブロック】本番移行時はこのボタンを削除または非表示
+                 ======================================================= -->
+            <button class="deck-btn btn-full" id="testJumpBtn" style="border: 1px dashed #ef4444; color: #ef4444; background: rgba(239, 68, 68, 0.08); margin-top: 3px;">
+                🛠️ 【テスト用】残り枚数ジャンプ
+            </button>
+            <!-- ======================================================= -->
         </div>
 
         <!-- 下段：シャッターボタン＆チャージステータス -->
@@ -832,17 +920,6 @@
                 loadCount();
                 updateUI();
             }
-        };
-
-        // テスト用：カウンターを長押しまたはダブルタップで枚数を設定するプロンプトを出す
-        document.getElementById('counter').ondblclick = () => {
-            const input = prompt("【テスト用】残り枚数を入力してください（0〜20）:", "3");
-        if (input !== null) {
-            const remaining = parseInt(input);
-            shotCount = MAX_SHOTS - remaining;
-            localStorage.setItem(`curry_count_${selectedCar}`, shotCount);
-            updateUI();
-            }   
         };
 
         function applyTeamSelectedUI(team) {
@@ -1157,15 +1234,13 @@
         document.getElementById('resetTrigger').onclick = () => {
             resetClickCount++;
             if (resetClickCount >= 5) {
-                if (confirm("全リセット（チーム選択・撮影枚数の初期化）を行いますか？")) {
-                    localStorage.clear();
-                    shotCount = 0;
-                    selectedCar = "";
-                    teamSelect.value = "";
-                    teamSelectWrapper.style.display = 'block';
-                    teamConfirmedView.style.display = 'none';
-                    updateUI();
-                }
+                localStorage.clear();
+                shotCount = 0;
+                selectedCar = "";
+                teamSelect.value = "";
+                teamSelectWrapper.style.display = 'block';
+                teamConfirmedView.style.display = 'none';
+                updateUI();
                 resetClickCount = 0;
             }
             setTimeout(() => { resetClickCount = 0; }, 2000);
@@ -1208,6 +1283,46 @@
         };
 
         window.addEventListener('online', syncPhotos);
+
+        /* =====================================================================
+           【テスト専用スクリプトブロック】
+           本番運用の際は、以下のブロックを丸ごと削除またはコメントアウトしてください。
+           ===================================================================== */
+        const testJumpBtn = document.getElementById('testJumpBtn');
+        const customPromptModal = document.getElementById('custom-prompt-modal');
+        const promptInput = document.getElementById('prompt-input');
+        const promptOkBtn = document.getElementById('prompt-ok-btn');
+        const promptCancelBtn = document.getElementById('prompt-cancel-btn');
+
+        if (testJumpBtn) {
+            testJumpBtn.onclick = () => {
+                // チーム未選択時はデフォルトで「A」を自動仮設定してテスト可能にする
+                if (!selectedCar) {
+                    selectedCar = "A";
+                    localStorage.setItem('curry_team', selectedCar);
+                    applyTeamSelectedUI(selectedCar);
+                }
+                const currentRemaining = Math.max(0, MAX_SHOTS - shotCount);
+                promptInput.value = currentRemaining;
+                customPromptModal.style.display = "flex";
+            };
+
+            promptOkBtn.onclick = () => {
+                const targetRemaining = parseInt(promptInput.value, 10);
+                if (!isNaN(targetRemaining)) {
+                    // 残り枚数 = 20 - 撮影枚数 => 撮影枚数 = 20 - 残り枚数
+                    shotCount = Math.max(0, MAX_SHOTS - targetRemaining);
+                    localStorage.setItem(`curry_count_${selectedCar}`, shotCount);
+                    updateUI();
+                }
+                customPromptModal.style.display = "none";
+            };
+
+            promptCancelBtn.onclick = () => {
+                customPromptModal.style.display = "none";
+            };
+        }
+        /* ===================================================================== */
     </script>
 </body>
 </html>
