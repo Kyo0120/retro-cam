@@ -3,479 +3,406 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Curry Grand Prix - Retro Cam</title>
+    <title>Curry Grand Prix - Neo Retro Cam</title>
     <style>
         :root {
-            --bg-base: #0c0e12;
-            --panel-bg: rgba(22, 26, 34, 0.75);
-            --panel-border: rgba(255, 255, 255, 0.08);
-            --card-bg: rgba(255, 255, 255, 0.04);
-            --accent: #ff9f1a;
+            --bg-color: #0d0f12;
+            --surface-bg: rgba(22, 25, 33, 0.75);
+            --surface-border: rgba(255, 255, 255, 0.08);
+            --accent-color: #ff9f1a;
             --accent-glow: rgba(255, 159, 26, 0.35);
-            --text-main: #f3f4f6;
-            --text-muted: #9ca3af;
-            --danger: #ef4444;
-            --shutter-red: #e11d48;
+            --text-main: #f0f3f6;
+            --text-sub: #8a94a6;
+            --danger: #ff4757;
+            --free-mode-color: #2ed573;
+            --free-glow: rgba(46, 213, 115, 0.35);
         }
 
-        * {
-            box-sizing: border-box;
-            user-select: none;
-            -webkit-user-select: none;
-        }
-
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         body {
-            margin: 0;
-            padding: 0;
-            background-color: var(--bg-base);
+            margin: 0; padding: 0;
+            background-color: var(--bg-color);
             color: var(--text-main);
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
-            display: flex;
-            height: 100dvh;
-            width: 100dvw;
-            overflow: hidden;
-            flex-direction: row;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Courier New", monospace;
+            display: flex; height: 100dvh; width: 100dvw;
+            overflow: hidden; flex-direction: row;
         }
 
-        /* ============================
-           左側：ファインダー・ビューエリア
-           ============================ */
-        .left-viewport {
-            flex: 1.15;
+        /* 左側：ビューファインダーセクション */
+        .viewport-section {
+            flex: 1.35;
+            height: 100%;
+            position: relative;
+            background: #000;
             display: flex;
-            flex-direction: column;
             align-items: center;
             justify-content: center;
-            position: relative;
-            background: radial-gradient(circle at center, #151922 0%, #08090c 100%);
-            padding: 16px;
+            padding: 12px;
             padding-left: max(16px, env(safe-area-inset-left));
         }
 
-        /* フローティングミッションバナー */
-        #mission-guide {
+        .viewfinder-frame {
+            width: 100%;
+            max-width: 520px;
+            aspect-ratio: 3 / 2;
+            border-radius: 14px;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 0 0 1px var(--surface-border), 0 20px 40px rgba(0,0,0,0.8);
+            background: #050505;
+        }
+
+        video {
+            width: 100%; height: 100%; object-fit: cover;
+            transform: scale(var(--zoom-level, 1));
+            transition: transform 0.1s ease-out;
+        }
+        video.selfie { transform: scale(var(--zoom-level, 1)) scaleX(-1); }
+
+        .finder-crosshair {
+            position: absolute; inset: 0; pointer-events: none;
+            background: 
+                linear-gradient(to right, transparent calc(50% - 0.5px), rgba(255,255,255,0.15) calc(50% - 0.5px), rgba(255,255,255,0.15) calc(50% + 0.5px), transparent calc(50% + 0.5px)),
+                linear-gradient(to bottom, transparent calc(50% - 0.5px), rgba(255,255,255,0.15) calc(50% - 0.5px), rgba(255,255,255,0.15) calc(50% + 0.5px), transparent calc(50% + 0.5px));
+        }
+
+        /* CURRENT MISSION バナー */
+        .mission-pill {
             position: absolute;
-            top: 14px;
-            width: calc(100% - 32px);
-            max-width: 440px;
-            background: rgba(12, 14, 18, 0.85);
+            top: 14px; left: 50%;
+            transform: translateX(-50%);
+            width: 90%; max-width: 440px;
+            background: rgba(13, 15, 18, 0.85);
             backdrop-filter: blur(12px);
             -webkit-backdrop-filter: blur(12px);
-            border: 1px solid var(--accent);
-            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6), 0 0 16px var(--accent-glow);
-            border-radius: 12px;
+            border: 1px solid rgba(255, 159, 26, 0.3);
+            border-radius: 10px;
             padding: 8px 14px;
             text-align: center;
             z-index: 20;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.4);
             pointer-events: none;
-            transition: all 0.3s ease;
+            transition: border-color 0.3s ease;
         }
-
-        .guide-pill {
-            display: inline-block;
-            font-size: 9px;
-            font-weight: 800;
+        .mission-pill.is-free-mode {
+            border-color: rgba(46, 213, 115, 0.5);
+        }
+        .mission-pill-label {
+            font-size: 8px;
             letter-spacing: 1.5px;
+            color: var(--accent-color);
+            font-weight: 700;
             text-transform: uppercase;
-            color: #0c0e12;
-            background: var(--accent);
-            padding: 2px 8px;
-            border-radius: 9999px;
-            margin-bottom: 4px;
+            margin-bottom: 2px;
         }
-
-        .guide-title {
-            font-size: 13px;
+        .mission-pill.is-free-mode .mission-pill-label {
+            color: var(--free-mode-color);
+        }
+        .mission-pill-title {
+            font-size: 11px;
             font-weight: 700;
             color: #fff;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
-            letter-spacing: 0.3px;
         }
-
-        /* 3:2ファインダー枠 */
-        .viewfinder-wrapper {
-            position: relative;
-            width: min(88%, 460px);
-            aspect-ratio: 3 / 2;
-            border-radius: 16px;
-            padding: 3px;
-            background: linear-gradient(135deg, rgba(255, 255, 255, 0.15), rgba(255, 255, 255, 0.02));
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.7);
-        }
-
-        .viewfinder-inner {
-            width: 100%;
-            height: 100%;
-            background: #000;
-            border-radius: 13px;
+        .mission-pill-task {
+            font-size: 9.5px;
+            color: #d1d5db;
+            margin-top: 3px;
+            line-height: 1.3;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
             overflow: hidden;
-            position: relative;
         }
 
-        video {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            transform: scale(var(--zoom-level, 1));
-            transition: transform 0.1s ease-out;
-        }
-
-        video.selfie {
-            transform: scale(var(--zoom-level, 1)) scaleX(-1);
-        }
-
-        /* レトロファインダーフレーム（四隅のガイド線） */
-        .vf-corner {
+        /* 下部ズームスライダー */
+        .zoom-island {
             position: absolute;
-            width: 14px;
-            height: 14px;
-            border-color: rgba(255, 255, 255, 0.5);
-            border-style: solid;
-            pointer-events: none;
-            z-index: 5;
-        }
-        .vf-tl { top: 10px; left: 10px; border-width: 2px 0 0 2px; }
-        .vf-tr { top: 10px; right: 10px; border-width: 2px 2px 0 0; }
-        .vf-bl { bottom: 10px; left: 10px; border-width: 0 0 2px 2px; }
-        .vf-br { bottom: 10px; right: 10px; border-width: 0 2px 2px 0; }
-
-        /* タイマーカウントダウンオーバーレイ */
-        #timer-display {
-            visibility: hidden;
-            position: absolute;
-            inset: 0;
+            bottom: 14px;
             display: flex;
             align-items: center;
-            justify-content: center;
-            font-size: 5rem;
-            color: var(--accent);
-            font-weight: 900;
-            text-shadow: 0 0 30px rgba(0, 0, 0, 0.9), 0 0 20px var(--accent-glow);
-            z-index: 15;
-            background: rgba(0, 0, 0, 0.35);
-        }
-
-        /* ズームバー下部オーバーレイ */
-        .zoom-container {
-            position: absolute;
-            bottom: 12px;
-            width: 70%;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            z-index: 10;
-            background: rgba(12, 14, 18, 0.7);
+            gap: 10px;
+            background: rgba(15, 17, 23, 0.7);
             backdrop-filter: blur(8px);
-            padding: 4px 12px;
-            border-radius: 9999px;
-            border: 1px solid rgba(255, 255, 255, 0.08);
+            padding: 4px 14px;
+            border-radius: 20px;
+            border: 1px solid var(--surface-border);
+            z-index: 15;
         }
-
-        .zoom-label {
-            font-size: 10px;
-            font-weight: 700;
-            color: var(--text-muted);
-        }
-
+        .zoom-label { font-size: 10px; color: var(--text-sub); font-weight: 600; }
         .zoom-slider {
-            flex: 1;
-            height: 4px;
-            accent-color: var(--accent);
+            -webkit-appearance: none; appearance: none;
+            width: 100px; height: 3px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 2px; outline: none;
+        }
+        .zoom-slider::-webkit-slider-thumb {
+            -webkit-appearance: none; appearance: none;
+            width: 14px; height: 14px;
+            border-radius: 50%;
+            background: var(--accent-color);
+            box-shadow: 0 0 8px var(--accent-glow);
             cursor: pointer;
         }
 
-        /* ============================
-           右側：統合モダンコントロールデッキ
-           ============================ */
-        .right-deck {
-            flex: 0.95;
-            background: var(--panel-bg);
+        #timer-display {
+            position: absolute; font-size: 5rem; font-weight: 800;
+            color: var(--accent-color); text-shadow: 0 0 30px var(--accent-glow);
+            z-index: 30; pointer-events: none; visibility: hidden;
+        }
+
+        /* 右側：コントロールセクション */
+        .control-section {
+            flex: 1.0;
+            height: 100%;
+            background: var(--surface-bg);
             backdrop-filter: blur(20px);
             -webkit-backdrop-filter: blur(20px);
-            border-left: 1px solid var(--panel-border);
+            border-left: 1px solid var(--surface-border);
             display: flex;
             flex-direction: column;
             justify-content: space-between;
-            padding: 18px 20px;
-            padding-right: max(20px, env(safe-area-inset-right));
-            overflow-y: auto;
-            position: relative;
+            padding: 14px 18px;
+            padding-right: max(18px, env(safe-area-inset-right));
+            z-index: 10;
         }
 
-        /* 上段：グループ選択 ＆ 残り枚数カウンター */
-        .deck-header {
+        .deck-top {
             display: flex;
-            gap: 12px;
-            align-items: stretch;
+            flex-direction: column;
+            gap: 8px;
+            width: 100%;
         }
 
-        .group-select-box {
-            flex: 1;
-            background: var(--card-bg);
-            border: 1px solid var(--panel-border);
-            border-radius: 14px;
+        .select-card {
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid var(--surface-border);
+            border-radius: 10px;
             padding: 8px 12px;
             display: flex;
-            flex-direction: column;
-            justify-content: center;
-        }
-
-        .deck-label {
-            font-size: 9px;
-            font-weight: 700;
-            color: var(--text-muted);
-            letter-spacing: 1px;
-            text-transform: uppercase;
-            margin-bottom: 4px;
-        }
-
-        .modern-select {
-            width: 100%;
-            background: rgba(0, 0, 0, 0.4);
-            color: var(--accent);
-            border: 1px solid rgba(255, 159, 26, 0.4);
-            border-radius: 8px;
-            padding: 6px 8px;
-            font-size: 12px;
-            font-weight: bold;
-            outline: none;
-            cursor: pointer;
-        }
-
-        .counter-badge {
-            flex: 0 0 110px;
-            background: linear-gradient(145deg, rgba(255, 159, 26, 0.12), rgba(0, 0, 0, 0.4));
-            border: 1px solid rgba(255, 159, 26, 0.3);
-            border-radius: 14px;
-            display: flex;
-            flex-direction: column;
             align-items: center;
-            justify-content: center;
-            padding: 6px;
-            cursor: pointer;
-            transition: transform 0.15s ease, border-color 0.15s;
+            justify-content: space-between;
+            min-height: 42px;
         }
-
-        .counter-badge:active {
-            transform: scale(0.96);
-            border-color: var(--accent);
-        }
-
-        .counter-num-box {
-            display: flex;
-            align-items: baseline;
-            line-height: 1;
-        }
-
-        .counter-num {
-            font-size: 2rem;
-            font-weight: 900;
-            color: var(--accent);
-            font-family: 'Courier New', Courier, monospace;
-            text-shadow: 0 0 12px var(--accent-glow);
-        }
-
-        .counter-total {
+        .select-label { font-size: 9px; color: var(--text-sub); font-weight: 700; letter-spacing: 0.5px; }
+        .car-select {
+            background: transparent;
+            color: var(--accent-color);
+            border: none;
             font-size: 11px;
-            color: var(--text-muted);
-            margin-left: 2px;
             font-weight: 700;
+            cursor: pointer;
+            outline: none;
+            text-align: right;
+            direction: rtl;
+        }
+        .car-select option { background: #1a1d24; color: #fff; direction: ltr; }
+
+        .team-display-name {
+            font-size: 13px;
+            font-weight: 800;
+            color: var(--accent-color);
+            letter-spacing: 0.5px;
+            display: none;
         }
 
-        /* 中段：機能ボタングリッド */
-        .controls-grid {
+        .counter-card {
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid var(--surface-border);
+            border-radius: 10px;
+            padding: 8px 12px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            cursor: pointer;
+        }
+        .counter-label { font-size: 9px; color: var(--text-sub); font-weight: 700; }
+        .counter-badge {
+            font-size: 1.6rem;
+            font-weight: 800;
+            color: var(--accent-color);
+            line-height: 1;
+            font-feature-settings: "tnum";
+            transition: color 0.3s ease;
+        }
+        .counter-badge.is-free-mode {
+            color: var(--free-mode-color);
+            font-size: 1.3rem;
+            letter-spacing: 1px;
+        }
+
+        /* 中央：機能ボタングリッド */
+        .actions-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 10px;
-            margin: 14px 0;
+            gap: 6px;
+            width: 100%;
+            margin: 6px 0;
         }
-
-        .deck-btn {
-            background: var(--card-bg);
+        .action-tile {
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid var(--surface-border);
+            border-radius: 8px;
+            padding: 10px 4px;
             color: var(--text-main);
-            border: 1px solid var(--panel-border);
-            padding: 11px 12px;
-            border-radius: 12px;
-            font-size: 11px;
+            font-size: 10px;
             font-weight: 600;
-            letter-spacing: 0.3px;
-            cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
             gap: 6px;
-            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            cursor: pointer;
+            transition: all 0.15s ease;
         }
-
-        .deck-btn:active {
-            transform: scale(0.97);
+        .action-tile:active { transform: scale(0.97); }
+        .action-tile.active {
+            background: var(--accent-color);
+            color: #000;
+            font-weight: 700;
+            border-color: var(--accent-color);
+            box-shadow: 0 0 12px var(--accent-glow);
         }
+        .full-width { grid-column: span 2; }
 
-        .deck-btn.active-state {
-            background: var(--accent);
-            color: #0c0e12;
-            border-color: var(--accent);
-            font-weight: 800;
-            box-shadow: 0 0 16px var(--accent-glow);
-        }
-
-        .btn-full {
-            grid-column: span 2;
-        }
-
-        /* 下段：シャッターセクション */
-        .shutter-section {
+        /* 下部：シャッターボタンデッキ */
+        .shutter-deck {
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            padding-top: 6px;
+            gap: 6px;
+            width: 100%;
         }
 
-        .shutter-outer {
-            width: 86px;
-            height: 86px;
+        .shutter-ring {
+            width: 74px; height: 74px;
             border-radius: 50%;
-            background: linear-gradient(145deg, #1f242d, #0d0f13);
-            border: 2px solid rgba(255, 255, 255, 0.12);
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.7);
+            background: transparent;
+            border: 2px dashed rgba(255, 255, 255, 0.2);
             display: flex;
             align-items: center;
             justify-content: center;
             position: relative;
+            transition: all 0.3s ease;
         }
-
-        #shutter {
-            width: 70px;
-            height: 70px;
+        .shutter-core {
+            width: 58px; height: 58px;
             border-radius: 50%;
-            border: 3px solid rgba(255, 255, 255, 0.2);
-            background: radial-gradient(circle at 35% 35%, #ff4b72 0%, var(--shutter-red) 70%, #9f1239 100%);
-            box-shadow: 0 6px 0 #881337, 0 10px 20px rgba(225, 29, 72, 0.4);
+            background: linear-gradient(135deg, #ff4757, #c0392b);
+            border: none;
+            outline: none;
+            box-shadow: 0 4px 15px rgba(235, 47, 6, 0.4);
             cursor: pointer;
             transition: all 0.1s ease;
-            position: relative;
-            outline: none;
         }
-
-        #shutter:active:not(:disabled) {
-            transform: translateY(4px);
-            box-shadow: 0 2px 0 #881337, 0 4px 10px rgba(225, 29, 72, 0.3);
-        }
-
-        #shutter:disabled {
-            background: #2b303b;
+        .shutter-core:active { transform: scale(0.92); }
+        .shutter-core:disabled {
+            background: #2a2e38;
             box-shadow: none;
-            border-color: rgba(255, 255, 255, 0.05);
-            cursor: not-allowed;
-            transform: none;
             opacity: 0.4;
+            cursor: not-allowed;
         }
 
-        /* チャージプログレスリング（3秒ロック視覚化） */
-        .charge-ring {
-            position: absolute;
-            inset: -4px;
-            border-radius: 50%;
-            border: 3px solid transparent;
-            pointer-events: none;
-            transition: border-color 0.3s;
-        }
-
-        .is-charging .charge-ring {
-            border-color: var(--accent);
-            animation: spin 3s linear forwards;
-        }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); opacity: 1; }
-            90% { transform: rotate(360deg); opacity: 1; }
-            100% { transform: rotate(360deg); opacity: 0; }
-        }
-
-        #status-msg {
-            margin-top: 8px;
-            font-size: 10px;
-            font-weight: 800;
-            letter-spacing: 1.5px;
-            color: var(--text-muted);
+        .charging-indicator {
+            font-size: 8.5px;
+            font-weight: 700;
+            letter-spacing: 1px;
+            color: var(--text-sub);
             text-transform: uppercase;
         }
 
-        #status-msg.charging {
-            color: var(--accent);
-            animation: pulse 1s infinite alternate;
-        }
-
-        @keyframes pulse {
-            from { opacity: 0.6; }
-            to { opacity: 1; }
-        }
-
-        /* ============================
-           ミッションモーダル
-           ============================ */
-        #mission-overlay {
-            position: fixed;
-            inset: 0;
-            background: rgba(8, 10, 14, 0.88);
-            backdrop-filter: blur(14px);
-            -webkit-backdrop-filter: blur(14px);
+        /* モーダル群 */
+        .modal-layer {
+            position: fixed; inset: 0;
+            background: rgba(0,0,0,0.85);
+            backdrop-filter: blur(12px);
             z-index: 1000;
             display: none;
-            padding: 24px 20px;
+            padding: 20px;
+            box-sizing: border-box;
             overflow-y: auto;
         }
-
-        .modal-card {
-            max-width: 520px;
-            margin: 20px auto;
-            background: #141820;
-            border: 1px solid var(--panel-border);
-            border-radius: 20px;
-            padding: 24px;
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.8);
-        }
-
-        .modal-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border-bottom: 1px solid var(--panel-border);
-            padding-bottom: 12px;
-            margin-bottom: 18px;
-        }
-
-        .modal-title {
-            font-size: 16px;
-            font-weight: 800;
-            color: var(--accent);
-            letter-spacing: 0.5px;
-            margin: 0;
+        .modal-box {
+            max-width: 480px; margin: 0 auto;
+            background: #14171f;
+            border: 1px solid var(--surface-border);
+            border-radius: 14px;
+            padding: 20px;
         }
 
         .mission-item-card {
-            background: var(--card-bg);
-            border: 1px solid var(--panel-border);
-            border-radius: 12px;
-            padding: 12px 14px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 8px;
+            padding: 10px 12px;
             margin-bottom: 10px;
+            position: relative;
+            transition: all 0.2s ease;
+        }
+        .mission-item-card.is-current {
+            background: rgba(255, 159, 26, 0.08);
+            border: 1.5px solid var(--accent-color);
+            box-shadow: 0 0 16px var(--accent-glow);
+        }
+        .current-badge {
+            display: none;
+            position: absolute;
+            top: 10px; right: 12px;
+            background: var(--accent-color);
+            color: #000;
+            font-size: 8px;
+            font-weight: 800;
+            padding: 2px 6px;
+            border-radius: 4px;
+            letter-spacing: 0.5px;
+        }
+        .mission-item-card.is-current .current-badge {
+            display: inline-block;
         }
 
-        .mission-head {
-            font-size: 12px;
-            font-weight: 700;
-            color: #fff;
-            margin-bottom: 4px;
+        #preview-modal {
+            position: fixed; inset: 0;
+            background: rgba(0,0,0,0.92);
+            backdrop-filter: blur(16px);
+            z-index: 2000;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
         }
-
-        .mission-desc {
-            font-size: 11px;
-            color: var(--text-muted);
-            margin: 0;
-            line-height: 1.5;
+        .preview-card {
+            background: #181b24;
+            border: 1px solid var(--surface-border);
+            border-radius: 14px;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 14px;
+            max-width: 90%;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.8);
+        }
+        #preview-image {
+            width: 100%;
+            max-width: 420px;
+            aspect-ratio: 3 / 2;
+            object-fit: contain;
+            border-radius: 8px;
+            background: #000;
+        }
+        .preview-btn {
+            background: var(--accent-color);
+            color: #000;
+            border: none;
+            padding: 10px 28px;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 800;
+            cursor: pointer;
+            box-shadow: 0 4px 15px var(--accent-glow);
         }
 
         canvas { display: none; }
@@ -483,95 +410,81 @@
 </head>
 <body>
 
+    <!-- 撮影プレビュー用モーダル（ミッション0限定） -->
+    <div id="preview-modal">
+        <div class="preview-card">
+            <div style="font-size:12px; font-weight:bold; color:var(--accent-color); letter-spacing:1px;">TEST SHOT CHECK</div>
+            <img id="preview-image" src="" alt="Test Preview">
+            <button id="preview-confirm-btn" class="preview-btn">チェックOK</button>
+        </div>
+    </div>
+
     <!-- ミッション一覧モーダル -->
-    <div id="mission-overlay">
-        <div class="modal-card">
-            <div class="modal-header">
-                <h3 class="modal-title" id="modal-team-name">MISSION LIST</h3>
-                <span style="font-size: 11px; color: var(--text-muted); cursor: pointer;" id="modalCloseBtn">✕ 閉じる</span>
-            </div>
+    <div id="mission-overlay" class="modal-layer">
+        <div class="modal-box">
+            <h3 style="color:var(--accent-color); margin-top:0; border-bottom:1px solid var(--surface-border); padding-bottom:8px; font-size:13px; letter-spacing:1px;">MISSION LIST</h3>
             <div id="mission-list-content"></div>
-            <p style="text-align: center; font-size: 10px; color: var(--text-muted); margin-top: 18px;">(タップして閉じる)</p>
+            <p style="text-align:center; font-size:10px; color:var(--text-sub); margin-top:16px;">(タップして閉じる)</p>
         </div>
     </div>
 
-    <!-- 左画面：3:2ファインダービュー -->
-    <div class="left-viewport">
-        <div id="mission-guide">
-            <div class="guide-pill">CURRENT MISSION</div>
-            <div id="guide-title" class="guide-title">グループを選択してください</div>
+    <!-- 左側：ファインダー -->
+    <section class="viewport-section">
+        <div class="mission-pill" id="missionPill">
+            <div class="mission-pill-label" id="pillLabel">CURRENT MISSION</div>
+            <div id="guide-title" class="mission-pill-title">グループを選択してください</div>
+            <div id="guide-task" class="mission-pill-task"></div>
         </div>
 
-        <div class="viewfinder-wrapper">
-            <div class="viewfinder-inner">
-                <span class="vf-corner vf-tl"></span>
-                <span class="vf-corner vf-tr"></span>
-                <span class="vf-corner vf-bl"></span>
-                <span class="vf-corner vf-br"></span>
-                <video id="video" autoplay playsinline></video>
-                <div id="timer-display">5</div>
-            </div>
+        <div class="viewfinder-frame">
+            <video id="video" autoplay playsinline></video>
+            <div class="finder-crosshair"></div>
         </div>
 
-        <div class="zoom-container">
-            <span class="zoom-label">1x</span>
+        <div class="zoom-island">
+            <span class="zoom-label">ZOOM</span>
             <input type="range" id="zoomRange" class="zoom-slider" min="1" max="3" step="0.1" value="1">
-            <span class="zoom-label">3x</span>
         </div>
-    </div>
 
-    <!-- 右画面：統合モダンコントロールデッキ -->
-    <div class="right-deck">
-        <!-- 上段：グループ設定 ＆ 残り枚数 -->
-        <div class="deck-header">
-            <div class="group-select-box">
-                <span class="deck-label">TEAM SELECT</span>
-                <select id="carSelect" class="modern-select">
-                    <option value="">グループを選択</option>
-                    <option value="A">グループ A</option>
-                    <option value="B">グループ B</option>
-                    <option value="C">グループ C</option>
-                    <option value="D">グループ D</option>
+        <div id="timer-display">5</div>
+    </section>
+
+    <!-- 右側：コントロールデッキ -->
+    <section class="control-section">
+        <div class="deck-top">
+            <div class="select-card">
+                <span class="select-label">TEAM</span>
+                <select id="carSelect" class="car-select">
+                    <option value="">選択してください</option>
+                    <option value="A">チームA</option>
+                    <option value="B">チームB</option>
+                    <option value="C">チームC</option>
+                    <option value="D">チームD</option>
                 </select>
+                <div id="teamDisplayName" class="team-display-name"></div>
             </div>
 
-            <div class="counter-badge" id="resetTrigger" title="5回連続タップでリセット">
-                <span class="deck-label">REMAINING</span>
-                <div class="counter-num-box">
-                    <span class="counter-num" id="counter">20</span>
-                    <span class="counter-total">/ 20</span>
-                </div>
+            <div class="counter-card" id="resetTrigger">
+                <span class="counter-label" id="counterLabel">REMAINING FILMS</span>
+                <div class="counter-badge" id="counter">20</div>
             </div>
         </div>
 
-        <!-- 中段：機能ボタングリッド -->
-        <div class="controls-grid">
-            <button class="deck-btn btn-full" id="missionBtn">
-                📋 ミッション全指令を見る
-            </button>
-            <button class="deck-btn" id="flashBtn">
-                ⚡ FLASH OFF
-            </button>
-            <button class="deck-btn" id="switchBtn">
-                🔄 カメラ切替
-            </button>
-            <button class="deck-btn" id="timerBtn">
-                ⏱️ 5秒タイマー
-            </button>
-            <button class="deck-btn" id="powerBtn">
-                📷 CAMERA ON
-            </button>
+        <div class="actions-grid">
+            <button class="action-tile full-width" id="missionBtn">ミッション一覧</button>
+            <button class="action-tile" id="flashBtn">FLASH OFF</button>
+            <button class="action-tile" id="switchBtn">カメラ切替</button>
+            <button class="action-tile" id="timerBtn">5秒タイマー</button>
+            <button class="action-tile" id="powerBtn">CAMERA ON</button>
         </div>
 
-        <!-- 下段：シャッターボタン＆チャージステータス -->
-        <div class="shutter-section" id="shutterContainer">
-            <div class="shutter-outer">
-                <div class="charge-ring"></div>
-                <button id="shutter" disabled aria-label="シャッター"></button>
+        <div class="shutter-deck">
+            <div class="shutter-ring" id="shutterRing">
+                <button id="shutter" class="shutter-core" disabled></button>
             </div>
-            <div id="status-msg">READY</div>
+            <div class="charging-indicator" id="status-msg">READY</div>
         </div>
-    </div>
+    </section>
 
     <canvas id="canvas"></canvas>
 
@@ -580,7 +493,7 @@
         import { getStorage, ref, uploadBytes } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
         import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
-        // --- 1. Firebase設定 (必要に応じてご自身の情報を貼り付けてください) ---
+        // --- Firebase設定 ---
         const firebaseConfig = {
             apiKey: "AIzaSyDHqQDeEMrFV09YI0n_ARr1Tzta5aqmE2U",
             authDomain: "my-retro-cam.firebaseapp.com",
@@ -593,17 +506,10 @@
         let app, storage, auth;
         let isAuthReady = false;
         if (firebaseConfig.apiKey) {
-            try {
-                app = initializeApp(firebaseConfig);
-                storage = getStorage(app);
-                auth = getAuth(app);
-                onAuthStateChanged(auth, (u) => { 
-                    if(u) { isAuthReady = true; syncPhotos(); } 
-                    else signInAnonymously(auth); 
-                });
-            } catch (err) {
-                console.warn("Firebase Init Error:", err);
-            }
+            app = initializeApp(firebaseConfig);
+            storage = getStorage(app);
+            auth = getAuth(app);
+            onAuthStateChanged(auth, (u) => { if(u) { isAuthReady=true; syncPhotos(); } else signInAnonymously(auth); });
         }
 
         const dbName = "CurryGrandPrixDB";
@@ -615,12 +521,13 @@
 
         const MAX_SHOTS = 20;
 
-        // --- 全チーム共通ミッション（計6ミッション・全20枚配分） ---
+        // 全チーム共通ミッション（練習2枚 + 各3枚均等 = 全20枚）
         const commonMissions = [
-            { id: "01", threshold: 17, title: "1.集合：【決起集会】", task: "優勝を誓うガッツポーズ集合写真！" },
-            { id: "02", threshold: 14, title: "2.買い出し：【目利きの極意】", task: "極上スパイスや隠し味を真剣に見極める姿。" },
-            { id: "03", threshold: 10, title: "3.会場散策①：【放課後の記憶】", task: "廃校の長い廊下や教室、黒板を背にしたノスタルジーな青春の1枚。" },
-            { id: "04", threshold: 7,  title: "4.会場散策②：【偵察部隊】", task: "ライバルチームを遠巻きに観察・警戒する姿。" },
+            { id: "00", threshold: 18, title: "0.操作練習：【テスト撮影】", task: "フラッシュやタイマー、構図を試してみよう！" },
+            { id: "01", threshold: 15, title: "1.集合：【決起集会】", task: "優勝を誓うガッツポーズ集合写真！" },
+            { id: "02", threshold: 12, title: "2.買い出し：【目利きの極意】", task: "極上スパイスや隠し味を真剣に見極める姿。" },
+            { id: "03", threshold: 9,  title: "3.会場散策①：【放課後の記憶】", task: "廃校の長い廊下や教室、黒板を背にしたノスタルジーな青春の1枚。" },
+            { id: "04", threshold: 6,  title: "4.会場散策②：【偵察部隊】", task: "ライバルチームを遠巻きに観察・警戒する姿。" },
             { id: "05", threshold: 3,  title: "5.調理中：【シェフの神業】", task: "ルーを投入する瞬間や躍動感ある鍋振り！" },
             { id: "06", threshold: 0,  title: "6.BBQ：【完成の歓喜】", task: "丹精込めて完成させたカレーを全員で囲んだ笑顔ショット。" }
         ];
@@ -633,14 +540,19 @@
         };
 
         const carSelect = document.getElementById('carSelect');
+        const teamDisplayName = document.getElementById('teamDisplayName');
         const counterDisplay = document.getElementById('counter');
+        const counterLabel = document.getElementById('counterLabel');
         const shutterBtn = document.getElementById('shutter');
-        const shutterContainer = document.getElementById('shutterContainer');
+        const missionPill = document.getElementById('missionPill');
+        const pillLabel = document.getElementById('pillLabel');
         const guideTitle = document.getElementById('guide-title');
+        const guideTask = document.getElementById('guide-task');
         const statusMsg = document.getElementById('status-msg');
         const flashBtn = document.getElementById('flashBtn');
-        const timerBtn = document.getElementById('timerBtn');
-        const powerBtn = document.getElementById('powerBtn');
+        const previewModal = document.getElementById('preview-modal');
+        const previewImg = document.getElementById('preview-image');
+        const previewConfirmBtn = document.getElementById('preview-confirm-btn');
         
         let selectedCar = localStorage.getItem('curry_team') || "";
         let shotCount = 0;
@@ -650,39 +562,94 @@
 
         window.onload = () => {
             if (selectedCar) {
-                carSelect.value = selectedCar;
-                carSelect.disabled = true;
+                applySelectedTeamUI(selectedCar);
                 loadCount();
             }
             startCamera();
             updateUI();
         };
 
+        function applySelectedTeamUI(teamKey) {
+            carSelect.style.display = "none";
+            teamDisplayName.style.display = "block";
+            teamDisplayName.innerText = `チーム${teamKey}`;
+        }
+
         function loadCount() {
             if (!selectedCar) return;
             shotCount = parseInt(localStorage.getItem(`curry_count_${selectedCar}`)) || 0;
         }
 
+        // 現在のミッションIDを取得（フリー時は "free"）
+        function getCurrentMissionInfo() {
+            if (!selectedCar) return null;
+            const remaining = MAX_SHOTS - shotCount;
+            if (remaining <= 0) {
+                return { isFree: true, id: "free", label: "フリーモード" };
+            }
+            const mList = missionsData[selectedCar];
+            const current = mList.find(m => remaining > m.threshold);
+            return {
+                isFree: false,
+                id: current ? current.id : "06",
+                label: current ? current.id : "06",
+                mission: current
+            };
+        }
+
         function updateUI() {
             if (!selectedCar) {
                 counterDisplay.innerText = MAX_SHOTS;
+                counterDisplay.classList.remove('is-free-mode');
+                counterLabel.innerText = "REMAINING FILMS";
                 guideTitle.innerText = "グループを選択してください";
+                guideTask.innerText = "";
+                missionPill.classList.remove('is-free-mode');
+                pillLabel.innerText = "CURRENT MISSION";
                 shutterBtn.disabled = true;
                 return;
             }
+
             const remaining = MAX_SHOTS - shotCount;
-            counterDisplay.innerText = remaining > 0 ? remaining : 0;
-            const mList = missionsData[selectedCar];
-            const current = mList.find(m => remaining > m.threshold);
-            guideTitle.innerText = current ? current.title : "ミッション完了！";
-            shutterBtn.disabled = (isCapturing || remaining <= 0 || !isCameraOn);
+            const mInfo = getCurrentMissionInfo();
+
+            if (mInfo.isFree) {
+                // フリーモード突入時
+                const freeCount = shotCount - MAX_SHOTS;
+                counterDisplay.innerText = freeCount > 0 ? `+${freeCount}` : "FREE";
+                counterDisplay.classList.add('is-free-mode');
+                counterLabel.innerText = "FREE MODE (UNLIMITED)";
+
+                missionPill.classList.add('is-free-mode');
+                pillLabel.innerText = "BONUS TRACK";
+                guideTitle.innerText = "フリー撮影モード";
+                guideTask.innerText = "規定枚数クリア！BBQや歓談の思い出を自由に撮影しよう！";
+
+                // フリーモードでもシャッターは押し放題
+                shutterBtn.disabled = (isCapturing || !isCameraOn);
+            } else {
+                // 通常ミッション時
+                counterDisplay.innerText = remaining;
+                counterDisplay.classList.remove('is-free-mode');
+                counterLabel.innerText = "REMAINING FILMS";
+
+                missionPill.classList.remove('is-free-mode');
+                pillLabel.innerText = "CURRENT MISSION";
+
+                if (mInfo.mission) {
+                    guideTitle.innerText = mInfo.mission.title;
+                    guideTask.innerText = mInfo.mission.task;
+                }
+
+                shutterBtn.disabled = (isCapturing || !isCameraOn);
+            }
         }
 
         carSelect.onchange = () => {
             if (carSelect.value) {
                 selectedCar = carSelect.value;
                 localStorage.setItem('curry_team', selectedCar);
-                carSelect.disabled = true;
+                applySelectedTeamUI(selectedCar);
                 loadCount();
                 updateUI();
             }
@@ -694,17 +661,12 @@
                 stream = await navigator.mediaDevices.getUserMedia({
                     video: { facingMode: currentFacingMode, width: { ideal: 1920 }, height: { ideal: 1080 } }
                 });
-                const videoEl = document.getElementById('video');
-                videoEl.srcObject = stream;
-                videoEl.classList.toggle('selfie', currentFacingMode === "user");
+                document.getElementById('video').srcObject = stream;
                 isCameraOn = true;
-                powerBtn.innerText = "📷 CAMERA OFF";
-                powerBtn.classList.add('active-state');
                 updateUI();
                 if (isFlashOn) setTimeout(() => applyTorch(true), 1000);
             } catch (e) {
                 statusMsg.innerText = "CAMERA ERROR";
-                console.error(e);
             }
         }
 
@@ -720,8 +682,8 @@
         flashBtn.onclick = () => {
             if (currentFacingMode === "user") return;
             isFlashOn = !isFlashOn;
-            flashBtn.innerText = isFlashOn ? "⚡ FLASH ON" : "⚡ FLASH OFF";
-            flashBtn.classList.toggle('active-state', isFlashOn);
+            flashBtn.innerText = isFlashOn ? "FLASH ON" : "FLASH OFF";
+            flashBtn.classList.toggle('active', isFlashOn);
             applyTorch(isFlashOn);
         };
 
@@ -730,17 +692,15 @@
             startCamera();
         };
 
-        timerBtn.onclick = () => {
+        document.getElementById('timerBtn').onclick = () => {
             isTimerActive = !isTimerActive;
-            timerBtn.classList.toggle('active-state', isTimerActive);
+            document.getElementById('timerBtn').classList.toggle('active', isTimerActive);
         };
 
-        powerBtn.onclick = () => {
+        document.getElementById('powerBtn').onclick = () => {
             if (isCameraOn) {
                 if (stream) stream.getTracks().forEach(t => t.stop());
                 isCameraOn = false;
-                powerBtn.innerText = "📷 CAMERA ON";
-                powerBtn.classList.remove('active-state');
             } else {
                 startCamera();
             }
@@ -770,7 +730,7 @@
                         timerDisp.style.visibility = "hidden";
                         executeCapture();
                         isTimerActive = false;
-                        timerBtn.classList.remove('active-state');
+                        document.getElementById('timerBtn').classList.remove('active');
                     }
                 }, 1000);
             } else {
@@ -781,20 +741,15 @@
         function executeCapture() {
             takePicture();
             statusMsg.innerText = "CHARGING...";
-            statusMsg.classList.add('charging');
-            shutterContainer.classList.add('is-charging');
-
             setTimeout(() => {
                 isCapturing = false;
                 statusMsg.innerText = "READY";
-                statusMsg.classList.remove('charging');
-                shutterContainer.classList.remove('is-charging');
                 updateUI();
             }, 3000);
         }
 
         function takePicture() {
-            const targetW = 1800, targetH = 1200; // 3:2比率
+            const targetW = 1800, targetH = 1200;
             const canvas = document.getElementById('canvas');
             canvas.width = targetW;
             canvas.height = targetH;
@@ -809,15 +764,21 @@
 
             ctx.drawImage(v, sX, sY, sW, sH, 0, 0, targetW, targetH);
             applyEffects(ctx, targetW, targetH);
-            addStamps(ctx, targetW, targetH);
 
-            // 1MB前後に最適化（品質0.82）
+            // ミッション判定
+            const mInfo = getCurrentMissionInfo();
+            addStamps(ctx, targetW, targetH, mInfo);
+
+            const remainingBeforeShot = MAX_SHOTS - shotCount;
+            const isPracticeMission = (remainingBeforeShot > 18);
+
             canvas.toBlob(async (blob) => {
                 const now = new Date();
                 const timeStr = `${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}-${String(now.getHours()).padStart(2,'0')}${String(now.getMinutes()).padStart(2,'0')}${String(now.getSeconds()).padStart(2,'0')}`;
-                const mList = missionsData[selectedCar];
-                const mID = (mList.find(m => (MAX_SHOTS - shotCount) > m.threshold) || {id:"99"}).id;
-                const fileName = `curry_team${selectedCar}_${mID}_${timeStr}.jpg`;
+                
+                // ファイル名：通常ミッションなら番号、フリーなら free
+                const fileMissionTag = mInfo.isFree ? "free" : mInfo.id;
+                const fileName = `curry_team${selectedCar}_${fileMissionTag}_${timeStr}.jpg`;
 
                 if (db) {
                     const tx = db.transaction(storeName, "readwrite");
@@ -827,14 +788,26 @@
                 shotCount++;
                 localStorage.setItem(`curry_count_${selectedCar}`, shotCount);
 
-                const remaining = MAX_SHOTS - shotCount;
-                counterDisplay.innerText = remaining > 0 ? remaining : 0;
+                updateUI();
                 syncPhotos();
-            }, 'image/jpeg', 0.82);
+
+                // ミッション0（操作練習）のみプレビュー表示
+                if (isPracticeMission) {
+                    const previewUrl = URL.createObjectURL(blob);
+                    previewImg.src = previewUrl;
+                    previewModal.style.display = "flex";
+
+                    previewConfirmBtn.onclick = () => {
+                        previewModal.style.display = "none";
+                        previewImg.src = "";
+                        URL.revokeObjectURL(previewUrl);
+                    };
+                }
+            }, 'image/jpeg', 0.80);
         }
 
         async function syncPhotos() {
-            if (!navigator.onLine || !db || !storage) return;
+            if (!navigator.onLine || !db || !isAuthReady || !storage) return;
             const store = db.transaction(storeName, "readwrite").objectStore(storeName);
             const req = store.getAll();
             req.onsuccess = async () => {
@@ -849,96 +822,14 @@
         }
 
         function applyEffects(ctx, w, h) {
-            // スパイス・アンバー レトロトーン
             ctx.globalCompositeOperation = 'overlay';
-            ctx.fillStyle = 'rgba(255, 150, 0, 0.12)'; 
-            ctx.fillRect(0, 0, w, h);
-            
-            ctx.fillStyle = isFlashOn ? 'rgba(255, 255, 255, 0.22)' : 'rgba(255, 180, 50, 0.14)'; 
-            ctx.fillRect(0, 0, w, h);
-            ctx.globalCompositeOperation = 'source-over';
+            ctx.fillStyle = 'rgba(255, 140, 0, 0.12)'; ctx.fillRect(写真への刻印レイアウトの更新と、「全ミッション完了後のフリー撮影モード」を追加した完全版コードです。
 
-            // グレインノイズ
-            const grain = (w * h) / 1.6;
-            for (let i = 0; i < grain; i++) {
-                const x = Math.random() * w, y = Math.random() * h, opacity = Math.random() * 0.07;
-                ctx.fillStyle = `rgba(255, 255, 255, ${opacity})`; 
-                ctx.fillRect(x, y, 1.2, 1.2);
-            }
-
-            // 周辺光量落ち (ヴィネット)
-            const g = ctx.createRadialGradient(w/2, h/2, w/4, w/2, h/2, w/0.8);
-            g.addColorStop(0, 'transparent'); 
-            g.addColorStop(1, 'rgba(0,0,0,0.65)');
-            ctx.fillStyle = g; 
-            ctx.fillRect(0, 0, w, h);
-        }
-
-        function addStamps(ctx, w, h) {
-            const n = new Date();
-            const dateStr = `'${n.getFullYear().toString().slice(-2)}.${String(n.getMonth()+1).padStart(2,'0')}.${String(n.getDate()).padStart(2,'0')} ${String(n.getHours()).padStart(2,'0')}:${String(n.getMinutes()).padStart(2,'0')}`;
-            const teamStr = `TEAM-${selectedCar} (CURRY GP)`;
-            const fs = Math.floor(w * 0.045);
-
-            ctx.font = `bold ${fs}px "Courier New", monospace`;
-            ctx.textAlign = "right";
-            ctx.globalAlpha = 0.75;
-            ctx.lineWidth = fs/8;
-            ctx.strokeStyle = "rgba(0,0,0,0.55)";
-
-            ctx.strokeText(dateStr, w*0.95, h*0.95);
-            ctx.fillStyle = "#ff9f1a";
-            ctx.fillText(dateStr, w*0.95, h*0.95);
-
-            ctx.textAlign = "left";
-            ctx.strokeText(teamStr, w*0.05, h*0.95);
-            ctx.fillText(teamStr, w*0.05, h*0.95);
-            ctx.globalAlpha = 1.0;
-        }
-
-        // 5連打リセット
-        document.getElementById('resetTrigger').onclick = () => {
-            resetClickCount++;
-            if (resetClickCount >= 5) {
-                if(confirm("全リセット（グループ選択・撮影枚数の初期化）を行いますか？")) {
-                    localStorage.clear();
-                    shotCount = 0;
-                    selectedCar = "";
-                    carSelect.disabled = false;
-                    carSelect.value = "";
-                    updateUI();
-                }
-                resetClickCount = 0;
-            }
-            setTimeout(() => { resetClickCount = 0; }, 2000);
-        };
-
-        // ミッションモーダル開閉
-        const modal = document.getElementById('mission-overlay');
-        document.getElementById('missionBtn').onclick = () => {
-            const currentTeam = selectedCar || "A";
-            const list = document.getElementById('mission-list-content');
-            list.innerHTML = "";
-            document.getElementById('modal-team-name').innerText = `TEAM ${currentTeam} - MISSION LIST`;
-            missionsData[currentTeam].forEach(m => {
-                const div = document.createElement('div');
-                div.className = "mission-item-card";
-                div.innerHTML = `<div class="mission-head" style="color:var(--accent)">MISSION ${m.id}: ${m.title}</div><p class="mission-desc">${m.task}</p>`;
-                list.appendChild(div);
-            });
-            modal.style.display = "block";
-        };
-
-        modal.onclick = (e) => {
-            if (e.target === modal || e.target.id === 'modalCloseBtn') {
-                modal.style.display = "none";
-            }
-        };
-
-        window.addEventListener('online', syncPhotos);
-    </script>
-</body>
-</html>
-
-
-
+### 変更点
+1. **スタンプ表記とサイズ調整**:
+   * 写真下部のスタンプを1行に統合：`チームA ミッション:01 2026.10.29 12:30`
+   * フォントサイズを従来の `0.045` から一回り小さい **`0.035`** に縮小。
+2. **フリー撮影モードの追加**:
+   * 既定の20枚を撮りきると、カウンター表示が `FREE` に切り替わり、シャッターロックが解除されて無制限に撮影可能になります。
+   * フリーモード時の写真スタンプは `チームA ミッション:フリーモード 2026.10.29 12:30` と刻印され、ファイル名も `curry_teamA_free_...` で保存・同期されます。
+   * バナー表示も「フリー撮影モード：自由に思い出を記録しよう！」に切り替わります。
