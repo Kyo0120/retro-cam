@@ -5,84 +5,574 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Curry Grand Prix - Retro Cam</title>
     <style>
-        :root { --body-bg: #1a1a1a; --accent: #ffae00; --panel-bg: #252525; }
-        body { margin: 0; padding: 0; background-color: var(--body-bg); color: white; font-family: 'Courier New', Courier, monospace; display: flex; height: 100dvh; width: 100dvw; overflow: hidden; flex-direction: row; }
-
-        .left-section { flex: 1.2; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; background: #000; padding-left: env(safe-area-inset-left); }
-        .viewfinder-container { width: 180px; height: 120px; border: 2px solid #444; border-radius: 4px; overflow: hidden; position: relative; }
-        video { width: 100%; height: 100%; object-fit: cover; transform: scale(var(--zoom-level, 1)); }
-        video.selfie { transform: scale(var(--zoom-level, 1)) scaleX(-1); }
-
-        #mission-guide {
-            position: absolute; top: 10px; width: 85%; max-width: 260px; 
-            background: rgba(0,0,0,0.85); border: 1px solid var(--accent); border-radius: 5px; 
-            padding: 6px 10px; text-align: center; z-index: 10; pointer-events: none; box-sizing: border-box;
+        :root {
+            --bg-base: #0c0e12;
+            --panel-bg: rgba(22, 26, 34, 0.75);
+            --panel-border: rgba(255, 255, 255, 0.08);
+            --card-bg: rgba(255, 255, 255, 0.04);
+            --accent: #ff9f1a;
+            --accent-glow: rgba(255, 159, 26, 0.35);
+            --text-main: #f3f4f6;
+            --text-muted: #9ca3af;
+            --danger: #ef4444;
+            --shutter-red: #e11d48;
         }
-        .guide-label { font-size: 8px; color: var(--accent); margin-bottom: 2px; }
-        .guide-title { font-size: 11px; font-weight: bold; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
-        .mid-section { width: 200px; background-color: var(--panel-bg); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; border-left: 1px solid #111; border-right: 1px solid #111; }
-        .select-group { width: 90%; display: flex; flex-direction: column; gap: 5px; margin-bottom: 10px; }
-        .sub-btn { background: #444; color: #eee; border: 1px solid #666; padding: 10px; border-radius: 6px; font-size: 10px; cursor: pointer; width: 85%; }
-        .car-select { background: #000; color: var(--accent); border: 1px solid var(--accent); padding: 8px; border-radius: 4px; font-size: 11px; width: 100%; text-align: center; }
-        .active-mode { background: var(--accent) !important; color: #000 !important; font-weight: bold; }
+        * {
+            box-sizing: border-box;
+            user-select: none;
+            -webkit-user-select: none;
+        }
 
-        .right-section { width: 180px; display: flex; flex-direction: column; align-items: center; justify-content: center; background-color: var(--panel-bg); padding-right: env(safe-area-inset-right); }
-        .counter { font-size: 2.5rem; color: var(--accent); font-weight: bold; line-height: 1; }
-        #shutter { width: 85px; height: 85px; border-radius: 50%; border: 6px solid #222; background: #d00; box-shadow: 0 6px 0 #600; cursor: pointer; margin-top: 15px; }
-        #shutter:disabled { background: #333; box-shadow: none; opacity: 0.3; cursor: default; }
-        
-        #mission-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 1000; display: none; padding: 20px; box-sizing: border-box; overflow-y: auto; }
-        #status-msg { position: fixed; bottom: 5px; width: 100%; text-align: center; font-size: 9px; color: #888; pointer-events: none; }
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: var(--bg-base);
+            color: var(--text-main);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+            display: flex;
+            height: 100dvh;
+            width: 100dvw;
+            overflow: hidden;
+            flex-direction: row;
+        }
+
+        /* ============================
+           左側：ファインダー・ビューエリア
+           ============================ */
+        .left-viewport {
+            flex: 1.15;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            background: radial-gradient(circle at center, #151922 0%, #08090c 100%);
+            padding: 16px;
+            padding-left: max(16px, env(safe-area-inset-left));
+        }
+
+        /* フローティングミッションバナー */
+        #mission-guide {
+            position: absolute;
+            top: 14px;
+            width: calc(100% - 32px);
+            max-width: 440px;
+            background: rgba(12, 14, 18, 0.85);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid var(--accent);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6), 0 0 16px var(--accent-glow);
+            border-radius: 12px;
+            padding: 8px 14px;
+            text-align: center;
+            z-index: 20;
+            pointer-events: none;
+            transition: all 0.3s ease;
+        }
+
+        .guide-pill {
+            display: inline-block;
+            font-size: 9px;
+            font-weight: 800;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            color: #0c0e12;
+            background: var(--accent);
+            padding: 2px 8px;
+            border-radius: 9999px;
+            margin-bottom: 4px;
+        }
+
+        .guide-title {
+            font-size: 13px;
+            font-weight: 700;
+            color: #fff;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            letter-spacing: 0.3px;
+        }
+
+        /* 3:2ファインダー枠 */
+        .viewfinder-wrapper {
+            position: relative;
+            width: min(88%, 460px);
+            aspect-ratio: 3 / 2;
+            border-radius: 16px;
+            padding: 3px;
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.15), rgba(255, 255, 255, 0.02));
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.7);
+        }
+
+        .viewfinder-inner {
+            width: 100%;
+            height: 100%;
+            background: #000;
+            border-radius: 13px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transform: scale(var(--zoom-level, 1));
+            transition: transform 0.1s ease-out;
+        }
+
+        video.selfie {
+            transform: scale(var(--zoom-level, 1)) scaleX(-1);
+        }
+
+        /* レトロファインダーフレーム（四隅のガイド線） */
+        .vf-corner {
+            position: absolute;
+            width: 14px;
+            height: 14px;
+            border-color: rgba(255, 255, 255, 0.5);
+            border-style: solid;
+            pointer-events: none;
+            z-index: 5;
+        }
+        .vf-tl { top: 10px; left: 10px; border-width: 2px 0 0 2px; }
+        .vf-tr { top: 10px; right: 10px; border-width: 2px 2px 0 0; }
+        .vf-bl { bottom: 10px; left: 10px; border-width: 0 0 2px 2px; }
+        .vf-br { bottom: 10px; right: 10px; border-width: 0 2px 2px 0; }
+
+        /* タイマーカウントダウンオーバーレイ */
+        #timer-display {
+            visibility: hidden;
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 5rem;
+            color: var(--accent);
+            font-weight: 900;
+            text-shadow: 0 0 30px rgba(0, 0, 0, 0.9), 0 0 20px var(--accent-glow);
+            z-index: 15;
+            background: rgba(0, 0, 0, 0.35);
+        }
+
+        /* ズームバー下部オーバーレイ */
+        .zoom-container {
+            position: absolute;
+            bottom: 12px;
+            width: 70%;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            z-index: 10;
+            background: rgba(12, 14, 18, 0.7);
+            backdrop-filter: blur(8px);
+            padding: 4px 12px;
+            border-radius: 9999px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .zoom-label {
+            font-size: 10px;
+            font-weight: 700;
+            color: var(--text-muted);
+        }
+
+        .zoom-slider {
+            flex: 1;
+            height: 4px;
+            accent-color: var(--accent);
+            cursor: pointer;
+        }
+
+        /* ============================
+           右側：統合モダンコントロールデッキ
+           ============================ */
+        .right-deck {
+            flex: 0.95;
+            background: var(--panel-bg);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-left: 1px solid var(--panel-border);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 18px 20px;
+            padding-right: max(20px, env(safe-area-inset-right));
+            overflow-y: auto;
+            position: relative;
+        }
+
+        /* 上段：グループ選択 ＆ 残り枚数カウンター */
+        .deck-header {
+            display: flex;
+            gap: 12px;
+            align-items: stretch;
+        }
+
+        .group-select-box {
+            flex: 1;
+            background: var(--card-bg);
+            border: 1px solid var(--panel-border);
+            border-radius: 14px;
+            padding: 8px 12px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .deck-label {
+            font-size: 9px;
+            font-weight: 700;
+            color: var(--text-muted);
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            margin-bottom: 4px;
+        }
+
+        .modern-select {
+            width: 100%;
+            background: rgba(0, 0, 0, 0.4);
+            color: var(--accent);
+            border: 1px solid rgba(255, 159, 26, 0.4);
+            border-radius: 8px;
+            padding: 6px 8px;
+            font-size: 12px;
+            font-weight: bold;
+            outline: none;
+            cursor: pointer;
+        }
+
+        .counter-badge {
+            flex: 0 0 110px;
+            background: linear-gradient(145deg, rgba(255, 159, 26, 0.12), rgba(0, 0, 0, 0.4));
+            border: 1px solid rgba(255, 159, 26, 0.3);
+            border-radius: 14px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 6px;
+            cursor: pointer;
+            transition: transform 0.15s ease, border-color 0.15s;
+        }
+
+        .counter-badge:active {
+            transform: scale(0.96);
+            border-color: var(--accent);
+        }
+
+        .counter-num-box {
+            display: flex;
+            align-items: baseline;
+            line-height: 1;
+        }
+
+        .counter-num {
+            font-size: 2rem;
+            font-weight: 900;
+            color: var(--accent);
+            font-family: 'Courier New', Courier, monospace;
+            text-shadow: 0 0 12px var(--accent-glow);
+        }
+
+        .counter-total {
+            font-size: 11px;
+            color: var(--text-muted);
+            margin-left: 2px;
+            font-weight: 700;
+        }
+
+        /* 中段：機能ボタングリッド */
+        .controls-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin: 14px 0;
+        }
+
+        .deck-btn {
+            background: var(--card-bg);
+            color: var(--text-main);
+            border: 1px solid var(--panel-border);
+            padding: 11px 12px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 600;
+            letter-spacing: 0.3px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .deck-btn:active {
+            transform: scale(0.97);
+        }
+
+        .deck-btn.active-state {
+            background: var(--accent);
+            color: #0c0e12;
+            border-color: var(--accent);
+            font-weight: 800;
+            box-shadow: 0 0 16px var(--accent-glow);
+        }
+
+        .btn-full {
+            grid-column: span 2;
+        }
+
+        /* 下段：シャッターセクション */
+        .shutter-section {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding-top: 6px;
+        }
+
+        .shutter-outer {
+            width: 86px;
+            height: 86px;
+            border-radius: 50%;
+            background: linear-gradient(145deg, #1f242d, #0d0f13);
+            border: 2px solid rgba(255, 255, 255, 0.12);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+
+        #shutter {
+            width: 70px;
+            height: 70px;
+            border-radius: 50%;
+            border: 3px solid rgba(255, 255, 255, 0.2);
+            background: radial-gradient(circle at 35% 35%, #ff4b72 0%, var(--shutter-red) 70%, #9f1239 100%);
+            box-shadow: 0 6px 0 #881337, 0 10px 20px rgba(225, 29, 72, 0.4);
+            cursor: pointer;
+            transition: all 0.1s ease;
+            position: relative;
+            outline: none;
+        }
+
+        #shutter:active:not(:disabled) {
+            transform: translateY(4px);
+            box-shadow: 0 2px 0 #881337, 0 4px 10px rgba(225, 29, 72, 0.3);
+        }
+
+        #shutter:disabled {
+            background: #2b303b;
+            box-shadow: none;
+            border-color: rgba(255, 255, 255, 0.05);
+            cursor: not-allowed;
+            transform: none;
+            opacity: 0.4;
+        }
+
+        /* チャージプログレスリング（3秒ロック視覚化） */
+        .charge-ring {
+            position: absolute;
+            inset: -4px;
+            border-radius: 50%;
+            border: 3px solid transparent;
+            pointer-events: none;
+            transition: border-color 0.3s;
+        }
+
+        .is-charging .charge-ring {
+            border-color: var(--accent);
+            animation: spin 3s linear forwards;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); opacity: 1; }
+            90% { transform: rotate(360deg); opacity: 1; }
+            100% { transform: rotate(360deg); opacity: 0; }
+        }
+
+        #status-msg {
+            margin-top: 8px;
+            font-size: 10px;
+            font-weight: 800;
+            letter-spacing: 1.5px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+        }
+
+        #status-msg.charging {
+            color: var(--accent);
+            animation: pulse 1s infinite alternate;
+        }
+
+        @keyframes pulse {
+            from { opacity: 0.6; }
+            to { opacity: 1; }
+        }
+
+        /* ============================
+           ミッションモーダル
+           ============================ */
+        #mission-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(8, 10, 14, 0.88);
+            backdrop-filter: blur(14px);
+            -webkit-backdrop-filter: blur(14px);
+            z-index: 1000;
+            display: none;
+            padding: 24px 20px;
+            overflow-y: auto;
+        }
+
+        .modal-card {
+            max-width: 520px;
+            margin: 20px auto;
+            background: #141820;
+            border: 1px solid var(--panel-border);
+            border-radius: 20px;
+            padding: 24px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.8);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--panel-border);
+            padding-bottom: 12px;
+            margin-bottom: 18px;
+        }
+
+        .modal-title {
+            font-size: 16px;
+            font-weight: 800;
+            color: var(--accent);
+            letter-spacing: 0.5px;
+            margin: 0;
+        }
+
+        .mission-item-card {
+            background: var(--card-bg);
+            border: 1px solid var(--panel-border);
+            border-radius: 12px;
+            padding: 12px 14px;
+            margin-bottom: 10px;
+        }
+
+        .mission-head {
+            font-size: 12px;
+            font-weight: 700;
+            color: #fff;
+            margin-bottom: 4px;
+        }
+
+        .mission-desc {
+            font-size: 11px;
+            color: var(--text-muted);
+            margin: 0;
+            line-height: 1.5;
+        }
+
         canvas { display: none; }
     </style>
 </head>
 <body>
 
+    <!-- ミッション一覧モーダル -->
     <div id="mission-overlay">
-        <div style="max-width: 500px; margin: 0 auto; color: white;">
-            <h2 id="modal-team-name" style="color: var(--accent); border-bottom: 1px solid var(--accent);">MISSION LIST</h2>
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3 class="modal-title" id="modal-team-name">MISSION LIST</h3>
+                <span style="font-size: 11px; color: var(--text-muted); cursor: pointer;" id="modalCloseBtn">✕ 閉じる</span>
+            </div>
             <div id="mission-list-content"></div>
-            <p style="text-align: center; font-size: 9px; color: #666; margin-top: 20px;">(タップして閉じる)</p>
+            <p style="text-align: center; font-size: 10px; color: var(--text-muted); margin-top: 18px;">(タップして閉じる)</p>
         </div>
     </div>
 
-    <div class="left-section">
+    <!-- 左画面：3:2ファインダービュー -->
+    <div class="left-viewport">
         <div id="mission-guide">
-            <div class="guide-label">CURRENT MISSION</div>
+            <div class="guide-pill">CURRENT MISSION</div>
             <div id="guide-title" class="guide-title">グループを選択してください</div>
         </div>
-        <div class="viewfinder-container"><video id="video" autoplay playsinline></video></div>
-        <div id="timer-display" style="visibility: hidden; position: absolute; font-size: 4rem; color: var(--accent); z-index: 20; font-weight: bold; text-shadow: 0 0 10px #000;">5</div>
-    </div>
 
-    <div class="mid-section">
-        <div class="select-group">
-            <select id="carSelect" class="car-select">
-                <option value="">グループを選択</option>
-                <option value="A">グループ A</option>
-                <option value="B">グループ B</option>
-                <option value="C">グループ C</option>
-                <option value="D">グループ D</option>
-            </select>
+        <div class="viewfinder-wrapper">
+            <div class="viewfinder-inner">
+                <span class="vf-corner vf-tl"></span>
+                <span class="vf-corner vf-tr"></span>
+                <span class="vf-corner vf-bl"></span>
+                <span class="vf-corner vf-br"></span>
+                <video id="video" autoplay playsinline></video>
+                <div id="timer-display">5</div>
+            </div>
         </div>
-        <button class="sub-btn" id="missionBtn">ミッション一覧</button>
-        <button class="sub-btn" id="flashBtn">FLASH OFF</button>
-        <button class="sub-btn" id="switchBtn">カメラ切替</button>
-        <button class="sub-btn" id="powerBtn">CAMERA ON</button>
-        <input type="range" id="zoomRange" min="1" max="3" step="0.1" value="1" style="width:80%; accent-color: var(--accent);">
-    </div>
 
-    <div class="right-section">
-        <div id="resetTrigger" style="text-align: center; cursor: pointer;">
-            <div class="counter" id="counter">20</div>
-            <div style="font-size: 9px; color: #888;">REMAINING</div>
+        <div class="zoom-container">
+            <span class="zoom-label">1x</span>
+            <input type="range" id="zoomRange" class="zoom-slider" min="1" max="3" step="0.1" value="1">
+            <span class="zoom-label">3x</span>
         </div>
-        <button id="shutter" disabled></button>
-        <button class="sub-btn" id="timerBtn" style="margin-top:15px; width:120px;">5秒タイマー</button>
     </div>
 
-    <div id="status-msg">READY</div>
+    <!-- 右画面：統合モダンコントロールデッキ -->
+    <div class="right-deck">
+        <!-- 上段：グループ設定 ＆ 残り枚数 -->
+        <div class="deck-header">
+            <div class="group-select-box">
+                <span class="deck-label">TEAM SELECT</span>
+                <select id="carSelect" class="modern-select">
+                    <option value="">グループを選択</option>
+                    <option value="A">グループ A</option>
+                    <option value="B">グループ B</option>
+                    <option value="C">グループ C</option>
+                    <option value="D">グループ D</option>
+                </select>
+            </div>
+
+            <div class="counter-badge" id="resetTrigger" title="5回連続タップでリセット">
+                <span class="deck-label">REMAINING</span>
+                <div class="counter-num-box">
+                    <span class="counter-num" id="counter">20</span>
+                    <span class="counter-total">/ 20</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 中段：機能ボタングリッド -->
+        <div class="controls-grid">
+            <button class="deck-btn btn-full" id="missionBtn">
+                📋 ミッション全指令を見る
+            </button>
+            <button class="deck-btn" id="flashBtn">
+                ⚡ FLASH OFF
+            </button>
+            <button class="deck-btn" id="switchBtn">
+                🔄 カメラ切替
+            </button>
+            <button class="deck-btn" id="timerBtn">
+                ⏱️ 5秒タイマー
+            </button>
+            <button class="deck-btn" id="powerBtn">
+                📷 CAMERA ON
+            </button>
+        </div>
+
+        <!-- 下段：シャッターボタン＆チャージステータス -->
+        <div class="shutter-section" id="shutterContainer">
+            <div class="shutter-outer">
+                <div class="charge-ring"></div>
+                <button id="shutter" disabled aria-label="シャッター"></button>
+            </div>
+            <div id="status-msg">READY</div>
+        </div>
+    </div>
+
     <canvas id="canvas"></canvas>
 
     <script type="module">
@@ -90,7 +580,7 @@
         import { getStorage, ref, uploadBytes } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
         import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
-        // --- Firebase設定 ---
+        // --- 1. Firebase設定 (必要に応じてご自身の情報を貼り付けてください) ---
         const firebaseConfig = {
             apiKey: "AIzaSyDHqQDeEMrFV09YI0n_ARr1Tzta5aqmE2U",
             authDomain: "my-retro-cam.firebaseapp.com",
@@ -103,10 +593,17 @@
         let app, storage, auth;
         let isAuthReady = false;
         if (firebaseConfig.apiKey) {
-            app = initializeApp(firebaseConfig);
-            storage = getStorage(app);
-            auth = getAuth(app);
-            onAuthStateChanged(auth, (u) => { if(u) { isAuthReady=true; syncPhotos(); } else signInAnonymously(auth); });
+            try {
+                app = initializeApp(firebaseConfig);
+                storage = getStorage(app);
+                auth = getAuth(app);
+                onAuthStateChanged(auth, (u) => { 
+                    if(u) { isAuthReady = true; syncPhotos(); } 
+                    else signInAnonymously(auth); 
+                });
+            } catch (err) {
+                console.warn("Firebase Init Error:", err);
+            }
         }
 
         const dbName = "CurryGrandPrixDB";
@@ -118,7 +615,7 @@
 
         const MAX_SHOTS = 20;
 
-        // --- 全チーム共通ミッション（会場散策①と②を入れ替え） ---
+        // --- 全チーム共通ミッション（計6ミッション・全20枚配分） ---
         const commonMissions = [
             { id: "01", threshold: 17, title: "1.集合：【決起集会】", task: "優勝を誓うガッツポーズ集合写真！" },
             { id: "02", threshold: 14, title: "2.買い出し：【目利きの極意】", task: "極上スパイスや隠し味を真剣に見極める姿。" },
@@ -128,7 +625,6 @@
             { id: "06", threshold: 0,  title: "6.BBQ：【完成の歓喜】", task: "丹精込めて完成させたカレーを全員で囲んだ笑顔ショット。" }
         ];
 
-        // 4チーム共通で同じミッションを割り当て
         const missionsData = {
             "A": commonMissions,
             "B": commonMissions,
@@ -139,9 +635,12 @@
         const carSelect = document.getElementById('carSelect');
         const counterDisplay = document.getElementById('counter');
         const shutterBtn = document.getElementById('shutter');
+        const shutterContainer = document.getElementById('shutterContainer');
         const guideTitle = document.getElementById('guide-title');
         const statusMsg = document.getElementById('status-msg');
         const flashBtn = document.getElementById('flashBtn');
+        const timerBtn = document.getElementById('timerBtn');
+        const powerBtn = document.getElementById('powerBtn');
         
         let selectedCar = localStorage.getItem('curry_team') || "";
         let shotCount = 0;
@@ -195,12 +694,17 @@
                 stream = await navigator.mediaDevices.getUserMedia({
                     video: { facingMode: currentFacingMode, width: { ideal: 1920 }, height: { ideal: 1080 } }
                 });
-                document.getElementById('video').srcObject = stream;
+                const videoEl = document.getElementById('video');
+                videoEl.srcObject = stream;
+                videoEl.classList.toggle('selfie', currentFacingMode === "user");
                 isCameraOn = true;
+                powerBtn.innerText = "📷 CAMERA OFF";
+                powerBtn.classList.add('active-state');
                 updateUI();
                 if (isFlashOn) setTimeout(() => applyTorch(true), 1000);
             } catch (e) {
                 statusMsg.innerText = "CAMERA ERROR";
+                console.error(e);
             }
         }
 
@@ -216,8 +720,8 @@
         flashBtn.onclick = () => {
             if (currentFacingMode === "user") return;
             isFlashOn = !isFlashOn;
-            flashBtn.innerText = isFlashOn ? "FLASH ON" : "FLASH OFF";
-            flashBtn.classList.toggle('active-mode', isFlashOn);
+            flashBtn.innerText = isFlashOn ? "⚡ FLASH ON" : "⚡ FLASH OFF";
+            flashBtn.classList.toggle('active-state', isFlashOn);
             applyTorch(isFlashOn);
         };
 
@@ -226,15 +730,17 @@
             startCamera();
         };
 
-        document.getElementById('timerBtn').onclick = () => {
+        timerBtn.onclick = () => {
             isTimerActive = !isTimerActive;
-            document.getElementById('timerBtn').classList.toggle('active-mode', isTimerActive);
+            timerBtn.classList.toggle('active-state', isTimerActive);
         };
 
-        document.getElementById('powerBtn').onclick = () => {
+        powerBtn.onclick = () => {
             if (isCameraOn) {
                 if (stream) stream.getTracks().forEach(t => t.stop());
                 isCameraOn = false;
+                powerBtn.innerText = "📷 CAMERA ON";
+                powerBtn.classList.remove('active-state');
             } else {
                 startCamera();
             }
@@ -264,7 +770,7 @@
                         timerDisp.style.visibility = "hidden";
                         executeCapture();
                         isTimerActive = false;
-                        document.getElementById('timerBtn').classList.remove('active-mode');
+                        timerBtn.classList.remove('active-state');
                     }
                 }, 1000);
             } else {
@@ -275,15 +781,20 @@
         function executeCapture() {
             takePicture();
             statusMsg.innerText = "CHARGING...";
+            statusMsg.classList.add('charging');
+            shutterContainer.classList.add('is-charging');
+
             setTimeout(() => {
                 isCapturing = false;
                 statusMsg.innerText = "READY";
+                statusMsg.classList.remove('charging');
+                shutterContainer.classList.remove('is-charging');
                 updateUI();
             }, 3000);
         }
 
         function takePicture() {
-            const targetW = 1800, targetH = 1200;
+            const targetW = 1800, targetH = 1200; // 3:2比率
             const canvas = document.getElementById('canvas');
             canvas.width = targetW;
             canvas.height = targetH;
@@ -300,6 +811,7 @@
             applyEffects(ctx, targetW, targetH);
             addStamps(ctx, targetW, targetH);
 
+            // 1MB前後に最適化（品質0.82）
             canvas.toBlob(async (blob) => {
                 const now = new Date();
                 const timeStr = `${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}-${String(now.getHours()).padStart(2,'0')}${String(now.getMinutes()).padStart(2,'0')}${String(now.getSeconds()).padStart(2,'0')}`;
@@ -318,11 +830,11 @@
                 const remaining = MAX_SHOTS - shotCount;
                 counterDisplay.innerText = remaining > 0 ? remaining : 0;
                 syncPhotos();
-            }, 'image/jpeg', 0.85);
+            }, 'image/jpeg', 0.82);
         }
 
         async function syncPhotos() {
-            if (!navigator.onLine || !db || !isAuthReady || !storage) return;
+            if (!navigator.onLine || !db || !storage) return;
             const store = db.transaction(storeName, "readwrite").objectStore(storeName);
             const req = store.getAll();
             req.onsuccess = async () => {
@@ -337,39 +849,45 @@
         }
 
         function applyEffects(ctx, w, h) {
-            // スパイス・レトロ調フィルター
+            // スパイス・アンバー レトロトーン
             ctx.globalCompositeOperation = 'overlay';
-            ctx.fillStyle = 'rgba(255, 140, 0, 0.12)'; ctx.fillRect(0, 0, w, h);
-            ctx.fillStyle = isFlashOn ? 'rgba(255, 255, 255, 0.2)' : 'rgba(255, 200, 60, 0.12)'; ctx.fillRect(0, 0, w, h);
+            ctx.fillStyle = 'rgba(255, 150, 0, 0.12)'; 
+            ctx.fillRect(0, 0, w, h);
+            
+            ctx.fillStyle = isFlashOn ? 'rgba(255, 255, 255, 0.22)' : 'rgba(255, 180, 50, 0.14)'; 
+            ctx.fillRect(0, 0, w, h);
             ctx.globalCompositeOperation = 'source-over';
 
             // グレインノイズ
             const grain = (w * h) / 1.6;
             for (let i = 0; i < grain; i++) {
-                const x = Math.random() * w, y = Math.random() * h, opacity = Math.random() * 0.08;
-                ctx.fillStyle = `rgba(255, 255, 255, ${opacity})`; ctx.fillRect(x, y, 1.2, 1.2);
+                const x = Math.random() * w, y = Math.random() * h, opacity = Math.random() * 0.07;
+                ctx.fillStyle = `rgba(255, 255, 255, ${opacity})`; 
+                ctx.fillRect(x, y, 1.2, 1.2);
             }
 
-            // 周辺光量落ち
+            // 周辺光量落ち (ヴィネット)
             const g = ctx.createRadialGradient(w/2, h/2, w/4, w/2, h/2, w/0.8);
-            g.addColorStop(0, 'transparent'); g.addColorStop(1, 'rgba(0,0,0,0.6)');
-            ctx.fillStyle = g; ctx.fillRect(0, 0, w, h);
+            g.addColorStop(0, 'transparent'); 
+            g.addColorStop(1, 'rgba(0,0,0,0.65)');
+            ctx.fillStyle = g; 
+            ctx.fillRect(0, 0, w, h);
         }
 
         function addStamps(ctx, w, h) {
             const n = new Date();
             const dateStr = `'${n.getFullYear().toString().slice(-2)}.${String(n.getMonth()+1).padStart(2,'0')}.${String(n.getDate()).padStart(2,'0')} ${String(n.getHours()).padStart(2,'0')}:${String(n.getMinutes()).padStart(2,'0')}`;
-            const teamStr = `TEAM-${selectedCar}`;
+            const teamStr = `TEAM-${selectedCar} (CURRY GP)`;
             const fs = Math.floor(w * 0.045);
 
             ctx.font = `bold ${fs}px "Courier New", monospace`;
             ctx.textAlign = "right";
             ctx.globalAlpha = 0.75;
             ctx.lineWidth = fs/8;
-            ctx.strokeStyle = "rgba(0,0,0,0.5)";
+            ctx.strokeStyle = "rgba(0,0,0,0.55)";
 
             ctx.strokeText(dateStr, w*0.95, h*0.95);
-            ctx.fillStyle = "#ff8c21";
+            ctx.fillStyle = "#ff9f1a";
             ctx.fillText(dateStr, w*0.95, h*0.95);
 
             ctx.textAlign = "left";
@@ -378,10 +896,11 @@
             ctx.globalAlpha = 1.0;
         }
 
+        // 5連打リセット
         document.getElementById('resetTrigger').onclick = () => {
             resetClickCount++;
             if (resetClickCount >= 5) {
-                if(confirm("全リセット（グループ・枚数クリア）しますか？")) {
+                if(confirm("全リセット（グループ選択・撮影枚数の初期化）を行いますか？")) {
                     localStorage.clear();
                     shotCount = 0;
                     selectedCar = "";
@@ -394,20 +913,32 @@
             setTimeout(() => { resetClickCount = 0; }, 2000);
         };
 
+        // ミッションモーダル開閉
+        const modal = document.getElementById('mission-overlay');
         document.getElementById('missionBtn').onclick = () => {
-            if (!selectedCar) return;
+            const currentTeam = selectedCar || "A";
             const list = document.getElementById('mission-list-content');
             list.innerHTML = "";
-            missionsData[selectedCar].forEach(m => {
+            document.getElementById('modal-team-name').innerText = `TEAM ${currentTeam} - MISSION LIST`;
+            missionsData[currentTeam].forEach(m => {
                 const div = document.createElement('div');
-                div.innerHTML = `<b style="color:var(--accent)">MISSION ${m.id}: ${m.title}</b><p style="font-size:11px;margin:5px 0 15px 0;">${m.task}</p>`;
+                div.className = "mission-item-card";
+                div.innerHTML = `<div class="mission-head" style="color:var(--accent)">MISSION ${m.id}: ${m.title}</div><p class="mission-desc">${m.task}</p>`;
                 list.appendChild(div);
             });
-            document.getElementById('mission-overlay').style.display = "block";
+            modal.style.display = "block";
         };
-        document.getElementById('mission-overlay').onclick = () => document.getElementById('mission-overlay').style.display = "none";
+
+        modal.onclick = (e) => {
+            if (e.target === modal || e.target.id === 'modalCloseBtn') {
+                modal.style.display = "none";
+            }
+        };
 
         window.addEventListener('online', syncPhotos);
     </script>
 </body>
 </html>
+
+
+
