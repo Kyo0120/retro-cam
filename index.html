@@ -834,6 +834,17 @@
             }
         };
 
+        // テスト用：カウンターを長押しまたはダブルタップで枚数を設定するプロンプトを出す
+        document.getElementById('counter').ondblclick = () => {
+            const input = prompt("【テスト用】残り枚数を入力してください（0〜20）:", "3");
+        if (input !== null) {
+            const remaining = parseInt(input);
+            shotCount = MAX_SHOTS - remaining;
+            localStorage.setItem(`curry_count_${selectedCar}`, shotCount);
+            updateUI();
+            }   
+        };
+
         function applyTeamSelectedUI(team) {
             teamSelectWrapper.style.display = 'none';
             teamConfirmedView.style.display = 'flex';
