@@ -1083,7 +1083,7 @@
             ctx.fillRect(0, 0, w, h);
         }
 
-        // 写真刻印スタンプ：一回り小さめ（0.035）で「チームA ミッション:01 YYYY.MM.DD HH:mm」
+        // 写真刻印スタンプ：左下に「チーム名 ミッション番号」、右下に「YYYY.MM.DD HH:mm」
         function addStamps(ctx, w, h, mId, isFree) {
             const n = new Date();
             const year = n.getFullYear();
@@ -1094,7 +1094,7 @@
 
             const dateStr = `${year}.${month}.${day} ${hours}:${minutes}`;
             const missionLabel = isFree ? "ミッション:フリーモード" : `ミッション:${mId}`;
-            const stampText = `チーム${selectedCar} ${missionLabel} ${dateStr}`;
+            const leftText = `チーム${selectedCar} ${missionLabel}`;
 
             const fs = Math.floor(w * 0.035);
             ctx.font = `bold ${fs}px "Courier New", "Hiragino Kaku Gothic ProN", sans-serif`;
@@ -1103,9 +1103,15 @@
             ctx.strokeStyle = "rgba(0,0,0,0.6)";
             ctx.fillStyle = "#ff8c21";
 
+            // 左下：チーム名 ＆ ミッション番号
             ctx.textAlign = "left";
-            ctx.strokeText(stampText, w * 0.04, h * 0.96);
-            ctx.fillText(stampText, w * 0.04, h * 0.96);
+            ctx.strokeText(leftText, w * 0.04, h * 0.96);
+            ctx.fillText(leftText, w * 0.04, h * 0.96);
+
+            // 右下：年月日 時分 (YYYY.MM.DD HH:mm)
+            ctx.textAlign = "right";
+            ctx.strokeText(dateStr, w * 0.96, h * 0.96);
+            ctx.fillText(dateStr, w * 0.96, h * 0.96);
 
             ctx.globalAlpha = 1.0;
         }
