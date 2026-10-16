@@ -14,8 +14,6 @@
             --text-main: #f0f3f6;
             --text-sub: #8a94a6;
             --danger: #ff4757;
-            --free-mode-color: #2ed573;
-            --free-glow: rgba(46, 213, 115, 0.35);
         }
 
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -66,7 +64,6 @@
                 linear-gradient(to bottom, transparent calc(50% - 0.5px), rgba(255,255,255,0.15) calc(50% - 0.5px), rgba(255,255,255,0.15) calc(50% + 0.5px), transparent calc(50% + 0.5px));
         }
 
-        /* CURRENT MISSION バナー */
         .mission-pill {
             position: absolute;
             top: 14px; left: 50%;
@@ -82,10 +79,6 @@
             z-index: 20;
             box-shadow: 0 8px 24px rgba(0,0,0,0.4);
             pointer-events: none;
-            transition: border-color 0.3s ease;
-        }
-        .mission-pill.is-free-mode {
-            border-color: rgba(46, 213, 115, 0.5);
         }
         .mission-pill-label {
             font-size: 8px;
@@ -94,9 +87,6 @@
             font-weight: 700;
             text-transform: uppercase;
             margin-bottom: 2px;
-        }
-        .mission-pill.is-free-mode .mission-pill-label {
-            color: var(--free-mode-color);
         }
         .mission-pill-title {
             font-size: 11px;
@@ -117,7 +107,6 @@
             overflow: hidden;
         }
 
-        /* 下部ズームスライダー */
         .zoom-island {
             position: absolute;
             bottom: 14px;
@@ -225,15 +214,8 @@
             color: var(--accent-color);
             line-height: 1;
             font-feature-settings: "tnum";
-            transition: color 0.3s ease;
-        }
-        .counter-badge.is-free-mode {
-            color: var(--free-mode-color);
-            font-size: 1.3rem;
-            letter-spacing: 1px;
         }
 
-        /* 中央：機能ボタングリッド */
         .actions-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -266,7 +248,6 @@
         }
         .full-width { grid-column: span 2; }
 
-        /* 下部：シャッターボタンデッキ */
         .shutter-deck {
             display: flex;
             flex-direction: column;
@@ -410,7 +391,6 @@
 </head>
 <body>
 
-    <!-- 撮影プレビュー用モーダル（ミッション0限定） -->
     <div id="preview-modal">
         <div class="preview-card">
             <div style="font-size:12px; font-weight:bold; color:var(--accent-color); letter-spacing:1px;">TEST SHOT CHECK</div>
@@ -419,7 +399,6 @@
         </div>
     </div>
 
-    <!-- ミッション一覧モーダル -->
     <div id="mission-overlay" class="modal-layer">
         <div class="modal-box">
             <h3 style="color:var(--accent-color); margin-top:0; border-bottom:1px solid var(--surface-border); padding-bottom:8px; font-size:13px; letter-spacing:1px;">MISSION LIST</h3>
@@ -428,10 +407,9 @@
         </div>
     </div>
 
-    <!-- 左側：ファインダー -->
     <section class="viewport-section">
-        <div class="mission-pill" id="missionPill">
-            <div class="mission-pill-label" id="pillLabel">CURRENT MISSION</div>
+        <div class="mission-pill">
+            <div class="mission-pill-label">CURRENT MISSION</div>
             <div id="guide-title" class="mission-pill-title">グループを選択してください</div>
             <div id="guide-task" class="mission-pill-task"></div>
         </div>
@@ -449,7 +427,6 @@
         <div id="timer-display">5</div>
     </section>
 
-    <!-- 右側：コントロールデッキ -->
     <section class="control-section">
         <div class="deck-top">
             <div class="select-card">
@@ -463,7 +440,6 @@
                 </select>
                 <div id="teamDisplayName" class="team-display-name"></div>
             </div>
-
             <div class="counter-card" id="resetTrigger">
                 <span class="counter-label" id="counterLabel">REMAINING FILMS</span>
                 <div class="counter-badge" id="counter">20</div>
@@ -489,11 +465,10 @@
     <canvas id="canvas"></canvas>
 
     <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getStorage, ref, uploadBytes } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
-        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { initializeApp } from "[https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js](https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js)";
+        import { getStorage, ref, uploadBytes } from "[https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js](https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js)";
+        import { getAuth, signInAnonymously, onAuthStateChanged } from "[https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js](https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js)";
 
-        // --- Firebase設定 ---
         const firebaseConfig = {
             apiKey: "AIzaSyDHqQDeEMrFV09YI0n_ARr1Tzta5aqmE2U",
             authDomain: "my-retro-cam.firebaseapp.com",
@@ -521,7 +496,6 @@
 
         const MAX_SHOTS = 20;
 
-        // 全チーム共通ミッション（練習2枚 + 各3枚均等 = 全20枚）
         const commonMissions = [
             { id: "00", threshold: 18, title: "0.操作練習：【テスト撮影】", task: "フラッシュやタイマー、構図を試してみよう！" },
             { id: "01", threshold: 15, title: "1.集合：【決起集会】", task: "優勝を誓うガッツポーズ集合写真！" },
@@ -544,8 +518,6 @@
         const counterDisplay = document.getElementById('counter');
         const counterLabel = document.getElementById('counterLabel');
         const shutterBtn = document.getElementById('shutter');
-        const missionPill = document.getElementById('missionPill');
-        const pillLabel = document.getElementById('pillLabel');
         const guideTitle = document.getElementById('guide-title');
         const guideTask = document.getElementById('guide-task');
         const statusMsg = document.getElementById('status-msg');
@@ -580,69 +552,36 @@
             shotCount = parseInt(localStorage.getItem(`curry_count_${selectedCar}`)) || 0;
         }
 
-        // 現在のミッションIDを取得（フリー時は "free"）
-        function getCurrentMissionInfo() {
-            if (!selectedCar) return null;
-            const remaining = MAX_SHOTS - shotCount;
-            if (remaining <= 0) {
-                return { isFree: true, id: "free", label: "フリーモード" };
-            }
-            const mList = missionsData[selectedCar];
-            const current = mList.find(m => remaining > m.threshold);
-            return {
-                isFree: false,
-                id: current ? current.id : "06",
-                label: current ? current.id : "06",
-                mission: current
-            };
-        }
-
         function updateUI() {
             if (!selectedCar) {
                 counterDisplay.innerText = MAX_SHOTS;
-                counterDisplay.classList.remove('is-free-mode');
                 counterLabel.innerText = "REMAINING FILMS";
                 guideTitle.innerText = "グループを選択してください";
                 guideTask.innerText = "";
-                missionPill.classList.remove('is-free-mode');
-                pillLabel.innerText = "CURRENT MISSION";
                 shutterBtn.disabled = true;
                 return;
             }
-
             const remaining = MAX_SHOTS - shotCount;
-            const mInfo = getCurrentMissionInfo();
+            const mList = missionsData[selectedCar];
 
-            if (mInfo.isFree) {
-                // フリーモード突入時
-                const freeCount = shotCount - MAX_SHOTS;
-                counterDisplay.innerText = freeCount > 0 ? `+${freeCount}` : "FREE";
-                counterDisplay.classList.add('is-free-mode');
-                counterLabel.innerText = "FREE MODE (UNLIMITED)";
-
-                missionPill.classList.add('is-free-mode');
-                pillLabel.innerText = "BONUS TRACK";
-                guideTitle.innerText = "フリー撮影モード";
-                guideTask.innerText = "規定枚数クリア！BBQや歓談の思い出を自由に撮影しよう！";
-
-                // フリーモードでもシャッターは押し放題
-                shutterBtn.disabled = (isCapturing || !isCameraOn);
-            } else {
-                // 通常ミッション時
+            if (remaining > 0) {
                 counterDisplay.innerText = remaining;
-                counterDisplay.classList.remove('is-free-mode');
                 counterLabel.innerText = "REMAINING FILMS";
-
-                missionPill.classList.remove('is-free-mode');
-                pillLabel.innerText = "CURRENT MISSION";
-
-                if (mInfo.mission) {
-                    guideTitle.innerText = mInfo.mission.title;
-                    guideTask.innerText = mInfo.mission.task;
+                const current = mList.find(m => remaining > m.threshold);
+                if (current) {
+                    guideTitle.innerText = current.title;
+                    guideTask.innerText = current.task;
                 }
-
-                shutterBtn.disabled = (isCapturing || !isCameraOn);
+            } else {
+                // フリー撮影モード
+                counterDisplay.innerText = "FREE";
+                counterLabel.innerText = "FREE SHOT MODE";
+                guideTitle.innerText = "フリー撮影モード";
+                guideTask.innerText = "全ミッション達成！自由に思い出を記録しよう！";
             }
+
+            // フリーモード時も撮影可能（残り枚数によるシャッターロックを解除）
+            shutterBtn.disabled = (isCapturing || !isCameraOn);
         }
 
         carSelect.onchange = () => {
@@ -765,20 +704,23 @@
             ctx.drawImage(v, sX, sY, sW, sH, 0, 0, targetW, targetH);
             applyEffects(ctx, targetW, targetH);
 
-            // ミッション判定
-            const mInfo = getCurrentMissionInfo();
-            addStamps(ctx, targetW, targetH, mInfo);
-
             const remainingBeforeShot = MAX_SHOTS - shotCount;
             const isPracticeMission = (remainingBeforeShot > 18);
+            const isFreeMode = (remainingBeforeShot <= 0);
+
+            // ミッションID判定
+            let currentMissionId = "free";
+            if (!isFreeMode) {
+                const mList = missionsData[selectedCar];
+                currentMissionId = (mList.find(m => remainingBeforeShot > m.threshold) || { id: "99" }).id;
+            }
+
+            addStamps(ctx, targetW, targetH, currentMissionId, isFreeMode);
 
             canvas.toBlob(async (blob) => {
                 const now = new Date();
                 const timeStr = `${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}-${String(now.getHours()).padStart(2,'0')}${String(now.getMinutes()).padStart(2,'0')}${String(now.getSeconds()).padStart(2,'0')}`;
-                
-                // ファイル名：通常ミッションなら番号、フリーなら free
-                const fileMissionTag = mInfo.isFree ? "free" : mInfo.id;
-                const fileName = `curry_team${selectedCar}_${fileMissionTag}_${timeStr}.jpg`;
+                const fileName = `curry_team${selectedCar}_${currentMissionId}_${timeStr}.jpg`;
 
                 if (db) {
                     const tx = db.transaction(storeName, "readwrite");
@@ -791,7 +733,6 @@
                 updateUI();
                 syncPhotos();
 
-                // ミッション0（操作練習）のみプレビュー表示
                 if (isPracticeMission) {
                     const previewUrl = URL.createObjectURL(blob);
                     previewImg.src = previewUrl;
@@ -823,13 +764,97 @@
 
         function applyEffects(ctx, w, h) {
             ctx.globalCompositeOperation = 'overlay';
-            ctx.fillStyle = 'rgba(255, 140, 0, 0.12)'; ctx.fillRect(写真への刻印レイアウトの更新と、「全ミッション完了後のフリー撮影モード」を追加した完全版コードです。
+            ctx.fillStyle = 'rgba(255, 140, 0, 0.12)'; ctx.fillRect(0, 0, w, h);
+            ctx.fillStyle = isFlashOn ? 'rgba(255, 255, 255, 0.2)' : 'rgba(255, 200, 60, 0.12)'; ctx.fillRect(0, 0, w, h);
+            ctx.globalCompositeOperation = 'source-over';
 
-### 変更点
-1. **スタンプ表記とサイズ調整**:
-   * 写真下部のスタンプを1行に統合：`チームA ミッション:01 2026.10.29 12:30`
-   * フォントサイズを従来の `0.045` から一回り小さい **`0.035`** に縮小。
-2. **フリー撮影モードの追加**:
-   * 既定の20枚を撮りきると、カウンター表示が `FREE` に切り替わり、シャッターロックが解除されて無制限に撮影可能になります。
-   * フリーモード時の写真スタンプは `チームA ミッション:フリーモード 2026.10.29 12:30` と刻印され、ファイル名も `curry_teamA_free_...` で保存・同期されます。
-   * バナー表示も「フリー撮影モード：自由に思い出を記録しよう！」に切り替わります。
+            const grain = (w * h) / 1.6;
+            for (let i = 0; i < grain; i++) {
+                const x = Math.random() * w, y = Math.random() * h, opacity = Math.random() * 0.08;
+                ctx.fillStyle = `rgba(255, 255, 255, ${opacity})`; ctx.fillRect(x, y, 1.2, 1.2);
+            }
+
+            const g = ctx.createRadialGradient(w/2, h/2, w/4, w/2, h/2, w/0.8);
+            g.addColorStop(0, 'transparent'); g.addColorStop(1, 'rgba(0,0,0,0.6)');
+            ctx.fillStyle = g; ctx.fillRect(0, 0, w, h);
+        }
+
+        // スタンプ：チーム名 ミッション:01(またはフリーモード) 年月日時分
+        function addStamps(ctx, w, h, mId, isFree) {
+            const n = new Date();
+            const year = n.getFullYear();
+            const month = String(n.getMonth() + 1).padStart(2, '0');
+            const day = String(n.getDate()).padStart(2, '0');
+            const hours = String(n.getHours()).padStart(2, '0');
+            const minutes = String(n.getMinutes()).padStart(2, '0');
+
+            const dateStr = `${year}.${month}.${day} ${hours}:${minutes}`;
+            const missionLabel = isFree ? "ミッション:フリーモード" : `ミッション:${mId}`;
+            const stampText = `チーム${selectedCar} ${missionLabel} ${dateStr}`;
+            
+            // 一回り小さく調整 (0.045 -> 0.035)
+            const fs = Math.floor(w * 0.035);
+            ctx.font = `bold ${fs}px "Courier New", "Hiragino Kaku Gothic ProN", sans-serif`;
+            ctx.globalAlpha = 0.75;
+            ctx.lineWidth = fs / 7;
+            ctx.strokeStyle = "rgba(0,0,0,0.55)";
+            ctx.fillStyle = "#ff8c21";
+
+            ctx.textAlign = "left";
+            ctx.strokeText(stampText, w * 0.04, h * 0.96);
+            ctx.fillText(stampText, w * 0.04, h * 0.96);
+
+            ctx.globalAlpha = 1.0;
+        }
+
+        document.getElementById('resetTrigger').onclick = () => {
+            resetClickCount++;
+            if (resetClickCount >= 5) {
+                if(confirm("全リセット（グループ・枚数クリア）しますか？")) {
+                    localStorage.clear();
+                    shotCount = 0;
+                    selectedCar = "";
+                    carSelect.style.display = "block";
+                    carSelect.value = "";
+                    teamDisplayName.style.display = "none";
+                    teamDisplayName.innerText = "";
+                    updateUI();
+                }
+                resetClickCount = 0;
+            }
+            setTimeout(() => { resetClickCount = 0; }, 2000);
+        };
+
+        document.getElementById('missionBtn').onclick = () => {
+            if (!selectedCar) return;
+            const list = document.getElementById('mission-list-content');
+            list.innerHTML = "";
+
+            const remaining = MAX_SHOTS - shotCount;
+            const mList = missionsData[selectedCar];
+            const currentMission = remaining > 0 ? mList.find(m => remaining > m.threshold) : null;
+            const currentId = currentMission ? currentMission.id : null;
+
+            mList.forEach(m => {
+                const isCurrent = (m.id === currentId);
+                const card = document.createElement('div');
+                card.className = `mission-item-card ${isCurrent ? 'is-current' : ''}`;
+                card.innerHTML = `
+                    <span class="current-badge">CURRENT</span>
+                    <div style="font-weight:700; font-size:11.5px; color:${isCurrent ? 'var(--accent-color)' : '#fff'};">
+                        MISSION ${m.id}: ${m.title}
+                    </div>
+                    <p style="font-size:10px; color:${isCurrent ? '#f0f3f6' : '#9ca3af'}; margin:4px 0 0 0; line-height:1.4;">
+                        ${m.task}
+                    </p>
+                `;
+                list.appendChild(card);
+            });
+            document.getElementById('mission-overlay').style.display = "block";
+        };
+        document.getElementById('mission-overlay').onclick = () => document.getElementById('mission-overlay').style.display = "none";
+
+        window.addEventListener('online', syncPhotos);
+    </script>
+</body>
+</html>
