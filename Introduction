@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Curry Grand Prix - Camera User Guide & Booklet</title>
+    <!-- Tailwind CSS (CDN) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        darkBg: '#0b0d10',
+                        surface: 'rgba(20, 24, 32, 0.78)',
+                        surfaceBorder: 'rgba(255, 255, 255, 0.09)',
+                        amberAccent: '#ff9f1a',
+                        amberGlow: 'rgba(255, 159, 26, 0.35)',
+                        freeEmerald: '#22c55e',
+                        freeGlow: 'rgba(34, 197, 94, 0.35)',
+                        dangerRed: '#ff4757',
+                        filmOrange: '#ff8c21'
+                    },
+                    fontFamily: {
+                        mono: ['"Courier New"', 'monospace', '"Hiragino Kaku Gothic ProN"', 'sans-serif'],
+                        sans: ['-apple-system', 'BlinkMacSystemFont', '"Segoe UI"', 'Roboto', '"Hiragino Kaku Gothic ProN"', 'Meiryo', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* カスタムスクロールバーとグラスモーフィズム効果 */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0b0d10;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #232936;
+            border-radius: 9999px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #ff9f1a;
+        }
+
+        .glass-panel {
+            background: rgba(20, 24, 32, 0.75);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .glow-amber {
+            box-shadow: 0 0 25px rgba(255, 159, 26, 0.22);
+        }
+
+        .glow-emerald {
+            box-shadow: 0 0 25px rgba(34, 197, 94, 0.25);
+        }
+
+        .corner-border {
+            position: relative;
+        }
+        .corner-border::before, .corner-border::after {
+            content: '';
+            position: absolute;
+            width: 8px;
+            height: 8px;
+            border-color: #ff9f1a;
+            pointer-events: none;
+        }
+        .corner-border::before {
+            top: 6px; left: 6px;
+            border-top: 2px solid #ff9f1a;
+            border-left: 2px solid #ff9f1a;
+        }
+        .corner-border::after {
+            bottom: 6px; right: 6px;
+            border-bottom: 2px solid #ff9f1a;
+            border-right: 2px solid #ff9f1a;
+        }
+
+        /* アニメーション用パルス */
+        @keyframes subtle-pulse {
+            0%, 100% { opacity: 0.9; transform: scale(1); }
+            50% { opacity: 1; transform: scale(1.02); }
+        }
+        .animate-subtle {
+            animation: subtle-pulse 3s infinite ease-in-out;
+        }
+    </style>
+</head>
+<body class="bg-darkBg text-gray-100 font-sans antialiased selection:bg-amberAccent selection:text-black min-h-screen pb-16">
+
+    <!-- 背景の光彩アクセント -->
+    <div class="fixed top-0 left-1/2 -translate-x-1/2 w-full max-w-5xl h-80 bg-gradient-to-b from-amberAccent/10 via-transparent to-transparent pointer-events-none -z-10 blur-3xl"></div>
+
+    <!-- コンテナ -->
+    <div class="max-w-4xl mx-auto px-4 sm:px-6 pt-8 space-y-12">
+
+        <!-- ==============================================
+             1. ヘッダー / イントロダクション
+             ============================================== -->
+        <header class="text-center space-y-4 pt-4">
+            <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amberAccent/10 border border-amberAccent/30 text-amberAccent text-xs font-mono font-bold tracking-widest uppercase mb-1">
+                <span class="w-2 h-2 rounded-full bg-amberAccent animate-ping"></span>
+                OFFICIAL PARTICIPANT MANUAL
+            </div>
+            
+            <h1 class="text-3xl sm:text-4xl md:text-5xl font-black tracking-tight text-white leading-tight">
+                🍛 カレーグランプリ <br class="sm:hidden">
+                <span class="text-transparent bg-clip-text bg-gradient-to-r from-amberAccent via-orange-400 to-amber-200">
+                    × フォトグランプリ
+                </span>
+            </h1>
+            
+            <p class="text-xs sm:text-sm text-gray-400 max-w-2xl mx-auto leading-relaxed">
+                最新スマホをあえて不便な「使い捨てフィルムカメラ」に変える特製Webカメラアプリ。<br>
+                巻き上げのチャージタイム、現像するまで見られない緊張感、そして仲間と紡ぐ最高の1日を記録しよう！
+            </p>
+
+            <!-- 基本仕様タグ一覧 -->
+            <div class="flex flex-wrap justify-center gap-2 pt-2">
+                <span class="px-3 py-1 rounded-lg bg-white/5 border border-white/10 text-xs font-mono text-gray-300">🎞️ 限定 20枚配分</span>
+                <span class="px-3 py-1 rounded-lg bg-freeEmerald/10 border border-freeEmerald/30 text-xs font-mono text-green-400 font-bold">🚀 完走後 無制限フリー</span>
+                <span class="px-3 py-1 rounded-lg bg-white/5 border border-white/10 text-xs font-mono text-gray-300">☕ レトロシネマ調加工</span>
+                <span class="px-3 py-1 rounded-lg bg-white/5 border border-white/10 text-xs font-mono text-gray-300">☁️ 自動クラウド同期</span>
+                <span class="px-3 py-1 rounded-lg bg-white/5 border border-white/10 text-xs font-mono text-gray-300">🏷️ 左右スタンプ刻印</span>
+            </div>
+        </header>
+
+        <!-- ==============================================
+             2. はじめかた（簡単2ステップ）
+             ============================================== -->
+        <section class="space-y-4">
+            <div class="flex items-center gap-2 border-b border-surfaceBorder pb-2">
+                <span class="text-amberAccent font-mono text-sm font-bold">01 / SETUP</span>
+                <h2 class="text-lg font-bold text-white tracking-wide">はじめかた（かんたん2ステップ）</h2>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <!-- STEP 1 -->
+                <div class="glass-panel p-5 rounded-2xl relative overflow-hidden group hover:border-amberAccent/40 transition">
+                    <div class="absolute top-0 right-0 w-24 h-24 bg-amberAccent/5 rounded-bl-full pointer-events-none"></div>
+                    <div class="flex items-start gap-4">
+                        <div class="w-10 h-10 rounded-xl bg-amberAccent/15 border border-amberAccent/30 flex items-center justify-center text-amberAccent font-black text-lg font-mono shrink-0">
+                            1
+                        </div>
+                        <div class="space-y-1.5">
+                            <h3 class="text-white font-bold text-sm">カメラの起動を許可する</h3>
+                            <p class="text-xs text-gray-400 leading-relaxed">
+                                配布URLをSafariまたはChromeで開きます。初回アクセス時に表示される<strong class="text-gray-200">「カメラへのアクセス」ダイアログで必ず『許可』</strong>を選択してください。
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- STEP 2 -->
+                <div class="glass-panel p-5 rounded-2xl relative overflow-hidden group hover:border-amberAccent/40 transition">
+                    <div class="absolute top-0 right-0 w-24 h-24 bg-amberAccent/5 rounded-bl-full pointer-events-none"></div>
+                    <div class="flex items-start gap-4">
+                        <div class="w-10 h-10 rounded-xl bg-amberAccent/15 border border-amberAccent/30 flex items-center justify-center text-amberAccent font-black text-lg font-mono shrink-0">
+                            2
+                        </div>
+                        <div class="space-y-1.5">
+                            <h3 class="text-white font-bold text-sm">グループ（TEAM）を選択</h3>
+                            <p class="text-xs text-gray-400 leading-relaxed">
+                                画面右上の<strong class="text-amberAccent">「TEAM」大型プルダウン</strong>からご自身のチーム（A〜D）を選択します。選ぶと即座にロックされ、撮影準備が完了します！
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ==============================================
+             3. 全ミッション攻略マップ（全20枚＋フリー）
+             ============================================== -->
+        <section class="space-y-4">
+            <div class="flex items-center justify-between border-b border-surfaceBorder pb-2">
+                <div class="flex items-center gap-2">
+                    <span class="text-amberAccent font-mono text-sm font-bold">02 / MISSIONS</span>
+                    <h2 class="text-lg font-bold text-white tracking-wide">全ミッション攻略マップ</h2>
+                </div>
+                <span class="text-xs font-mono text-gray-400">計 20枚 ＋ α</span>
+            </div>
+
+            <p class="text-xs text-gray-400">
+                フィルムの残り枚数に応じて、画面上部の <strong class="text-gray-200">「CURRENT MISSION」</strong> が自動で切り替わります。チームで知恵を絞り、最高のお題写真を収めましょう！
+            </p>
+
+            <div class="space-y-2.5">
+                <!-- MISSION 00 (操作練習) ★プレビュー機能付き強調 -->
+                <div class="glass-panel p-4 rounded-xl border-amberAccent/40 relative overflow-hidden bg-gradient-to-r from-amberAccent/10 via-transparent to-transparent">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                        <div class="flex items-center gap-3">
+                            <span class="px-2.5 py-1 rounded bg-amberAccent text-black font-mono font-black text-xs">MISSION 00</span>
+                            <span class="text-sm font-bold text-white">0. 操作練習：【テスト撮影】</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="text-xs font-mono text-amberAccent bg-amberAccent/10 px-2 py-0.5 rounded border border-amberAccent/20">残り 20〜19枚 (2枚分)</span>
+                            <span class="text-[10px] font-bold px-2 py-0.5 rounded bg-amber-400/20 text-amber-300 border border-amber-400/30">★ プレビュー確認あり</span>
+                        </div>
+                    </div>
+                    <p class="text-xs text-gray-300 mt-2 pl-0 sm:pl-1">
+                        フラッシュやタイマー、ズームや構図を試してみよう！<br>
+                        <span class="text-amberAccent font-bold">※ このミッション（最初の2枚）限定で、撮影直後に仕上がりプレビューが表示され「チェックOK」を押して次へ進むことができます。</span>
+                    </p>
+                </div>
+
+                <!-- MISSION 01 -->
+                <div class="glass-panel p-3.5 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-white/5">
+                    <div class="flex items-center gap-3">
+                        <span class="px-2 py-0.5 rounded bg-white/10 text-gray-300 font-mono font-bold text-xs">MISSION 01</span>
+                        <span class="text-xs sm:text-sm font-bold text-gray-200">1. 集合：【決起集会】</span>
+                    </div>
+                    <div class="flex items-center justify-between sm:justify-end gap-3 text-xs">
+                        <span class="text-gray-400">優勝を誓うガッツポーズ集合写真！</span>
+                        <span class="font-mono text-gray-400 bg-black/40 px-2 py-0.5 rounded shrink-0">残り 18〜16枚 (3枚)</span>
+                    </div>
+                </div>
+
+                <!-- MISSION 02 -->
+                <div class="glass-panel p-3.5 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-white/5">
+                    <div class="flex items-center gap-3">
+                        <span class="px-2 py-0.5 rounded bg-white/10 text-gray-300 font-mono font-bold text-xs">MISSION 02</span>
+                        <span class="text-xs sm:text-sm font-bold text-gray-200">2. 買い出し：【目利きの極意】</span>
+                    </div>
+                    <div class="flex items-center justify-between sm:justify-end gap-3 text-xs">
+                        <span class="text-gray-400">極上スパイスや隠し味を真剣に見極める姿。</span>
+                        <span class="font-mono text-gray-400 bg-black/40 px-2 py-0.5 rounded shrink-0">残り 15〜13枚 (3枚)</span>
+                    </div>
+                </div>
+
+                <!-- MISSION 03 -->
+                <div class="glass-panel p-3.5 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-white/5">
+                    <div class="flex items-center gap-3">
+                        <span class="px-2 py-0.5 rounded bg-white/10 text-gray-300 font-mono font-bold text-xs">MISSION 03</span>
+                        <span class="text-xs sm:text-sm font-bold text-gray-200">3. 会場散策①：【放課後の記憶】</span>
+                    </div>
+                    <div class="flex items-center justify-between sm:justify-end gap-3 text-xs">
+                        <span class="text-gray-400">廃校の長い廊下や教室、黒板を背にしたノスタルジーな青春の1枚。</span>
+                        <span class="font-mono text-gray-400 bg-black/40 px-2 py-0.5 rounded shrink-0">残り 12〜10枚 (3枚)</span>
+                    </div>
+                </div>
+
+                <!-- MISSION 04 -->
+                <div class="glass-panel p-3.5 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-white/5">
+                    <div class="flex items-center gap-3">
+                        <span class="px-2 py-0.5 rounded bg-white/10 text-gray-300 font-mono font-bold text-xs">MISSION 04</span>
+                        <span class="text-xs sm:text-sm font-bold text-gray-200">4. 会場散策②：【偵察部隊】</span>
+                    </div>
+                    <div class="flex items-center justify-between sm:justify-end gap-3 text-xs">
+                        <span class="text-gray-400">ライバルチームを遠巻きに観察・警戒する姿。</span>
+                        <span class="font-mono text-gray-400 bg-black/40 px-2 py-0.5 rounded shrink-0">残り 9〜7枚 (3枚)</span>
+                    </div>
+                </div>
+
+                <!-- MISSION 05 -->
+                <div class="glass-panel p-3.5 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-white/5">
+                    <div class="flex items-center gap-3">
+                        <span class="px-2 py-0.5 rounded bg-white/10 text-gray-300 font-mono font-bold text-xs">MISSION 05</span>
+                        <span class="text-xs sm:text-sm font-bold text-gray-200">5. 調理中：【シェフの神業】</span>
+                    </div>
+                    <div class="flex items-center justify-between sm:justify-end gap-3 text-xs">
+                        <span class="text-gray-400">ルーを投入する瞬間や躍動感ある鍋振り！</span>
+                        <span class="font-mono text-gray-400 bg-black/40 px-2 py-0.5 rounded shrink-0">残り 6〜4枚 (3枚)</span>
+                    </div>
+                </div>
+
+                <!-- MISSION 06 -->
+                <div class="glass-panel p-3.5 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-white/5">
+                    <div class="flex items-center gap-3">
+                        <span class="px-2 py-0.5 rounded bg-white/10 text-gray-300 font-mono font-bold text-xs">MISSION 06</span>
+                        <span class="text-xs sm:text-sm font-bold text-gray-200">6. BBQ：【完成の歓喜】</span>
+                    </div>
+                    <div class="flex items-center justify-between sm:justify-end gap-3 text-xs">
+                        <span class="text-gray-400">丹精込めて完成させたカレーを全員で囲んだ笑顔ショット。</span>
+                        <span class="font-mono text-gray-400 bg-black/40 px-2 py-0.5 rounded shrink-0">残り 3〜1枚 (3枚)</span>
+                    </div>
+                </div>
+
+                <!-- ★規定完走後: フリー撮影モード突入 -->
+                <div class="glass-panel p-4 rounded-xl border-freeEmerald/40 relative overflow-hidden bg-gradient-to-r from-freeEmerald/10 via-transparent to-transparent glow-emerald">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                        <div class="flex items-center gap-3">
+                            <span class="px-2.5 py-1 rounded bg-freeEmerald text-black font-mono font-black text-xs">BONUS</span>
+                            <span class="text-sm font-bold text-white">🚀 フリー撮影モード（無制限）</span>
+                        </div>
+                        <span class="text-xs font-mono text-freeEmerald bg-freeEmerald/10 px-2 py-0.5 rounded border border-freeEmerald/30">20枚完走後 自動突入</span>
+                    </div>
+                    <p class="text-xs text-gray-300 mt-2 pl-0 sm:pl-1">
+                        規定の20枚を使い切るとシャッター制限が解除！カウンターが「<strong class="text-freeEmerald">撮影枚数（21, 22...）</strong>」に変わり、BBQの歓談や表彰式、後片付けのオフショットまで何枚でも自由に撮りまくれます！
+                    </p>
+                </div>
+            </div>
+        </section>
+
+        <!-- ==============================================
+             4. 画面・ボタンの解説（UI解説図）
+             ============================================== -->
+        <section class="space-y-4">
+            <div class="flex items-center gap-2 border-b border-surfaceBorder pb-2">
+                <span class="text-amberAccent font-mono text-sm font-bold">03 / INTERFACE</span>
+                <h2 class="text-lg font-bold text-white tracking-wide">画面の見方・ボタンの解説</h2>
+            </div>
+
+            <!-- アプリ画面の疑似レイアウトプレビュー -->
+            <div class="glass-panel p-5 rounded-2xl space-y-6">
+                
+                <div class="grid grid-cols-1 md:grid-cols-12 gap-5 items-center">
+                    
+                    <!-- 左ファインダー側 (7 cols) -->
+                    <div class="md:col-span-7 space-y-3">
+                        <div class="text-xs font-mono font-bold text-amberAccent flex items-center gap-1.5">
+                            <span class="w-1.5 h-1.5 rounded-full bg-amberAccent"></span>
+                            LEFT: ファインダービュー (3:2)
+                        </div>
+                        
+                        <!-- 模擬ファインダー枠 -->
+                        <div class="relative bg-black border border-white/20 rounded-xl aspect-[3/2] overflow-hidden p-3 flex flex-col justify-between corner-border shadow-2xl">
+                            <!-- ミッションバナー -->
+                            <div class="bg-darkBg/90 backdrop-blur border border-amberAccent/40 rounded-lg p-2 text-center shadow-lg">
+                                <div class="text-[9px] font-mono font-bold text-amberAccent">CURRENT MISSION</div>
+                                <div class="text-xs font-bold text-white truncate">1. 集合：【決起集会】</div>
+                                <div class="text-[9.5px] text-gray-300 truncate">優勝を誓うガッツポーズ集合写真！</div>
+                            </div>
+                            
+                            <!-- 中央十字線 -->
+                            <div class="absolute inset-0 flex items-center justify-center pointer-events-none opacity-20">
+                                <div class="w-8 h-8 border border-white rounded-full"></div>
+                            </div>
+
+                            <!-- 下部ズームアイランド -->
+                            <div class="self-center bg-darkBg/80 backdrop-blur px-3 py-1 rounded-full border border-white/10 flex items-center gap-2 text-[10px] text-gray-300">
+                                <span class="font-mono">ZOOM</span>
+                                <div class="w-16 h-1 bg-white/20 rounded-full relative">
+                                    <div class="absolute left-1/3 -top-1 w-3 h-3 bg-amberAccent rounded-full shadow-sm"></div>
+                                </div>
+                                <span class="font-mono text-amberAccent font-bold" id="sampleZoom">1.8x</span>
+                            </div>
+                        </div>
+
+                        <div class="space-y-1.5 text-xs text-gray-400 pl-1">
+                            <p>● <strong class="text-white">CURRENT MISSION:</strong> 今撮るべきミッション番号とお題の指示内容を常時表示。</p>
+                            <p>● <strong class="text-white">ZOOMスライダー:</strong> スライド操作で <code class="text-amberAccent">1.0x 〜 3.0x</code> まで画角を直感的にズーム調整。</p>
+                        </div>
+                    </div>
+
+                    <!-- 右デッキ側 (5 cols) -->
+                    <div class="md:col-span-5 space-y-3">
+                        <div class="text-xs font-mono font-bold text-amberAccent flex items-center gap-1.5">
+                            <span class="w-1.5 h-1.5 rounded-full bg-amberAccent"></span>
+                            RIGHT: コントロールデッキ
+                        </div>
+
+                        <!-- 模擬コントロールデッキ -->
+                        <div class="bg-black/40 border border-white/10 rounded-xl p-3.5 space-y-3">
+                            <!-- チーム＆カウンター -->
+                            <div class="flex items-center justify-between gap-2">
+                                <div class="bg-white/5 border border-white/10 rounded-lg px-2.5 py-1.5 flex-1">
+                                    <div class="text-[8px] font-mono text-gray-400">TEAM</div>
+                                    <div class="text-xs font-bold text-amberAccent">チームA (LOCKED)</div>
+                                </div>
+                                <div class="bg-amberAccent/10 border border-amberAccent/30 rounded-lg px-3 py-1.5 text-right flex-1">
+                                    <div class="text-[8px] font-mono text-gray-400">🎞️残り枚数</div>
+                                    <div class="text-lg font-black font-mono text-amberAccent leading-none">18</div>
+                                </div>
+                            </div>
+
+                            <!-- 機能ボタングリッド -->
+                            <div class="grid grid-cols-2 gap-1.5 text-[10px] font-bold">
+                                <div class="col-span-2 bg-white/5 border border-white/10 py-1.5 rounded text-center text-gray-200">🗒️ ミッション一覧</div>
+                                <div class="bg-white/5 border border-white/10 py-1.5 rounded text-center text-gray-300">⚡ FLASH OFF</div>
+                                <div class="bg-white/5 border border-white/10 py-1.5 rounded text-center text-gray-300">📷 カメラ切替</div>
+                                <div class="bg-amberAccent/20 border border-amberAccent py-1.5 rounded text-center text-amberAccent">⌛ 5秒タイマー</div>
+                                <div class="bg-white/5 border border-white/10 py-1.5 rounded text-center text-gray-300">↔️ CAMERA ON</div>
+                            </div>
+
+                            <!-- シャッターボタン（3秒チャージ） -->
+                            <div class="flex flex-col items-center pt-1">
+                                <div class="w-12 h-12 rounded-full border-2 border-dashed border-white/30 flex items-center justify-center p-1">
+                                    <div class="w-full h-full rounded-full bg-gradient-to-tr from-red-600 to-rose-400 shadow-lg shadow-rose-600/30"></div>
+                                </div>
+                                <div class="text-[8px] font-mono font-bold text-gray-400 tracking-wider mt-1">3SEC CHARGE LOCK</div>
+                            </div>
+                        </div>
+
+                        <div class="space-y-1.5 text-xs text-gray-400 pl-1">
+                            <p>● <strong class="text-white">シャッター & 3秒チャージ:</strong> 撮影直後は <span class="text-amberAccent">CHARGING...</span> となり3秒間シャッターがロック（フィルム巻き上げの演出）。</p>
+                            <p>● <strong class="text-white">5秒タイマー:</strong> タイマーONでシャッターを押すと5秒カウントダウン開始。集合写真に必須！</p>
+                            <p>● <strong class="text-white">ミッション一覧:</strong> 全指令を確認可能。現在のミッションがオレンジ色で光ります。</p>
+                        </div>
+                    </div>
+
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==============================================
+             5. 写真の刻印（スタンプ仕様）
+             ============================================== -->
+        <section class="space-y-4">
+            <div class="flex items-center gap-2 border-b border-surfaceBorder pb-2">
+                <span class="text-amberAccent font-mono text-sm font-bold">04 / STAMP FORMAT</span>
+                <h2 class="text-lg font-bold text-white tracking-wide">写真の刻印（タイムスタンプ）仕様</h2>
+            </div>
+
+            <p class="text-xs text-gray-400">
+                撮影した写真には、フィルムカメラの現像印字のように「チーム名・ミッション」と「撮影年月日時分」が左右に美しく刻印されます。
+            </p>
+
+            <!-- 模擬フォトカード -->
+            <div class="glass-panel p-4 rounded-2xl relative overflow-hidden">
+                <div class="relative bg-gradient-to-tr from-stone-900 via-neutral-900 to-stone-800 rounded-xl aspect-[16/9] sm:aspect-[3/2] max-w-xl mx-auto border border-white/10 shadow-2xl flex flex-col justify-between p-4 overflow-hidden">
+                    
+                    <!-- 模擬写真中央（グリッドとレトロ感） -->
+                    <div class="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-amber-500/10 via-transparent to-black/60 pointer-events-none"></div>
+                    <div class="flex items-center justify-center h-full text-white/30 text-xs font-mono">
+                        [ フィルム調グレインノイズ ＆ 暖色カラーフィルタ適用済み ]
+                    </div>
+
+                    <!-- スタンプ印字（下部） -->
+                    <div class="w-full flex items-end justify-between font-mono font-bold text-filmOrange text-xs sm:text-sm drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)] z-10 select-none tracking-wider">
+                        <div class="border-b-2 border-filmOrange/40 pb-0.5">
+                            チームA ミッション:01
+                        </div>
+                        <div class="border-b-2 border-filmOrange/40 pb-0.5">
+                            2026.10.17 12:30
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-4 text-xs">
+                    <div class="bg-black/30 p-2.5 rounded-lg border border-white/5">
+                        <span class="text-amberAccent font-bold">【左下】</span>
+                        <span class="text-gray-300">「チーム名 ミッション:番号」</span><br>
+                        <span class="text-gray-500 text-[11px]">※フリーモード時は「チーム名 ミッション:フリーモード」</span>
+                    </div>
+                    <div class="bg-black/30 p-2.5 rounded-lg border border-white/5">
+                        <span class="text-amberAccent font-bold">【右下】</span>
+                        <span class="text-gray-300">「YYYY.MM.DD HH:mm」</span><br>
+                        <span class="text-gray-500 text-[11px]">※シャッターを切った正確な年月日時分が刻印されます</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ==============================================
+             6. レトロカメラの鉄則 ＆ FAQ
+             ============================================== -->
+        <section class="space-y-4">
+            <div class="flex items-center gap-2 border-b border-surfaceBorder pb-2">
+                <span class="text-amberAccent font-mono text-sm font-bold">05 / Q&A & RULES</span>
+                <h2 class="text-lg font-bold text-white tracking-wide">レトロカメラの鉄則 ＆ よくある質問</h2>
+            </div>
+
+            <div class="space-y-3">
+                <!-- FAQ 1 -->
+                <div class="glass-panel p-4 rounded-xl space-y-1.5 border-white/5">
+                    <div class="flex items-start gap-2.5">
+                        <span class="px-2 py-0.5 rounded bg-amberAccent/20 text-amberAccent font-mono font-bold text-xs shrink-0 mt-0.5">Q1</span>
+                        <h3 class="text-sm font-bold text-white">ミッション1以降、撮った写真がすぐ見られないのはなぜ？</h3>
+                    </div>
+                    <p class="text-xs text-gray-400 pl-7 leading-relaxed">
+                        本アプリは「使い捨てフィルムカメラ」の緊張感を再現しています。そのため、<strong class="text-gray-200">ミッション00（練習の2枚）を除いて撮影後のプレビュー画面はありません</strong>。どんな写真が撮れているかは、イベント終盤の現像（スライドショー発表）までのお楽しみです！
+                    </p>
+                </div>
+
+                <!-- FAQ 2 -->
+                <div class="glass-panel p-4 rounded-xl space-y-1.5 border-white/5">
+                    <div class="flex items-start gap-2.5">
+                        <span class="px-2 py-0.5 rounded bg-amberAccent/20 text-amberAccent font-mono font-bold text-xs shrink-0 mt-0.5">Q2</span>
+                        <h3 class="text-sm font-bold text-white">電波（オフライン／4Gが弱い場所）でも撮影できますか？</h3>
+                    </div>
+                    <p class="text-xs text-gray-400 pl-7 leading-relaxed">
+                        <strong class="text-freeEmerald">まったく問題ありません！</strong><br>
+                        撮影した写真は端末内（IndexedDB）に一時保管され、電波が復活した際に自動でクラウド（Firebase）へ同期されます。ブラウザタブを閉じたり履歴を削除せずそのままご利用ください。
+                    </p>
+                </div>
+
+                <!-- FAQ 3 -->
+                <div class="glass-panel p-4 rounded-xl space-y-1.5 border-white/5">
+                    <div class="flex items-start gap-2.5">
+                        <span class="px-2 py-0.5 rounded bg-amberAccent/20 text-amberAccent font-mono font-bold text-xs shrink-0 mt-0.5">Q3</span>
+                        <h3 class="text-sm font-bold text-white">チーム選択を間違えてしまったときは？</h3>
+                    </div>
+                    <p class="text-xs text-gray-400 pl-7 leading-relaxed">
+                        右上の <strong class="text-amberAccent">「🎞️残り枚数」バッジをすばやく5回連続タップ</strong> してください。<br>
+                        専用の確認画面（<code class="text-dangerRed">⚠️ グループ設定のリセット</code>）が表示され、「リセット実行」を選択するとチーム選択画面へ戻ることができます。
+                    </p>
+                </div>
+
+                <!-- FAQ 4 -->
+                <div class="glass-panel p-4 rounded-xl space-y-1.5 border-white/5">
+                    <div class="flex items-start gap-2.5">
+                        <span class="px-2 py-0.5 rounded bg-amberAccent/20 text-amberAccent font-mono font-bold text-xs shrink-0 mt-0.5">Q4</span>
+                        <h3 class="text-sm font-bold text-white">20枚撮りきったらアプリは使えなくなりますか？</h3>
+                    </div>
+                    <p class="text-xs text-gray-400 pl-7 leading-relaxed">
+                        使えなくなることはありません！自動的に <strong class="text-freeEmerald">「フリー撮影モード」</strong> に切り替わり、シャッターロックが解除されます。カウンターが「撮影枚数」に変わり無制限に撮影を継続できますので、BBQや歓談もたくさん記録してください。
+                    </p>
+                </div>
+            </div>
+        </section>
+
+        <!-- ==============================================
+             7. フッター / 応援メッセージ
+             ============================================== -->
+        <footer class="text-center pt-8 border-t border-surfaceBorder space-y-4">
+            <div class="inline-block p-4 rounded-2xl glass-panel border-amberAccent/30 glow-amber max-w-lg">
+                <p class="text-sm font-bold text-white">
+                    🔥 最高のカレーと、フィルムに残す最高の思い出を！ 📸
+                </p>
+                <p class="text-xs text-gray-400 mt-1">
+                    ファインダーの向こうに、チームだけの最高の瞬間を見つけに行こう。
+                </p>
+            </div>
+
+            <p class="text-[10px] font-mono text-gray-500 uppercase tracking-widest">
+                Curry Grand Prix × Photo Grand Prix 2026 / Neo Retro Cam
+            </p>
+        </footer>
+
+    </div>
+
+</body>
+</html>
