@@ -516,6 +516,7 @@
             display: none;
             padding: 20px;
             overflow-y: auto;
+            cursor: pointer;
         }
 
         .modal-box {
@@ -526,6 +527,7 @@
             border-radius: 18px;
             padding: 20px;
             box-shadow: 0 25px 50px rgba(0, 0, 0, 0.8);
+            cursor: pointer;
         }
 
         .mission-item-card {
@@ -610,7 +612,10 @@
             box-shadow: 0 4px 15px var(--accent-glow);
         }
 
-        /* カスタム入力モーダル（alert/prompt代替） */
+        /* =======================================================
+           【テスト用モーダルスタイル（コメントアウト中）】
+           ======================================================= */
+        /*
         #custom-prompt-modal {
             position: fixed;
             inset: 0;
@@ -676,6 +681,7 @@
             background: var(--accent-color);
             color: #0c0e12;
         }
+        */
 
         canvas { display: none; }
     </style>
@@ -693,17 +699,20 @@
 
     <!-- ミッション一覧モーダル -->
     <div id="mission-overlay" class="modal-layer">
-        <div class="modal-box">
+        <div class="modal-box" id="modalBoxInner">
             <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--surface-border); padding-bottom: 10px; margin-bottom: 14px;">
                 <h3 style="color: var(--accent-color); margin: 0; font-size: 14px; letter-spacing: 0.5px;" id="modal-team-title">MISSION LIST</h3>
-                <span style="font-size: 11px; color: var(--text-sub); cursor: pointer;" id="modalCloseBtn">✕ 閉じる</span>
+                <span style="font-size: 11px; color: var(--text-sub); cursor: pointer; padding: 4px 8px; border-radius: 4px; background: rgba(255,255,255,0.06);" id="modalCloseBtn">✕ 閉じる</span>
             </div>
             <div id="mission-list-content"></div>
-            <p style="text-align: center; font-size: 10px; color: var(--text-sub); margin-top: 14px;">(タップして閉じる)</p>
+            <p style="text-align: center; font-size: 11px; color: var(--accent-color); margin-top: 16px; font-weight: bold;">(タップして閉じる)</p>
         </div>
     </div>
 
-    <!-- カスタムプロンプトモーダル（テスト用枚数ジャンプ入力） -->
+    <!-- =======================================================
+         【テスト用UIブロック（コメントアウト中）】
+         ======================================================= -->
+    <!--
     <div id="custom-prompt-modal">
         <div class="prompt-card">
             <div class="prompt-title">残り枚数の変更（テスト用）</div>
@@ -715,6 +724,7 @@
             </div>
         </div>
     </div>
+    -->
 
     <!-- 左画面：3:2ファインダービュー -->
     <div class="left-viewport">
@@ -789,11 +799,13 @@
             <button class="deck-btn" id="powerBtn">📷 CAMERA ON</button>
 
             <!-- =======================================================
-                 【テスト用UIブロック】本番移行時はこのボタンを削除または非表示
+                 【テスト用ボタン（コメントアウト中）】
                  ======================================================= -->
+            <!--
             <button class="deck-btn btn-full" id="testJumpBtn" style="border: 1px dashed #ef4444; color: #ef4444; background: rgba(239, 68, 68, 0.08); margin-top: 3px;">
                 🛠️ 【テスト用】残り枚数ジャンプ
             </button>
+            -->
             <!-- ======================================================= -->
         </div>
 
@@ -1276,18 +1288,17 @@
             modal.style.display = "block";
         };
 
-        modal.onclick = (e) => {
-            if (e.target === modal || e.target.id === 'modalCloseBtn') {
-                modal.style.display = "none";
-            }
+        // モーダル枠外だけでなく、モーダル内どこをタップしても確実に閉じる処理
+        modal.onclick = () => {
+            modal.style.display = "none";
         };
 
         window.addEventListener('online', syncPhotos);
 
         /* =====================================================================
-           【テスト専用スクリプトブロック】
-           本番運用の際は、以下のブロックを丸ごと削除またはコメントアウトしてください。
+           【テスト専用スクリプトブロック（コメントアウト中）】
            ===================================================================== */
+        /*
         const testJumpBtn = document.getElementById('testJumpBtn');
         const customPromptModal = document.getElementById('custom-prompt-modal');
         const promptInput = document.getElementById('prompt-input');
@@ -1296,7 +1307,6 @@
 
         if (testJumpBtn) {
             testJumpBtn.onclick = () => {
-                // チーム未選択時はデフォルトで「A」を自動仮設定してテスト可能にする
                 if (!selectedCar) {
                     selectedCar = "A";
                     localStorage.setItem('curry_team', selectedCar);
@@ -1310,7 +1320,6 @@
             promptOkBtn.onclick = () => {
                 const targetRemaining = parseInt(promptInput.value, 10);
                 if (!isNaN(targetRemaining)) {
-                    // 残り枚数 = 20 - 撮影枚数 => 撮影枚数 = 20 - 残り枚数
                     shotCount = Math.max(0, MAX_SHOTS - targetRemaining);
                     localStorage.setItem(`curry_count_${selectedCar}`, shotCount);
                     updateUI();
@@ -1322,6 +1331,7 @@
                 customPromptModal.style.display = "none";
             };
         }
+        */
         /* ===================================================================== */
     </script>
 </body>
