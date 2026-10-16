@@ -239,7 +239,7 @@
             width: 100%;
         }
 
-        /* チーム選択：大きくタップしやすいUI */
+        /* チーム選択ボックス */
         .team-select-box {
             background: var(--card-bg);
             border: 1px solid var(--surface-border);
@@ -247,7 +247,7 @@
             padding: 8px 10px;
             display: flex;
             flex-direction: column;
-            gap: 6px;
+            gap: 5px;
             position: relative;
         }
 
@@ -259,39 +259,62 @@
             text-transform: uppercase;
         }
 
-        /* 4つの大型ボタングリッド */
-        .team-btn-grid {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 6px;
+        /* タップしやすい大型プルダウン（セレクト） */
+        .large-team-select-wrapper {
+            position: relative;
+            width: 100%;
         }
 
-        .team-pick-btn {
-            background: rgba(0, 0, 0, 0.45);
-            border: 1.5px solid rgba(255, 159, 26, 0.35);
-            color: #fff;
-            padding: 10px 0;
+        .large-team-select {
+            width: 100%;
+            height: 44px;
+            background: rgba(0, 0, 0, 0.55);
+            color: var(--accent-color);
+            border: 1.5px solid rgba(255, 159, 26, 0.45);
             border-radius: 8px;
-            font-size: 13px;
+            padding: 0 36px 0 12px;
+            font-size: 14px;
             font-weight: 800;
             cursor: pointer;
-            text-align: center;
-            transition: all 0.15s ease;
+            outline: none;
+            appearance: none;
+            -webkit-appearance: none;
+            transition: all 0.2s ease;
         }
 
-        .team-pick-btn:active {
-            transform: scale(0.94);
-            background: var(--accent-color);
-            color: #0c0e12;
+        .large-team-select:focus {
             border-color: var(--accent-color);
+            box-shadow: 0 0 12px var(--accent-glow);
         }
 
-        /* 選択確定後の表示 */
+        .large-team-select option {
+            background: #141820;
+            color: #fff;
+            font-size: 14px;
+            padding: 8px;
+        }
+
+        /* プルダウンのカスタム矢印 */
+        .large-team-select-wrapper::after {
+            content: "▼";
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 10px;
+            color: var(--accent-color);
+            pointer-events: none;
+        }
+
+        /* 選択確定後の表示（プルダウンは非表示になり、こちらを表示） */
         .team-confirmed-view {
             display: none;
             align-items: center;
             justify-content: space-between;
-            padding: 4px 6px;
+            padding: 8px 8px;
+            background: rgba(255, 159, 26, 0.08);
+            border: 1px solid rgba(255, 159, 26, 0.35);
+            border-radius: 8px;
         }
 
         .team-confirmed-name {
@@ -306,7 +329,7 @@
             font-weight: 700;
             color: var(--text-sub);
             background: rgba(255, 255, 255, 0.08);
-            padding: 2px 6px;
+            padding: 3px 6px;
             border-radius: 4px;
         }
 
@@ -642,15 +665,19 @@
     <!-- 右画面：統合コントロールデッキ -->
     <div class="right-deck">
         <div class="deck-top-stack">
-            <!-- チーム選択（押しやすい大型ボタングリッド） -->
+            <!-- チーム選択（大型プルダウン） -->
             <div class="team-select-box">
                 <span class="deck-label">TEAM SELECT</span>
-                <div class="team-btn-grid" id="teamBtnGrid">
-                    <button class="team-pick-btn" data-team="A">A</button>
-                    <button class="team-pick-btn" data-team="B">B</button>
-                    <button class="team-pick-btn" data-team="C">C</button>
-                    <button class="team-pick-btn" data-team="D">D</button>
+                <div class="large-team-select-wrapper" id="teamSelectWrapper">
+                    <select id="teamSelect" class="large-team-select">
+                        <option value="">タップしてチームを選択 ▼</option>
+                        <option value="A">チーム A</option>
+                        <option value="B">チーム B</option>
+                        <option value="C">チーム C</option>
+                        <option value="D">チーム D</option>
+                    </select>
                 </div>
+                <!-- 選択確定後の表示（プルダウンは非表示） -->
                 <div class="team-confirmed-view" id="teamConfirmedView">
                     <span class="team-confirmed-name" id="teamConfirmedText">チームA</span>
                     <span class="team-locked-tag">LOCKED</span>
@@ -699,7 +726,7 @@
         import { getStorage, ref, uploadBytes } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
         import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
-        // --- 1. Firebase設定 (必要に応じてご自身の情報を入力してください) ---
+        // --- 1. Firebase設定 ---
         const firebaseConfig = {
             apiKey: "AIzaSyDHqQDeEMrFV09YI0n_ARr1Tzta5aqmE2U",
             authDomain: "my-retro-cam.firebaseapp.com",
@@ -754,7 +781,8 @@
         };
 
         // DOM参照
-        const teamBtnGrid = document.getElementById('teamBtnGrid');
+        const teamSelectWrapper = document.getElementById('teamSelectWrapper');
+        const teamSelect = document.getElementById('teamSelect');
         const teamConfirmedView = document.getElementById('teamConfirmedView');
         const teamConfirmedText = document.getElementById('teamConfirmedText');
         const counterDisplay = document.getElementById('counter');
@@ -794,22 +822,20 @@
             shotCount = parseInt(localStorage.getItem(`curry_count_${selectedCar}`)) || 0;
         }
 
-        // チーム選択ボタングリッドのイベント
-        teamBtnGrid.querySelectorAll('.team-pick-btn').forEach(btn => {
-            btn.onclick = () => {
-                const team = btn.getAttribute('data-team');
-                if (team) {
-                    selectedCar = team;
-                    localStorage.setItem('curry_team', selectedCar);
-                    applyTeamSelectedUI(selectedCar);
-                    loadCount();
-                    updateUI();
-                }
-            };
-        });
+        // 大型プルダウンの選択変更イベント
+        teamSelect.onchange = () => {
+            const team = teamSelect.value;
+            if (team) {
+                selectedCar = team;
+                localStorage.setItem('curry_team', selectedCar);
+                applyTeamSelectedUI(selectedCar);
+                loadCount();
+                updateUI();
+            }
+        };
 
         function applyTeamSelectedUI(team) {
-            teamBtnGrid.style.display = 'none';
+            teamSelectWrapper.style.display = 'none';
             teamConfirmedView.style.display = 'flex';
             teamConfirmedText.innerText = `チーム${team}`;
             document.getElementById('modal-team-title').innerText = `TEAM ${team} - MISSION LIST`;
@@ -1042,7 +1068,7 @@
                         URL.revokeObjectURL(previewUrl);
                     };
                 }
-            }, 'image/jpeg', 0.82);
+            }, 'image/jpeg', 0.80);
         }
 
         async function syncPhotos() {
@@ -1124,7 +1150,8 @@
                     localStorage.clear();
                     shotCount = 0;
                     selectedCar = "";
-                    teamBtnGrid.style.display = 'grid';
+                    teamSelect.value = "";
+                    teamSelectWrapper.style.display = 'block';
                     teamConfirmedView.style.display = 'none';
                     updateUI();
                 }
