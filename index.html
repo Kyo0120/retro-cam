@@ -483,6 +483,7 @@
         <div class="zoom-island">
             <span class="zoom-label">ZOOM</span>
             <input type="range" id="zoomRange" class="zoom-slider" min="1" max="3" step="0.1" value="1">
+            <span id="zoomVal" style="font-size: 10px; color: var(--accent-color); font-weight: 700; min-width: 26px; text-align: right;">1.0x</span>
         </div>
 
         <div id="timer-display">5</div>
@@ -711,9 +712,11 @@
         };
 
         document.getElementById('zoomRange').oninput = (e) => {
-            document.getElementById('video').style.setProperty('--zoom-level', e.target.value);
+            const val = parseFloat(e.target.value).toFixed(1);
+            document.getElementById('video').style.setProperty('--zoom-level', val);
+              document.getElementById('zoomVal').innerText = `${val}x`;
         };
-
+        
         shutterBtn.onclick = () => {
             if (isCapturing || shutterBtn.disabled) return;
             isCapturing = true;
