@@ -36,13 +36,13 @@
             backdrop-filter: blur(16px);
             -webkit-backdrop-filter: blur(16px);
             border-bottom: 1px solid var(--surface-border);
-            padding: 14px 20px;
+            padding: 12px 16px;
             display: flex;
             align-items: center;
             justify-content: space-between;
             z-index: 100;
         }
-        .header-title { font-size: 15px; font-weight: 800; color: var(--accent-color); letter-spacing: 0.5px; }
+        .header-title { font-size: 14px; font-weight: 800; color: var(--accent-color); letter-spacing: 0.5px; }
         .nav-links { display: flex; gap: 8px; }
         .nav-btn {
             background: rgba(255, 255, 255, 0.06);
@@ -53,6 +53,11 @@
             font-size: 11px;
             font-weight: 700;
             text-decoration: none;
+            cursor: pointer;
+        }
+        .nav-btn.accent {
+            color: var(--accent-color);
+            border-color: rgba(255, 159, 26, 0.35);
         }
 
         .container { max-width: 800px; margin: 0 auto; padding: 24px 16px 60px 16px; }
@@ -70,7 +75,6 @@
         h1 { margin: 0 0 8px 0; font-size: 1.8rem; font-weight: 900; letter-spacing: -0.5px; }
         .hero-desc { font-size: 12.5px; color: var(--text-sub); }
 
-        /* セクション共通カード */
         .section-card {
             background: var(--surface-card);
             border: 1px solid var(--surface-border);
@@ -85,7 +89,7 @@
             border-bottom: 1px solid var(--surface-border); padding-bottom: 10px;
         }
 
-        /* 総合ランキングカード */
+        /* 総合ランキング */
         .ranking-list { display: flex; flex-direction: column; gap: 10px; }
         .rank-card {
             background: rgba(0, 0, 0, 0.4);
@@ -97,6 +101,7 @@
             justify-content: space-between;
             position: relative;
             overflow: hidden;
+            transition: all 0.3s ease;
         }
         .rank-card.rank-1 {
             border: 2px solid var(--gold);
@@ -116,13 +121,14 @@
         .rank-2 .rank-num { color: var(--silver); }
         .rank-3 .rank-num { color: var(--bronze); }
         .rank-team { font-size: 15px; font-weight: 800; color: #fff; }
+        .rank-breakdown { font-size: 10px; color: var(--text-sub); margin-top: 2px; }
         .rank-score {
-            font-size: 1.4rem; font-weight: 800; color: var(--accent-color);
+            font-size: 1.5rem; font-weight: 800; color: var(--accent-color);
             font-feature-settings: "tnum";
         }
         .rank-unit { font-size: 10px; color: var(--text-sub); margin-left: 2px; }
 
-        /* 個別部門賞グリッド */
+        /* 個別部門賞 */
         .category-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
@@ -139,14 +145,13 @@
         .category-winner { font-size: 16px; font-weight: 900; color: #fff; margin: 4px 0 2px 0; }
         .category-votes { font-size: 11px; color: var(--accent-color); font-weight: 700; }
 
-        /* コメントリスト */
+        /* コメント */
         .comment-grid { display: flex; flex-direction: column; gap: 10px; }
         .comment-bubble {
             background: rgba(0, 0, 0, 0.35);
             border: 1px solid var(--surface-border);
             border-radius: 10px;
             padding: 12px 14px;
-            position: relative;
         }
         .comment-header {
             display: flex; justify-content: space-between; align-items: center;
@@ -155,15 +160,7 @@
         .comment-user { font-weight: 800; color: var(--accent-color); }
         .comment-body { font-size: 12px; color: #d1d5db; line-height: 1.5; margin: 0; }
 
-        /* 集計結果オープンボタン */
-        .reveal-control { text-align: center; margin-bottom: 20px; }
-        .reveal-btn {
-            background: linear-gradient(135deg, #ff4757, #eb2f06);
-            color: #fff; border: none; padding: 12px 28px; border-radius: 24px;
-            font-size: 13px; font-weight: 800; cursor: pointer;
-            box-shadow: 0 4px 15px rgba(235, 47, 6, 0.4);
-            letter-spacing: 1px;
-        }
+        .loading-box { text-align: center; padding: 30px; color: var(--text-sub); font-size: 12px; }
     </style>
 </head>
 <body>
@@ -171,140 +168,157 @@
     <header>
         <div class="header-title">🏆 GRAND PRIX AWARDS</div>
         <div class="nav-links">
-            <a href="gallery.html" class="nav-btn">📷 ギャラリー</a>
-            <a href="guide.html" class="nav-btn">📖 取説</a>
+            <button class="nav-btn accent" id="refreshBtn">🔄 最新に更新</button>
+            <a href="home.html" class="nav-btn">🏠️ Home</a>
         </div>
     </header>
 
     <div class="container">
         <div class="hero">
-            <span class="hero-badge">AI × RETRO CAM AWARD</span>
+            <span class="hero-badge">LIVE RESULTS</span>
             <h1>写真グランプリ 結果発表</h1>
-            <div class="hero-desc">ミッション01〜06 ＋ フリー撮影の写真から選ばれた栄光のチームはこちら！</div>
+            <div class="hero-desc">Google フォーム投票スプレッドシートからリアルタイム集計中</div>
         </div>
 
         <!-- 総合ランキング -->
         <div class="section-card">
             <div class="section-title">🥇 総合ランキング（最優秀グランプリ）</div>
             <div class="ranking-list" id="rankingList">
-                <!-- 1位 -->
-                <div class="rank-card rank-1">
-                    <div class="rank-left">
-                        <div class="rank-num">1</div>
-                        <div>
-                            <div class="rank-team">チームA</div>
-                            <div style="font-size:10px; color:var(--gold); font-weight:700;">👑 GRAND PRIX WINNER</div>
-                        </div>
-                    </div>
-                    <div>
-                        <span class="rank-score">28</span><span class="rank-unit">pt</span>
-                    </div>
-                </div>
-
-                <!-- 2位 -->
-                <div class="rank-card rank-2">
-                    <div class="rank-left">
-                        <div class="rank-num">2</div>
-                        <div class="rank-team">チームC</div>
-                    </div>
-                    <div>
-                        <span class="rank-score">22</span><span class="rank-unit">pt</span>
-                    </div>
-                </div>
-
-                <!-- 3位 -->
-                <div class="rank-card rank-3">
-                    <div class="rank-left">
-                        <div class="rank-num">3</div>
-                        <div class="rank-team">チームB</div>
-                    </div>
-                    <div>
-                        <span class="rank-score">18</span><span class="rank-unit">pt</span>
-                    </div>
-                </div>
-
-                <!-- 4位 -->
-                <div class="rank-card">
-                    <div class="rank-left">
-                        <div class="rank-num" style="color:var(--text-sub);">4</div>
-                        <div class="rank-team">チームD</div>
-                    </div>
-                    <div>
-                        <span class="rank-score">15</span><span class="rank-unit">pt</span>
-                    </div>
-                </div>
+                <div class="loading-box">スプレッドシートから集計データを取得しています...</div>
             </div>
         </div>
 
         <!-- 個別部門ランキング -->
         <div class="section-card">
             <div class="section-title">🎖️ 個別部門賞</div>
-            <div class="category-grid">
-                
-                <div class="category-card">
-                    <div class="category-name">🤝 チームワーク賞</div>
-                    <div class="category-winner">チームA</div>
-                    <div class="category-votes">最多 8 票獲得！</div>
-                    <p style="font-size:10px; color:var(--text-sub); margin:4px 0 0 0;">全員集合のガッツポーズと一体感が圧倒的でした。</p>
-                </div>
-
-                <div class="category-card">
-                    <div class="category-name">📐 構図・ポーズ再現度賞</div>
-                    <div class="category-winner">チームC</div>
-                    <div class="category-votes">最多 7 票獲得！</div>
-                    <p style="font-size:10px; color:var(--text-sub); margin:4px 0 0 0;">AIの棒人間スケッチをミリ単位で再現したアングル！</p>
-                </div>
-
-                <div class="category-card">
-                    <div class="category-name">🎭 ドラマ・ユーモア賞</div>
-                    <div class="category-winner">チームB</div>
-                    <div class="category-votes">最多 9 票獲得！</div>
-                    <p style="font-size:10px; color:var(--text-sub); margin:4px 0 0 0;">偵察部隊の隠れ方と真剣な表情に全員大爆笑。</p>
-                </div>
-
+            <div class="category-grid" id="categoryGrid">
+                <div class="loading-box">集計中...</div>
             </div>
         </div>
 
         <!-- コメント要約・ハイライト -->
         <div class="section-card">
-            <div class="section-title">💬 参加者からのコメント要約＆メッセージ</div>
-            <div class="comment-grid">
-                
-                <div class="comment-bubble">
-                    <div class="comment-header">
-                        <span class="comment-user">チームAへの投票コメント</span>
-                        <span>決起集会・調理中</span>
-                    </div>
-                    <p class="comment-body">「大鍋にスパイスとルーを落とす瞬間の表情が完全にプロの料理人でした！全員の笑顔が素晴らしい。」</p>
-                </div>
-
-                <div class="comment-bubble">
-                    <div class="comment-header">
-                        <span class="comment-user">チームBへの投票コメント</span>
-                        <span>偵察部隊</span>
-                    </div>
-                    <p class="comment-body">「物陰からこちらの鍋を覗き込むスパイのようなポーズが秀逸。スケッチのジト目を完全再現していました！」</p>
-                </div>
-
-                <div class="comment-bubble">
-                    <div class="comment-header">
-                        <span class="comment-user">チームCへの投票コメント</span>
-                        <span>放課後の記憶</span>
-                    </div>
-                    <p class="comment-body">「廃校の長い廊下と黒板の哀愁あるエモさがピカイチ。レトロカメラの色味と最高にマッチしていました。」</p>
-                </div>
-
-                <div class="comment-bubble">
-                    <div class="comment-header">
-                        <span class="comment-user">チームDへの投票コメント</span>
-                        <span>BBQ歓喜</span>
-                    </div>
-                    <p class="comment-body">「カレーを囲んでスプーンを掲げたバンザイショットが本当に美味しそう！BBQの楽しさが伝わってきました。」</p>
-                </div>
-
+            <div class="section-title">💬 参加者からの投票メッセージ</div>
+            <div class="comment-grid" id="commentGrid">
+                <div class="loading-box">コメントを読み込み中...</div>
             </div>
         </div>
     </div>
 
+    <script>
+        // ★ Step 1 でデプロイしたWebアプリURLをここに貼り付けてください ★
+        const GAS_API_URL = "https://script.google.com/macros/s/AKfycbxlmHVIabVgeHkrWOReMoNZdNa5sOY8fdCFFOEiv8XKrB_MZFjMKF25Pw-CfOX_fT796w/exec";
+
+        async function fetchLiveResults() {
+            if (GAS_API_URL.includes("YOUR_DEPLOYMENT_ID")) {
+                renderMockData();
+                return;
+            }
+
+            try {
+                const res = await fetch(GAS_API_URL);
+                const data = await res.json();
+                renderResults(data);
+            } catch (err) {
+                console.error("Fetch Error:", err);
+                document.getElementById('rankingList').innerHTML = 
+                    '<div class="loading-box" style="color:var(--danger);">集計データの取得に失敗しました。<br>GASの公開設定を確認してください。</div>';
+            }
+        }
+
+        function renderResults(data) {
+            // 1. 総合ランキングの描画
+            const rankList = document.getElementById('rankingList');
+            rankList.innerHTML = "";
+            data.ranking.forEach((item, index) => {
+                const rankNum = index + 1;
+                const rankClass = rankNum === 1 ? 'rank-1' : rankNum === 2 ? 'rank-2' : rankNum === 3 ? 'rank-3' : '';
+                const winnerBadge = rankNum === 1 ? '<div style="font-size:10px; color:var(--gold); font-weight:800;">👑 GRAND PRIX WINNER</div>' : '';
+
+                const card = document.createElement('div');
+                card.className = `rank-card ${rankClass}`;
+                card.innerHTML = `
+                    <div class="rank-left">
+                        <div class="rank-num">${rankNum}</div>
+                        <div>
+                            <div class="rank-team">${item.team}</div>
+                            ${winnerBadge}
+                            <div class="rank-breakdown">チームワーク:${item.teamwork} | 再現度:${item.repro} | ユーモア:${item.humor} | 最優秀:${item.grand}</div>
+                        </div>
+                    </div>
+                    <div>
+                        <span class="rank-score">${item.totalScore}</span><span class="rank-unit">pt</span>
+                    </div>
+                `;
+                rankList.appendChild(card);
+            });
+
+            // 2. 個別部門賞の描画
+            const catGrid = document.getElementById('categoryGrid');
+            catGrid.innerHTML = `
+                <div class="category-card">
+                    <div class="category-name">🤝 チームワーク賞</div>
+                    <div class="category-winner">${data.categories.teamwork.team}</div>
+                    <div class="category-votes">最多 ${data.categories.teamwork.votes} 票獲得！</div>
+                    <p style="font-size:10px; color:var(--text-sub); margin:4px 0 0 0;">全員の一体感・楽しそうな雰囲気が最高評価！</p>
+                </div>
+                <div class="category-card">
+                    <div class="category-name">📐 構図・ポーズ再現度賞</div>
+                    <div class="category-winner">${data.categories.repro.team}</div>
+                    <div class="category-votes">最多 ${data.categories.repro.votes} 票獲得！</div>
+                    <p style="font-size:10px; color:var(--text-sub); margin:4px 0 0 0;">AIのお手本スケッチを見事に再現した1枚！</p>
+                </div>
+                <div class="category-card">
+                    <div class="category-name">🎭 ドラマ・ユーモア賞</div>
+                    <div class="category-winner">${data.categories.humor.team}</div>
+                    <div class="category-votes">最多 ${data.categories.humor.votes} 票獲得！</div>
+                    <p style="font-size:10px; color:var(--text-sub); margin:4px 0 0 0;">思わずクスッと笑ってしまったエモい瞬間！</p>
+                </div>
+            `;
+
+            // 3. コメントの描画
+            const comGrid = document.getElementById('commentGrid');
+            if (data.comments && data.comments.length > 0) {
+                comGrid.innerHTML = "";
+                data.comments.forEach(c => {
+                    const bubble = document.createElement('div');
+                    bubble.className = "comment-bubble";
+                    bubble.innerHTML = `
+                        <div class="comment-header">
+                            <span class="comment-user">👤 ${c.user}</span>
+                        </div>
+                        <p class="comment-body">「${c.text}」</p>
+                    `;
+                    comGrid.appendChild(bubble);
+                });
+            } else {
+                comGrid.innerHTML = '<div class="loading-box">まだコメントはありません。</div>';
+            }
+        }
+
+        // URL未設定時のフォールバック用ダミーデータ
+        function renderMockData() {
+            renderResults({
+                ranking: [
+                    { team: "チームA", teamwork: 8, repro: 5, humor: 4, grand: 3, totalScore: 23, rank: 1 },
+                    { team: "チームC", teamwork: 4, repro: 7, humor: 3, grand: 2, totalScore: 18, rank: 2 },
+                    { team: "チームB", teamwork: 3, repro: 2, humor: 9, grand: 1, totalScore: 16, rank: 3 },
+                    { team: "チームD", teamwork: 2, repro: 3, humor: 2, grand: 1, totalScore: 9, rank: 4 }
+                ],
+                categories: {
+                    teamwork: { team: "チームA", votes: 8 },
+                    repro: { team: "チームC", votes: 7 },
+                    humor: { team: "チームB", votes: 9 }
+                },
+                comments: [
+                    { user: "参加者1", text: "チームAのルーを投入する瞬間がプロ並みでした！" },
+                    { user: "参加者2", text: "チームBの偵察部隊のポーズがツボに入って面白かったです。" }
+                ]
+            });
+        }
+
+        document.getElementById('refreshBtn').onclick = fetchLiveResults;
+        window.onload = fetchLiveResults;
+    </script>
 </body>
 </html>
