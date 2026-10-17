@@ -492,6 +492,12 @@
     <!-- 右側：コントロールデッキ -->
     <section class="control-section">
         <div class="deck-top">
+            <!-- ★ここに追加：グループ選択の上の取説リンクボタン★ -->
+            <a href="guide.html" class="guide-link-btn">
+                📖 アプリ取扱説明書を見る
+            </a>
+
+            <!-- チーム選択 -->
             <div class="select-card">
                 <span class="select-label">TEAM</span>
                 <select id="carSelect" class="car-select">
@@ -503,15 +509,14 @@
                 </select>
                 <div id="teamDisplayName" class="team-display-name"></div>
             </div>
+
+            <!-- 残り枚数カウンター -->
             <div class="counter-card" id="resetTrigger">
                 <span class="counter-label" id="counterLabel">🎞️残り枚数</span>
                 <div class="counter-badge" id="counter">20</div>
             </div>
         </div>
-        <div class="header-actions">
-            <!-- ★取扱説明書へのリンク★ -->
-            <a href="guide.html" class="header-btn accent">📖 取説を見る</a>
-        </div>
+
         <div class="actions-grid">
             <button class="action-tile full-width" id="missionBtn">🗒️ミッション一覧</button>
             <button class="action-tile" id="flashBtn">⚡️FLASH OFF</button>
