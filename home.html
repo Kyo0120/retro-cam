@@ -1,0 +1,578 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>カレーグランプリ ポータル</title>
+    <style>
+        :root {
+            --bg-color: #0b0d10;
+            --surface-bg: rgba(20, 24, 32, 0.85);
+            --surface-card: rgba(26, 31, 42, 0.75);
+            --surface-border: rgba(255, 255, 255, 0.08);
+            --accent-color: #ff9f1a;
+            --accent-glow: rgba(255, 159, 26, 0.35);
+            --text-main: #f0f3f6;
+            --text-sub: #9aa4b2;
+            --danger: #ff4757;
+            --secret-color: #00d2d3;
+            --secret-glow: rgba(0, 210, 211, 0.35);
+            --gold: #ffd700;
+        }
+
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body {
+            margin: 0; padding: 0;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Hiragino Kaku Gothic ProN", sans-serif;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: space-between;
+            background-image: 
+                radial-gradient(circle at 50% 0%, rgba(255, 159, 26, 0.15) 0%, transparent 60%),
+                radial-gradient(circle at 50% 100%, rgba(0, 0, 0, 0.8) 0%, transparent 80%);
+            padding: max(20px, env(safe-area-inset-top)) 16px max(24px, env(safe-area-inset-bottom)) 16px;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 440px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        /* ヘッダー・ロゴ */
+        .brand-header {
+            text-align: center;
+            margin-top: 10px;
+            margin-bottom: 28px;
+            position: relative;
+            width: 100%;
+        }
+
+        /* 隠しコマンド起動トリガー（ロゴ長押し） */
+        .brand-logo-trigger {
+            display: inline-flex;
+            flex-direction: column;
+            align-items: center;
+            cursor: pointer;
+            user-select: none;
+            padding: 8px 16px;
+            border-radius: 14px;
+            transition: transform 0.15s ease;
+        }
+        .brand-logo-trigger:active {
+            transform: scale(0.96);
+        }
+
+        .brand-icon {
+            font-size: 2.8rem;
+            filter: drop-shadow(0 4px 12px var(--accent-glow));
+            margin-bottom: 6px;
+        }
+
+        .event-tag {
+            font-size: 9.5px;
+            font-weight: 800;
+            letter-spacing: 2px;
+            color: var(--accent-color);
+            background: rgba(255, 159, 26, 0.12);
+            border: 1px solid rgba(255, 159, 26, 0.35);
+            padding: 3px 10px;
+            border-radius: 12px;
+            text-transform: uppercase;
+        }
+
+        h1 {
+            font-size: 1.6rem;
+            margin: 10px 0 4px 0;
+            font-weight: 900;
+            letter-spacing: -0.5px;
+            color: #fff;
+        }
+
+        .sub-lead {
+            font-size: 11.5px;
+            color: var(--text-sub);
+            margin: 0;
+        }
+
+        /* 右上ロック状態インジケータ（タップでもパス入力可能） */
+        .admin-lock-btn {
+            position: absolute;
+            top: 0; right: 0;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--surface-border);
+            color: var(--text-sub);
+            font-size: 11px;
+            padding: 6px 10px;
+            border-radius: 20px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .admin-lock-btn.unlocked {
+            border-color: var(--secret-color);
+            color: var(--secret-color);
+            background: rgba(0, 210, 211, 0.1);
+        }
+
+        /* メニューボタングリッド */
+        .menu-list {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .menu-card {
+            background: var(--surface-card);
+            border: 1px solid var(--surface-border);
+            border-radius: 14px;
+            padding: 16px 18px;
+            text-decoration: none;
+            color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+            backdrop-filter: blur(10px);
+            transition: all 0.2s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        .menu-card:active {
+            transform: scale(0.98);
+        }
+
+        /* カメラ起動（メインCTA） */
+        .menu-card.primary {
+            background: linear-gradient(135deg, rgba(255, 71, 87, 0.95), rgba(192, 57, 43, 0.95));
+            border: 1px solid rgba(255, 71, 87, 0.5);
+            box-shadow: 0 6px 20px rgba(235, 47, 6, 0.45);
+        }
+        .menu-card.primary .menu-title { font-size: 16px; font-weight: 900; }
+        .menu-card.primary .menu-desc { color: rgba(255, 255, 255, 0.85); font-size: 11px; }
+
+        .menu-left {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+        .menu-icon {
+            font-size: 1.6rem;
+            width: 38px; height: 38px;
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.08);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+        .menu-card.primary .menu-icon {
+            background: rgba(0, 0, 0, 0.25);
+        }
+
+        .menu-info {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+        .menu-title {
+            font-size: 14px;
+            font-weight: 800;
+            color: #fff;
+            letter-spacing: 0.3px;
+        }
+        .menu-desc {
+            font-size: 10.5px;
+            color: var(--text-sub);
+            line-height: 1.35;
+        }
+        .menu-arrow {
+            font-size: 14px;
+            color: var(--text-sub);
+            margin-left: 8px;
+        }
+
+        /* シークレットセクション（解放時にフェードイン） */
+        .secret-section {
+            width: 100%;
+            display: none;
+            flex-direction: column;
+            gap: 12px;
+            margin-top: 14px;
+            animation: fadeIn 0.4s ease-out forwards;
+        }
+        .secret-divider {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin: 6px 0;
+        }
+        .secret-divider-line {
+            flex: 1;
+            height: 1px;
+            background: rgba(0, 210, 211, 0.3);
+        }
+        .secret-divider-text {
+            font-size: 10px;
+            font-weight: 800;
+            letter-spacing: 1.5px;
+            color: var(--secret-color);
+            text-transform: uppercase;
+        }
+
+        .menu-card.secret {
+            border: 1px solid rgba(0, 210, 211, 0.35);
+            background: linear-gradient(135deg, rgba(0, 210, 211, 0.08), rgba(26, 31, 42, 0.8));
+        }
+        .menu-card.secret .menu-icon {
+            background: rgba(0, 210, 211, 0.15);
+            color: var(--secret-color);
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* パスコードモーダル（レトロテンキー） */
+        #pass-modal {
+            position: fixed; inset: 0;
+            background: rgba(0,0,0,0.88);
+            backdrop-filter: blur(14px);
+            z-index: 2000;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .pass-box {
+            background: #141720;
+            border: 1px solid rgba(255, 159, 26, 0.3);
+            box-shadow: 0 10px 40px rgba(0,0,0,0.8);
+            border-radius: 18px;
+            padding: 22px 20px;
+            width: 100%;
+            max-width: 310px;
+            text-align: center;
+        }
+        .pass-title {
+            font-size: 12.5px;
+            font-weight: 800;
+            color: var(--accent-color);
+            letter-spacing: 1px;
+            margin-bottom: 4px;
+        }
+        .pass-sub {
+            font-size: 10px;
+            color: var(--text-sub);
+            margin-bottom: 16px;
+        }
+        .pass-display {
+            display: flex;
+            justify-content: center;
+            gap: 14px;
+            margin-bottom: 20px;
+        }
+        .pass-dot {
+            width: 14px; height: 14px;
+            border-radius: 50%;
+            border: 1.5px solid rgba(255, 255, 255, 0.25);
+            background: transparent;
+            transition: all 0.15s ease;
+        }
+        .pass-dot.filled {
+            background: var(--accent-color);
+            border-color: var(--accent-color);
+            box-shadow: 0 0 10px var(--accent-glow);
+        }
+
+        /* テンキーグリッド */
+        .keypad-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-bottom: 12px;
+        }
+        .key-btn {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--surface-border);
+            border-radius: 12px;
+            color: #fff;
+            font-size: 18px;
+            font-weight: 700;
+            padding: 12px 0;
+            cursor: pointer;
+            transition: all 0.1s ease;
+        }
+        .key-btn:active {
+            background: rgba(255, 159, 26, 0.2);
+            transform: scale(0.94);
+        }
+        .key-btn.action {
+            font-size: 11px;
+            color: var(--text-sub);
+            font-weight: 600;
+        }
+
+        footer {
+            margin-top: 24px;
+            text-align: center;
+            font-size: 10px;
+            color: var(--text-sub);
+            letter-spacing: 0.5px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <!-- ヘッダー -->
+        <header class="brand-header">
+            <button class="admin-lock-btn" id="lockToggleBtn">
+                <span id="lockIcon">🔒</span> <span id="lockStatus">LOCKED</span>
+            </button>
+
+            <!-- ロゴ（長押しトリガー） -->
+            <div class="brand-logo-trigger" id="logoTrigger">
+                <div class="brand-icon">🍛</div>
+                <span class="event-tag">Curry & Photo Grand Prix</span>
+                <h1>CURRY GRAND PRIX</h1>
+                <p class="sub-lead">専用レトロカメラ＆グランプリポータル</p>
+            </div>
+        </header>
+
+        <!-- メインメニュー -->
+        <div class="menu-list">
+            
+            <!-- ① カメラ起動（メイン） -->
+            <a href="index.html" class="menu-card primary">
+                <div class="menu-left">
+                    <div class="menu-icon">📷</div>
+                    <div class="menu-info">
+                        <span class="menu-title">カメラアプリ起動</span>
+                        <span class="menu-desc">チーム選択・ミッション撮影・フリー撮影</span>
+                    </div>
+                </div>
+                <span class="menu-arrow">❯</span>
+            </a>
+
+            <!-- ② アプリ取扱説明書 -->
+            <a href="guide.html" class="menu-card">
+                <div class="menu-left">
+                    <div class="menu-icon">📖</div>
+                    <div class="menu-info">
+                        <span class="menu-title">アプリ取扱説明書</span>
+                        <span class="menu-desc">遊び方・ミッション一覧・FAQ・画面解説</span>
+                    </div>
+                </div>
+                <span class="menu-arrow">❯</span>
+            </a>
+
+            <!-- ③ 隠しメニューセクション（0120入力で出現） -->
+            <div class="secret-section" id="secretSection">
+                <div class="secret-divider">
+                    <div class="secret-divider-line"></div>
+                    <span class="secret-divider-text">UNLOCKED MENU</span>
+                    <div class="secret-divider-line"></div>
+                </div>
+
+                <!-- ギャラリー -->
+                <a href="gallery.html" class="menu-card secret">
+                    <div class="menu-left">
+                        <div class="menu-icon">🖼️</div>
+                        <div class="menu-info">
+                            <span class="menu-title">写真ギャラリー</span>
+                            <span class="menu-desc">チーム別のミッション撮影・現像写真一覧</span>
+                        </div>
+                    </div>
+                    <span class="menu-arrow">❯</span>
+                </a>
+
+                <!-- 投票フォーム（※作成したGoogleフォームの回答URLに置き換えてください） -->
+                <a href="https://forms.google.com" target="_blank" class="menu-card secret">
+                    <div class="menu-left">
+                        <div class="menu-icon">🗳️</div>
+                        <div class="menu-info">
+                            <span class="menu-title">グランプリ投票フォーム</span>
+                            <span class="menu-desc">チームワーク・再現度・ユーモア・最優秀投票</span>
+                        </div>
+                    </div>
+                    <span class="menu-arrow">❯</span>
+                </a>
+
+                <!-- 投票結果・表彰式披歴ページ -->
+                <a href="results.html" class="menu-card secret">
+                    <div class="menu-left">
+                        <div class="menu-icon">🏆</div>
+                        <div class="menu-info">
+                            <span class="menu-title">表彰式・結果発表</span>
+                            <span class="menu-desc">総合ランキング・個別部門賞・コメント要約</span>
+                        </div>
+                    </div>
+                    <span class="menu-arrow">❯</span>
+                </a>
+            </div>
+
+        </div>
+
+        <footer>
+            CURRY GRAND PRIX × NEO RETRO CAM
+        </footer>
+    </div>
+
+    <!-- 暗証番号入力モーダル（テンキー） -->
+    <div id="pass-modal">
+        <div class="pass-box">
+            <div class="pass-title">SECRET PASSCODE</div>
+            <div class="pass-sub">暗証番号（4桁）を入力してください</div>
+
+            <div class="pass-display">
+                <div class="pass-dot" id="dot0"></div>
+                <div class="pass-dot" id="dot1"></div>
+                <div class="pass-dot" id="dot2"></div>
+                <div class="pass-dot" id="dot3"></div>
+            </div>
+
+            <div class="keypad-grid">
+                <button class="key-btn" onclick="pressKey('1')">1</button>
+                <button class="key-btn" onclick="pressKey('2')">2</button>
+                <button class="key-btn" onclick="pressKey('3')">3</button>
+                <button class="key-btn" onclick="pressKey('4')">4</button>
+                <button class="key-btn" onclick="pressKey('5')">5</button>
+                <button class="key-btn" onclick="pressKey('6')">6</button>
+                <button class="key-btn" onclick="pressKey('7')">7</button>
+                <button class="key-btn" onclick="pressKey('8')">8</button>
+                <button class="key-btn" onclick="pressKey('9')">9</button>
+                <button class="key-btn action" onclick="closePassModal()">キャンセル</button>
+                <button class="key-btn" onclick="pressKey('0')">0</button>
+                <button class="key-btn action" onclick="clearKey()">1文字消す</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const SECRET_PASS = "0120";
+        let enteredPass = "";
+        let longPressTimer = null;
+        let isUnlocked = localStorage.getItem('curry_portal_unlocked') === 'true';
+
+        const secretSection = document.getElementById('secretSection');
+        const passModal = document.getElementById('pass-modal');
+        const lockIcon = document.getElementById('lockIcon');
+        const lockStatus = document.getElementById('lockStatus');
+        const lockToggleBtn = document.getElementById('lockToggleBtn');
+        const logoTrigger = document.getElementById('logoTrigger');
+
+        // 初期表示チェック
+        if (isUnlocked) {
+            applyUnlockState();
+        }
+
+        function applyUnlockState() {
+            secretSection.style.display = "flex";
+            lockIcon.innerText = "🔓";
+            lockStatus.innerText = "OPEN";
+            lockToggleBtn.classList.add('unlocked');
+        }
+
+        // --- トリガー操作 ---
+        // 1. 右上のロックボタンタップ
+        lockToggleBtn.onclick = () => {
+            if (isUnlocked) {
+                if (confirm("シークレットメニューを再ロックしますか？")) {
+                    localStorage.removeItem('curry_portal_unlocked');
+                    isUnlocked = false;
+                    secretSection.style.display = "none";
+                    lockIcon.innerText = "🔒";
+                    lockStatus.innerText = "LOCKED";
+                    lockToggleBtn.classList.remove('unlocked');
+                }
+            } else {
+                openPassModal();
+            }
+        };
+
+        // 2. ロゴ長押し（1.5秒長押しで起動）
+        logoTrigger.addEventListener('touchstart', startLongPress, { passive: true });
+        logoTrigger.addEventListener('touchend', cancelLongPress);
+        logoTrigger.addEventListener('mousedown', startLongPress);
+        logoTrigger.addEventListener('mouseup', cancelLongPress);
+
+        function startLongPress() {
+            longPressTimer = setTimeout(() => {
+                if (!isUnlocked) {
+                    if (navigator.vibrate) navigator.vibrate(50);
+                    openPassModal();
+                }
+            }, 1200);
+        }
+
+        function cancelLongPress() {
+            if (longPressTimer) clearTimeout(longPressTimer);
+        }
+
+        // --- パスコード入力処理 ---
+        function openPassModal() {
+            enteredPass = "";
+            updateDots();
+            passModal.style.display = "flex";
+        }
+
+        function closePassModal() {
+            passModal.style.display = "none";
+            enteredPass = "";
+        }
+
+        window.pressKey = (num) => {
+            if (enteredPass.length < 4) {
+                enteredPass += num;
+                updateDots();
+
+                if (enteredPass.length === 4) {
+                    setTimeout(verifyPass, 150);
+                }
+            }
+        };
+
+        window.clearKey = () => {
+            if (enteredPass.length > 0) {
+                enteredPass = enteredPass.slice(0, -1);
+                updateDots();
+            }
+        };
+
+        function updateDots() {
+            for (let i = 0; i < 4; i++) {
+                const dot = document.getElementById(`dot${i}`);
+                if (i < enteredPass.length) {
+                    dot.classList.add('filled');
+                } else {
+                    dot.classList.remove('filled');
+                }
+            }
+        }
+
+        function verifyPass() {
+            if (enteredPass === SECRET_PASS) {
+                isUnlocked = true;
+                localStorage.setItem('curry_portal_unlocked', 'true');
+                applyUnlockState();
+                closePassModal();
+            } else {
+                if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
+                alert("暗証番号が違います");
+                enteredPass = "";
+                updateDots();
+            }
+        }
+    </script>
+</body>
+</html>
