@@ -127,7 +127,7 @@
         }
         .curry-mode .section-title { color: var(--curry-color); }
 
-        /* ランキングカード */
+        /* 総合ランキングカード */
         .ranking-list { display: flex; flex-direction: column; gap: 10px; }
         .rank-card {
             background: rgba(0, 0, 0, 0.4);
@@ -169,27 +169,86 @@
         .curry-mode .rank-score { color: var(--curry-color); }
         .rank-unit { font-size: 11px; color: var(--text-sub); margin-left: 2px; font-weight: 700; }
 
-        /* 個別部門賞 */
-        .category-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-            gap: 12px;
-        }
-        .category-card {
+        /* ★ 部門賞グラフUI ★ */
+        .chart-category-card {
             background: rgba(0, 0, 0, 0.35);
             border: 1px solid var(--surface-border);
-            border-radius: 12px;
-            padding: 14px;
+            border-radius: 14px;
+            padding: 16px 18px;
+            margin-bottom: 16px;
             border-top: 3px solid var(--accent-color);
         }
-        .curry-mode .category-card { border-top-color: var(--curry-color); }
-        .category-name { font-size: 11px; font-weight: 700; color: var(--text-sub); }
-        .category-winner { font-size: 16px; font-weight: 900; color: #fff; margin: 4px 0 2px 0; }
-        .category-votes { font-size: 11px; color: var(--accent-color); font-weight: 700; }
-        .curry-mode .category-votes { color: var(--curry-color); }
+        .curry-mode .chart-category-card { border-top-color: var(--curry-color); }
+        .chart-cat-header {
+            display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: 12px;
+        }
+        .chart-cat-title { font-size: 13px; font-weight: 800; color: #fff; }
+        .chart-cat-winner {
+            font-size: 11px; font-weight: 800; color: var(--gold);
+            background: rgba(255, 215, 0, 0.1); border: 1px solid rgba(255, 215, 0, 0.3);
+            padding: 2px 8px; border-radius: 6px;
+        }
 
-        /* コメントリスト */
-        .comment-grid { display: flex; flex-direction: column; gap: 10px; }
+        .bar-group { display: flex; flex-direction: column; gap: 8px; }
+        .bar-row {
+            display: grid;
+            grid-template-columns: 60px 1fr 45px;
+            align-items: center;
+            gap: 10px;
+            font-size: 11px;
+        }
+        .bar-team {
+            font-weight: 700; color: var(--text-sub);
+            white-space: nowrap;
+        }
+        .bar-team.is-top { color: #fff; font-weight: 800; }
+        .bar-track {
+            background: rgba(255, 255, 255, 0.06);
+            height: 12px;
+            border-radius: 6px;
+            overflow: hidden;
+            position: relative;
+        }
+        .bar-fill {
+            height: 100%;
+            border-radius: 6px;
+            background: var(--text-sub);
+            opacity: 0.6;
+            transition: width 0.6s cubic-bezier(0.2, 0.8, 0.2, 1);
+        }
+        .bar-fill.is-top {
+            background: linear-gradient(90deg, var(--accent-color), #ffb84d);
+            opacity: 1;
+            box-shadow: 0 0 10px var(--accent-glow);
+        }
+        .curry-mode .bar-fill.is-top {
+            background: linear-gradient(90deg, var(--curry-color), #ff8566);
+            box-shadow: 0 0 10px var(--curry-glow);
+        }
+        .bar-val {
+            text-align: right;
+            font-weight: 800;
+            color: var(--text-sub);
+            font-family: "Courier New", monospace;
+            font-size: 12px;
+        }
+        .bar-val.is-top { color: var(--accent-color); }
+        .curry-mode .bar-val.is-top { color: var(--curry-color); }
+
+        /* コメントリスト（スクロール対応） */
+        .comment-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            max-height: 420px;
+            overflow-y: auto;
+            padding-right: 4px;
+        }
+        .comment-grid::-webkit-scrollbar { width: 5px; }
+        .comment-grid::-webkit-scrollbar-track { background: rgba(0,0,0,0.2); border-radius: 4px; }
+        .comment-grid::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 4px; }
+
         .comment-bubble {
             background: rgba(0, 0, 0, 0.35);
             border: 1px solid var(--surface-border);
@@ -245,9 +304,10 @@
                 </div>
             </div>
 
+            <!-- ★ 部門賞グラフコンテナ ★ -->
             <div class="section-card">
-                <div class="section-title">🎖️ 写真 部門賞</div>
-                <div class="category-grid" id="photoCategoryGrid">
+                <div class="section-title">📊 写真 部門賞 得票グラフ</div>
+                <div id="photoCategoryCharts">
                     <div class="loading-box">集計中...</div>
                 </div>
             </div>
@@ -269,9 +329,10 @@
                 </div>
             </div>
 
+            <!-- ★ 部門賞グラフコンテナ ★ -->
             <div class="section-card">
-                <div class="section-title">🎖️ カレー 部門賞</div>
-                <div class="category-grid" id="curryCategoryGrid">
+                <div class="section-title">📊 カレー 部門賞 得票グラフ</div>
+                <div id="curryCategoryCharts">
                     <div class="loading-box">集計中...</div>
                 </div>
             </div>
@@ -287,7 +348,7 @@
     </div>
 
     <script>
-        // ★ GASでデプロイしたWebアプリURLをここに貼り付けてください ★
+        // ★ GASのWebアプリURL（設定済みURLをそのまま使用）
         const GAS_API_URL = "https://script.google.com/macros/s/AKfycbxdc51YIhCJS3WE-6qJXNC8jPpeTazBYDTkflCYSBJeU3zN1jTU3ry2mGYYGLpXjiX8Iw/exec";
 
         function switchView(tab) {
@@ -314,7 +375,7 @@
 
         async function fetchLiveResults() {
             if (GAS_API_URL.includes("YOUR_DEPLOYMENT_ID")) {
-                console.log("GAS_API_URLが未設定のためデモ表示します");
+                renderMockData();
                 return;
             }
 
@@ -325,6 +386,7 @@
                 if (data.curry) renderCurryResults(data.curry);
             } catch (err) {
                 console.error("Fetch Error:", err);
+                renderMockData();
             }
         }
 
@@ -356,24 +418,12 @@
                 rankList.appendChild(card);
             });
 
-            // 部門賞
-            document.getElementById('photoCategoryGrid').innerHTML = `
-                <div class="category-card">
-                    <div class="category-name">🤝 チームワーク賞</div>
-                    <div class="category-winner">${photoData.categories.teamwork.team}</div>
-                    <div class="category-votes">最多 ${photoData.categories.teamwork.votes} 票！</div>
-                </div>
-                <div class="category-card">
-                    <div class="category-name">📐 構図・ポーズ再現度賞</div>
-                    <div class="category-winner">${photoData.categories.repro.team}</div>
-                    <div class="category-votes">最多 ${photoData.categories.repro.votes} 票！</div>
-                </div>
-                <div class="category-card">
-                    <div class="category-name">🎭 ドラマ・ユーモア賞</div>
-                    <div class="category-winner">${photoData.categories.humor.team}</div>
-                    <div class="category-votes">最多 ${photoData.categories.humor.votes} 票！</div>
-                </div>
-            `;
+            // ★ 部門賞グラフの描画 ★
+            const chartsContainer = document.getElementById('photoCategoryCharts');
+            chartsContainer.innerHTML = "";
+            chartsContainer.appendChild(createCategoryChartCard("🤝 チームワーク賞", photoData.categories.teamwork));
+            chartsContainer.appendChild(createCategoryChartCard("📐 構図・ポーズ再現度賞", photoData.categories.repro));
+            chartsContainer.appendChild(createCategoryChartCard("🎭 ドラマ・ユーモア賞", photoData.categories.humor));
 
             renderComments('photoCommentGrid', photoData.comments);
         }
@@ -406,26 +456,51 @@
                 rankList.appendChild(card);
             });
 
-            // 部門賞
-            document.getElementById('curryCategoryGrid').innerHTML = `
-                <div class="category-card">
-                    <div class="category-name">👅 味 部門賞</div>
-                    <div class="category-winner">${curryData.categories.taste.team}</div>
-                    <div class="category-votes">最多 ${curryData.categories.taste.votes} 票！</div>
-                </div>
-                <div class="category-card">
-                    <div class="category-name">💡 オリジナリティ 部門賞</div>
-                    <div class="category-winner">${curryData.categories.orig.team}</div>
-                    <div class="category-votes">最多 ${curryData.categories.orig.votes} 票！</div>
-                </div>
-                <div class="category-card">
-                    <div class="category-name">🤝 チームワーク 部門賞</div>
-                    <div class="category-winner">${curryData.categories.teamwork.team}</div>
-                    <div class="category-votes">最多 ${curryData.categories.teamwork.votes} 票！</div>
-                </div>
-            `;
+            // ★ 部門賞グラフの描画 ★
+            const chartsContainer = document.getElementById('curryCategoryCharts');
+            chartsContainer.innerHTML = "";
+            chartsContainer.appendChild(createCategoryChartCard("👅 味 部門賞", curryData.categories.taste));
+            chartsContainer.appendChild(createCategoryChartCard("💡 オリジナリティ 部門賞", curryData.categories.orig));
+            chartsContainer.appendChild(createCategoryChartCard("🤝 チームワーク 部門賞", curryData.categories.teamwork));
 
             renderComments('curryCommentGrid', curryData.comments);
+        }
+
+        // グラフカード生成関数（プログレスバー）
+        function createCategoryChartCard(title, teamList) {
+            const card = document.createElement('div');
+            card.className = "chart-category-card";
+
+            // 最大票数の取得（バーの長さを100%基準にするため）
+            const maxVotes = Math.max(...teamList.map(t => t.votes), 1);
+            const winner = teamList[0];
+
+            let rowsHtml = "";
+            teamList.forEach((t, i) => {
+                const isTop = (i === 0 && t.votes > 0);
+                const percent = Math.round((t.votes / maxVotes) * 100);
+
+                rowsHtml += `
+                    <div class="bar-row">
+                        <span class="bar-team ${isTop ? 'is-top' : ''}">${t.team}</span>
+                        <div class="bar-track">
+                            <div class="bar-fill ${isTop ? 'is-top' : ''}" style="width: ${percent}%;"></div>
+                        </div>
+                        <span class="bar-val ${isTop ? 'is-top' : ''}">${t.votes}票</span>
+                    </div>
+                `;
+            });
+
+            card.innerHTML = `
+                <div class="chart-cat-header">
+                    <span class="chart-cat-title">${title}</span>
+                    <span class="chart-cat-winner">👑 1位: ${winner && winner.votes > 0 ? winner.team : '集計中'}</span>
+                </div>
+                <div class="bar-group">
+                    ${rowsHtml}
+                </div>
+            `;
+            return card;
         }
 
         function renderComments(containerId, comments) {
@@ -446,6 +521,76 @@
             } else {
                 container.innerHTML = '<div class="loading-box">まだコメントはありません。</div>';
             }
+        }
+
+        // デモデータ（テスト用）
+        function renderMockData() {
+            renderPhotoResults({
+                ranking: [
+                    { team: "チームA", teamwork: 8, repro: 6, humor: 5, grand: 6, calcScore: 6.019 },
+                    { team: "チームC", teamwork: 5, repro: 5, humor: 4, grand: 6, calcScore: 6.014 },
+                    { team: "チームB", teamwork: 3, repro: 2, humor: 9, grand: 4, calcScore: 4.014 },
+                    { team: "チームD", teamwork: 2, repro: 3, humor: 2, grand: 2, calcScore: 2.007 }
+                ],
+                categories: {
+                    teamwork: [
+                        { team: "チームA", votes: 8 },
+                        { team: "チームC", votes: 5 },
+                        { team: "チームB", votes: 3 },
+                        { team: "チームD", votes: 2 }
+                    ],
+                    repro: [
+                        { team: "チームA", votes: 6 },
+                        { team: "チームC", votes: 5 },
+                        { team: "チームD", votes: 3 },
+                        { team: "チームB", votes: 2 }
+                    ],
+                    humor: [
+                        { team: "チームB", votes: 9 },
+                        { team: "チームA", votes: 5 },
+                        { team: "チームC", votes: 4 },
+                        { team: "チームD", votes: 2 }
+                    ]
+                },
+                comments: [
+                    { user: "参加者1", text: "チームAのルーを投入する瞬間がプロ並みでした！" },
+                    { user: "参加者2", text: "チームBの偵察部隊のポーズがツボに入って面白かったです。" },
+                    { user: "参加者3", text: "廃校の廊下を活かしたチームCの写真がすごくノスタルジックでした！" }
+                ]
+            });
+
+            renderCurryResults({
+                ranking: [
+                    { team: "チームB", taste: 12, orig: 9, teamwork: 8, grand: 5, calcScore: 5.029 },
+                    { team: "チームA", taste: 10, orig: 7, teamwork: 9, grand: 4, calcScore: 4.026 },
+                    { team: "チームC", taste: 8, orig: 8, teamwork: 7, grand: 3, calcScore: 3.023 },
+                    { team: "チームD", taste: 7, orig: 6, teamwork: 6, grand: 2, calcScore: 2.019 }
+                ],
+                categories: {
+                    taste: [
+                        { team: "チームB", votes: 12 },
+                        { team: "チームA", votes: 10 },
+                        { team: "チームC", votes: 8 },
+                        { team: "チームD", votes: 7 }
+                    ],
+                    orig: [
+                        { team: "チームB", votes: 9 },
+                        { team: "チームC", votes: 8 },
+                        { team: "チームA", votes: 7 },
+                        { team: "チームD", votes: 6 }
+                    ],
+                    teamwork: [
+                        { team: "チームA", votes: 9 },
+                        { team: "チームB", votes: 8 },
+                        { team: "チームC", votes: 7 },
+                        { team: "チームD", votes: 6 }
+                    ]
+                },
+                comments: [
+                    { user: "審査員A", text: "チームBのスパイスの深みが素晴らしく、ご飯が進みました！" },
+                    { user: "参加者4", text: "チームAの野菜の火入れとルーのツヤが完璧でした。" }
+                ]
+            });
         }
 
         document.getElementById('refreshBtn').onclick = fetchLiveResults;
