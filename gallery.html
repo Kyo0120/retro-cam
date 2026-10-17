@@ -89,7 +89,7 @@
             gap: 8px;
         }
 
-        /* 1行目：チーム選択タブ（全チームを一番右に配置） */
+        /* 1行目：チーム選択タブ（全チームを右端に配置） */
         .team-tabs {
             display: flex;
             gap: 6px;
@@ -179,10 +179,10 @@
             padding: 10px 10px 60px 10px;
         }
 
-        /* ★ 写真グリッド：スマホ横2列（PCは自動展開） ★ */
+        /* 写真グリッド：スマホ横2列（PCは自動展開） */
         .gallery-grid {
             display: grid;
-            grid-template-columns: repeat(2, 1fr); /* スマホ標準で横2列 */
+            grid-template-columns: repeat(2, 1fr);
             gap: 8px;
         }
 
@@ -287,7 +287,7 @@
     <header>
         <div class="header-title">📷 PHOTO GALLERY</div>
         <div class="header-actions">
-            <a href="index.html" class="header-btn accent">🏠️ Homeへ</a>
+            <a href="home.html" class="header-btn accent">🏠️ Homeへ</a>
             <a href="https://forms.gle/fhFzxPfTXiwS39g27" target="_blank" rel="noopener noreferrer" class="header-btn accent">🗳️ 投票する</a>
             <button class="header-btn" id="reloadBtn">🔄 最新に更新</button>
         </div>
@@ -311,7 +311,7 @@
                 <span class="counter-number" id="photoCount">0枚</span>
             </div>
 
-            <!-- 正解構図ボタン（タップで同フォルダ内の「フォトGP_正解構図.jpeg」を表示） -->
+            <!-- 正解構図ボタン -->
             <button class="guide-sketch-btn" onclick="openModal('フォトGP_正解構図.jpeg', '📐 正解構図スケッチ一覧')">
                 📐 正解構図を見る
             </button>
@@ -359,6 +359,18 @@
             "free": "フリー撮影"
         };
 
+        // ★ ミッションの並び順定義（00〜06 を先頭、free を最後） ★
+        const missionOrder = {
+            "00": 0,
+            "01": 1,
+            "02": 2,
+            "03": 3,
+            "04": 4,
+            "05": 5,
+            "06": 6,
+            "free": 99
+        };
+
         const app = initializeApp(firebaseConfig);
         const storage = getStorage(app);
         const auth = getAuth(app);
@@ -400,8 +412,17 @@
                     return { url, name, team, mission, timeStr };
                 }));
 
-                // 日時降順（新しい順）
-                items.sort((a, b) => b.name.localeCompare(a.name));
+                // ★ 00〜06 を先、その後に free、同一ミッション内は日時昇順（古い順） ★
+                items.sort((a, b) => {
+                    const orderA = missionOrder[a.mission] !== undefined ? missionOrder[a.mission] : 50;
+                    const orderB = missionOrder[b.mission] !== undefined ? missionOrder[b.mission] : 50;
+
+                    if (orderA !== orderB) {
+                        return orderA - orderB;
+                    }
+                    return (a.timeStr || '').localeCompare(b.timeStr || '');
+                });
+
                 allPhotos = items;
                 renderGallery();
             } catch (err) {
