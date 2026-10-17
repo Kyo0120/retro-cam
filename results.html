@@ -122,11 +122,16 @@
         .rank-3 .rank-num { color: var(--bronze); }
         .rank-team { font-size: 15px; font-weight: 800; color: #fff; }
         .rank-breakdown { font-size: 10px; color: var(--text-sub); margin-top: 2px; }
-        .rank-score {
-            font-size: 1.5rem; font-weight: 800; color: var(--accent-color);
-            font-feature-settings: "tnum";
+        
+        .rank-score-wrap {
+            text-align: right;
         }
-        .rank-unit { font-size: 10px; color: var(--text-sub); margin-left: 2px; }
+        .rank-score {
+            font-size: 1.6rem; font-weight: 900; color: var(--accent-color);
+            font-feature-settings: "tnum";
+            font-family: "Courier New", monospace;
+        }
+        .rank-unit { font-size: 11px; color: var(--text-sub); margin-left: 2px; font-weight: 700; }
 
         /* 個別部門賞 */
         .category-grid {
@@ -206,8 +211,8 @@
     </div>
 
     <script>
-        // ★ Step 1 でデプロイしたWebアプリURLをここに貼り付けてください ★
-        const GAS_API_URL = "https://script.google.com/macros/s/AKfycbxlmHVIabVgeHkrWOReMoNZdNa5sOY8fdCFFOEiv8XKrB_MZFjMKF25Pw-CfOX_fT796w/exec";
+        // ★ デプロイしたGASのWebアプリURL（設定済みであれば差し替えてください）
+        const GAS_API_URL = "https://script.google.com/macros/s/YOUR_DEPLOYMENT_ID/exec";
 
         async function fetchLiveResults() {
             if (GAS_API_URL.includes("YOUR_DEPLOYMENT_ID")) {
@@ -227,13 +232,26 @@
         }
 
         function renderResults(data) {
-            // 1. 総合ランキングの描画
+            // 1. 総合ランキングのソート処理
+            // スコア算出：最優秀票 + (チームワーク + 再現度 + ユーモア) * 0.001
+            data.ranking.forEach(item => {
+                const subTotal = (item.teamwork || 0) + (item.repro || 0) + (item.humor || 0);
+                item.calcScore = (item.grand || 0) + (subTotal * 0.001);
+            });
+
+            // 正確なスコア（小数含む）で降順ソート（同点時の判定を完全自動化）
+            data.ranking.sort((a, b) => b.calcScore - a.calcScore);
+
+            // 総合ランキングの描画
             const rankList = document.getElementById('rankingList');
             rankList.innerHTML = "";
             data.ranking.forEach((item, index) => {
                 const rankNum = index + 1;
                 const rankClass = rankNum === 1 ? 'rank-1' : rankNum === 2 ? 'rank-2' : rankNum === 3 ? 'rank-3' : '';
                 const winnerBadge = rankNum === 1 ? '<div style="font-size:10px; color:var(--gold); font-weight:800;">👑 GRAND PRIX WINNER</div>' : '';
+
+                // ★ 小数点以下は切り捨て、整数のみで表示 ★
+                const displayScore = Math.floor(item.calcScore);
 
                 const card = document.createElement('div');
                 card.className = `rank-card ${rankClass}`;
@@ -243,11 +261,11 @@
                         <div>
                             <div class="rank-team">${item.team}</div>
                             ${winnerBadge}
-                            <div class="rank-breakdown">チームワーク:${item.teamwork} | 再現度:${item.repro} | ユーモア:${item.humor} | 最優秀:${item.grand}</div>
+                            <div class="rank-breakdown">最優秀:${item.grand || 0}票 | TW:${item.teamwork} 再現:${item.repro} 劇的:${item.humor}</div>
                         </div>
                     </div>
-                    <div>
-                        <span class="rank-score">${item.totalScore}</span><span class="rank-unit">pt</span>
+                    <div class="rank-score-wrap">
+                        <span class="rank-score">${displayScore}</span><span class="rank-unit">票</span>
                     </div>
                 `;
                 rankList.appendChild(card);
@@ -296,18 +314,18 @@
             }
         }
 
-        // URL未設定時のフォールバック用ダミーデータ
+        // ダミーデータ（テスト用：チームAとチームCが最優秀6票で並んでも、各評価点の差で順位が決定）
         function renderMockData() {
             renderResults({
                 ranking: [
-                    { team: "チームA", teamwork: 8, repro: 5, humor: 4, grand: 3, totalScore: 23, rank: 1 },
-                    { team: "チームC", teamwork: 4, repro: 7, humor: 3, grand: 2, totalScore: 18, rank: 2 },
-                    { team: "チームB", teamwork: 3, repro: 2, humor: 9, grand: 1, totalScore: 16, rank: 3 },
-                    { team: "チームD", teamwork: 2, repro: 3, humor: 2, grand: 1, totalScore: 9, rank: 4 }
+                    { team: "チームA", teamwork: 8, repro: 6, humor: 5, grand: 6 }, // 6 + 0.019
+                    { team: "チームC", teamwork: 5, repro: 5, humor: 4, grand: 6 }, // 6 + 0.014 (同票だが2位へ)
+                    { team: "チームB", teamwork: 3, repro: 2, humor: 9, grand: 4 }, // 4 + 0.014
+                    { team: "チームD", teamwork: 2, repro: 3, humor: 2, grand: 2 }  // 2 + 0.007
                 ],
                 categories: {
                     teamwork: { team: "チームA", votes: 8 },
-                    repro: { team: "チームC", votes: 7 },
+                    repro: { team: "チームA", votes: 6 },
                     humor: { team: "チームB", votes: 9 }
                 },
                 comments: [
