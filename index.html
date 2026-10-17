@@ -154,16 +154,46 @@
             display: flex;
             flex-direction: column;
             justify-content: space-between;
-            padding: 14px 18px;
-            padding-right: max(18px, env(safe-area-inset-right));
+            padding: 12px 16px;
+            padding-right: max(16px, env(safe-area-inset-right));
             z-index: 10;
         }
 
         .deck-top {
             display: flex;
             flex-direction: column;
+            gap: 6px;
+            width: 100%;
+        }
+
+        /* ★HOME & 取説 ナビゲーションバー★ */
+        .nav-btn-group {
+            display: flex;
             gap: 8px;
             width: 100%;
+            justify-content: space-between;
+        }
+
+        .header-launch-btn {
+            flex: 1;
+            background: var(--accent-color);
+            color: #000;
+            font-size: 11px;
+            font-weight: 800;
+            text-decoration: none;
+            padding: 6px 14px;
+            border-radius: 20px;
+            box-shadow: 0 2px 10px var(--accent-glow);
+            white-space: nowrap;
+            text-align: center;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+            transition: transform 0.1s ease;
+        }
+        .header-launch-btn:active {
+            transform: scale(0.96);
         }
 
         /* 大型プルダウン */
@@ -171,21 +201,21 @@
             background: rgba(0, 0, 0, 0.45);
             border: 1px solid var(--surface-border);
             border-radius: 10px;
-            padding: 10px 14px;
+            padding: 8px 12px;
             display: flex;
             flex-direction: column;
-            gap: 6px;
+            gap: 5px;
         }
         .select-label { font-size: 9px; color: var(--text-sub); font-weight: 700; letter-spacing: 0.5px; }
         .car-select {
             width: 100%;
-            height: 44px;
+            height: 40px;
             background: rgba(255, 255, 255, 0.06);
             color: var(--accent-color);
             border: 1px solid rgba(255, 159, 26, 0.3);
             border-radius: 8px;
-            padding: 0 12px;
-            font-size: 14px;
+            padding: 0 10px;
+            font-size: 13.5px;
             font-weight: 700;
             cursor: pointer;
             outline: none;
@@ -194,28 +224,28 @@
         .car-select option { background: #1a1d24; color: #fff; }
 
         .team-display-name {
-            font-size: 15px;
+            font-size: 14.5px;
             font-weight: 800;
             color: var(--accent-color);
             letter-spacing: 0.5px;
             display: none;
-            padding: 6px 0;
+            padding: 4px 0;
         }
 
         .counter-card {
             background: rgba(0, 0, 0, 0.45);
             border: 1px solid var(--surface-border);
             border-radius: 10px;
-            padding: 8px 12px;
+            padding: 7px 12px;
             display: flex;
             align-items: center;
             justify-content: space-between;
             cursor: pointer;
             user-select: none;
         }
-        .counter-label { font-size: 9.5px; color: var(--text-sub); font-weight: 700; letter-spacing: 0.5px; }
+        .counter-label { font-size: 9px; color: var(--text-sub); font-weight: 700; letter-spacing: 0.5px; }
         .counter-badge {
-            font-size: 1.6rem;
+            font-size: 1.5rem;
             font-weight: 800;
             color: var(--accent-color);
             line-height: 1;
@@ -227,13 +257,13 @@
             grid-template-columns: 1fr 1fr;
             gap: 6px;
             width: 100%;
-            margin: 6px 0;
+            margin: 4px 0;
         }
         .action-tile {
             background: rgba(255, 255, 255, 0.04);
             border: 1px solid var(--surface-border);
             border-radius: 8px;
-            padding: 10px 4px;
+            padding: 9px 4px;
             color: var(--text-main);
             font-size: 10px;
             font-weight: 600;
@@ -259,12 +289,12 @@
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            gap: 6px;
+            gap: 5px;
             width: 100%;
         }
 
         .shutter-ring {
-            width: 74px; height: 74px;
+            width: 70px; height: 70px;
             border-radius: 50%;
             background: transparent;
             border: 2px dashed rgba(255, 255, 255, 0.2);
@@ -275,7 +305,7 @@
             transition: all 0.3s ease;
         }
         .shutter-core {
-            width: 58px; height: 58px;
+            width: 56px; height: 56px;
             border-radius: 50%;
             background: linear-gradient(135deg, #ff4757, #c0392b);
             border: none;
@@ -392,7 +422,6 @@
             box-shadow: 0 4px 15px var(--accent-glow);
         }
 
-        /* 5タップリセット専用確認モーダル */
         #reset-confirm-modal {
             position: fixed; inset: 0;
             background: rgba(0,0,0,0.85);
@@ -471,7 +500,7 @@
     <section class="viewport-section">
         <div class="mission-pill">
             <div class="mission-pill-label">CURRENT MISSION</div>
-            <div id="guide-title" class="mission-pill-title">グループを選択してください</div>
+            <div id="guide-title" class="mission-pill-title">グループ選択</div>
             <div id="guide-task" class="mission-pill-task"></div>
         </div>
 
@@ -492,10 +521,11 @@
     <!-- 右側：コントロールデッキ -->
     <section class="control-section">
         <div class="deck-top">
-            <!-- ★ここに追加：グループ選択の上の取説リンクボタン★ -->
-            <a href="guide.html" class="guide-link-btn">
-                📖 アプリ取扱説明書を見る
-            </a>
+            <!-- ★グループ選択の真上：HOME & 取説の横並びボタン★ -->
+            <div class="nav-btn-group">
+                <a href="home.html" class="header-launch-btn">🏠 HOME</a>
+                <a href="guide.html" class="header-launch-btn">📖 取説</a>
+            </div>
 
             <!-- チーム選択 -->
             <div class="select-card">
@@ -540,7 +570,7 @@
         import { getStorage, ref, uploadBytes } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
         import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
-        // --- Firebase設定（実際の値を貼り付けてください） ---
+        // --- Firebase設定 ---
         const firebaseConfig = {
             apiKey: "AIzaSyDHqQDeEMrFV09YI0n_ARr1Tzta5aqmE2U",
             authDomain: "my-retro-cam.firebaseapp.com",
@@ -638,7 +668,6 @@
             const mList = missionsData[selectedCar];
 
             if (remaining > 0) {
-                // ミッション中
                 counterDisplay.innerText = remaining;
                 counterLabel.innerText = "残り枚数";
                 const current = mList.find(m => remaining > m.threshold);
@@ -647,8 +676,7 @@
                     guideTask.innerText = current.task;
                 }
             } else {
-                // フリー撮影モード中
-                counterDisplay.innerText = shotCount; // 撮影したトータル枚数を表示（21, 22...）
+                counterDisplay.innerText = shotCount;
                 counterLabel.innerText = "撮影枚数";
                 guideTitle.innerText = "フリー撮影モード";
                 guideTask.innerText = "全ミッション達成！自由に思い出を記録しよう！";
@@ -722,7 +750,7 @@
         document.getElementById('zoomRange').oninput = (e) => {
             const val = parseFloat(e.target.value).toFixed(1);
             document.getElementById('video').style.setProperty('--zoom-level', val);
-              document.getElementById('zoomVal').innerText = `${val}x`;
+            document.getElementById('zoomVal').innerText = `${val}x`;
         };
         
         shutterBtn.onclick = () => {
@@ -853,7 +881,6 @@
             ctx.fillStyle = g; ctx.fillRect(0, 0, w, h);
         }
 
-        // スタンプ：左下に「チーム名 ミッション:01」、右下に「YYYY.MM.DD HH:mm」
         function addStamps(ctx, w, h, mId, isFree) {
             const n = new Date();
             const year = n.getFullYear();
@@ -873,12 +900,10 @@
             ctx.strokeStyle = "rgba(0,0,0,0.55)";
             ctx.fillStyle = "#ff8c21";
 
-            // 左下
             ctx.textAlign = "left";
             ctx.strokeText(leftText, w * 0.04, h * 0.96);
             ctx.fillText(leftText, w * 0.04, h * 0.96);
 
-            // 右下
             ctx.textAlign = "right";
             ctx.strokeText(dateStr, w * 0.96, h * 0.96);
             ctx.fillText(dateStr, w * 0.96, h * 0.96);
@@ -886,7 +911,6 @@
             ctx.globalAlpha = 1.0;
         }
 
-        // 5回連続タップでリセット確認モーダルを表示
         document.getElementById('resetTrigger').onclick = () => {
             resetClickCount++;
             if (resetClickCount >= 5) {
@@ -896,12 +920,10 @@
             setTimeout(() => { resetClickCount = 0; }, 2000);
         };
 
-        // リセットキャンセル
         document.getElementById('resetCancelBtn').onclick = () => {
             resetModal.style.display = "none";
         };
 
-        // リセット実行
         document.getElementById('resetConfirmBtn').onclick = () => {
             localStorage.clear();
             shotCount = 0;
@@ -914,7 +936,6 @@
             updateUI();
         };
 
-        // ミッション一覧モーダル表示
         document.getElementById('missionBtn').onclick = () => {
             if (!selectedCar) return;
             const list = document.getElementById('mission-list-content');
@@ -943,7 +964,6 @@
             document.getElementById('mission-overlay').style.display = "block";
         };
 
-        // どこをタップしても確実に閉じる処理
         document.getElementById('mission-overlay').onclick = () => {
             document.getElementById('mission-overlay').style.display = "none";
         };
