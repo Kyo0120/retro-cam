@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>表彰式・結果発表 | カレーGP フォトアワード</title>
+    <title>表彰式・結果発表 | カレーGP & フォトアワード</title>
     <style>
         :root {
             --bg-color: #0b0d10;
@@ -17,7 +17,8 @@
             --bronze: #cd7f32;
             --text-main: #f0f3f6;
             --text-sub: #9aa4b2;
-            --free-color: #2ed573;
+            --curry-color: #ff6b4a;
+            --curry-glow: rgba(255, 107, 74, 0.4);
         }
 
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -60,9 +61,9 @@
             border-color: rgba(255, 159, 26, 0.35);
         }
 
-        .container { max-width: 800px; margin: 0 auto; padding: 24px 16px 60px 16px; }
+        .container { max-width: 800px; margin: 0 auto; padding: 20px 16px 60px 16px; }
 
-        .hero { text-align: center; margin-bottom: 28px; }
+        .hero { text-align: center; margin-bottom: 20px; }
         .hero-badge {
             display: inline-block;
             background: rgba(255, 159, 26, 0.12);
@@ -70,26 +71,63 @@
             color: var(--accent-color);
             font-size: 10px; font-weight: 800;
             padding: 4px 12px; border-radius: 20px;
-            letter-spacing: 1.5px; margin-bottom: 10px;
+            letter-spacing: 1.5px; margin-bottom: 8px;
         }
-        h1 { margin: 0 0 8px 0; font-size: 1.8rem; font-weight: 900; letter-spacing: -0.5px; }
-        .hero-desc { font-size: 12.5px; color: var(--text-sub); }
+        h1 { margin: 0 0 6px 0; font-size: 1.7rem; font-weight: 900; letter-spacing: -0.5px; }
+        .hero-desc { font-size: 12px; color: var(--text-sub); }
+
+        /* グランプリ切り替えタブ（ギャラリー風UI） */
+        .gp-tabs {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 22px;
+        }
+        .gp-tab-btn {
+            background: var(--surface-card);
+            border: 1px solid var(--surface-border);
+            color: var(--text-sub);
+            padding: 12px 0;
+            border-radius: 12px;
+            font-size: 13.5px;
+            font-weight: 800;
+            cursor: pointer;
+            text-align: center;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+        .gp-tab-btn.active {
+            background: var(--accent-color);
+            color: #000;
+            border-color: var(--accent-color);
+            box-shadow: 0 4px 15px var(--accent-glow);
+        }
+        .gp-tab-btn.curry-tab.active {
+            background: var(--curry-color);
+            color: #fff;
+            border-color: var(--curry-color);
+            box-shadow: 0 4px 15px var(--curry-glow);
+        }
 
         .section-card {
             background: var(--surface-card);
             border: 1px solid var(--surface-border);
             border-radius: 16px;
             padding: 20px;
-            margin-bottom: 24px;
+            margin-bottom: 22px;
             backdrop-filter: blur(12px);
         }
         .section-title {
-            font-size: 14px; font-weight: 800; color: var(--accent-color);
+            font-size: 13.5px; font-weight: 800; color: var(--accent-color);
             margin: 0 0 16px 0; display: flex; align-items: center; gap: 8px;
             border-bottom: 1px solid var(--surface-border); padding-bottom: 10px;
         }
+        .curry-mode .section-title { color: var(--curry-color); }
 
-        /* 総合ランキング */
+        /* ランキングカード */
         .ranking-list { display: flex; flex-direction: column; gap: 10px; }
         .rank-card {
             background: rgba(0, 0, 0, 0.4);
@@ -101,7 +139,6 @@
             justify-content: space-between;
             position: relative;
             overflow: hidden;
-            transition: all 0.3s ease;
         }
         .rank-card.rank-1 {
             border: 2px solid var(--gold);
@@ -123,14 +160,13 @@
         .rank-team { font-size: 15px; font-weight: 800; color: #fff; }
         .rank-breakdown { font-size: 10px; color: var(--text-sub); margin-top: 2px; }
         
-        .rank-score-wrap {
-            text-align: right;
-        }
+        .rank-score-wrap { text-align: right; }
         .rank-score {
             font-size: 1.6rem; font-weight: 900; color: var(--accent-color);
             font-feature-settings: "tnum";
             font-family: "Courier New", monospace;
         }
+        .curry-mode .rank-score { color: var(--curry-color); }
         .rank-unit { font-size: 11px; color: var(--text-sub); margin-left: 2px; font-weight: 700; }
 
         /* 個別部門賞 */
@@ -146,11 +182,13 @@
             padding: 14px;
             border-top: 3px solid var(--accent-color);
         }
+        .curry-mode .category-card { border-top-color: var(--curry-color); }
         .category-name { font-size: 11px; font-weight: 700; color: var(--text-sub); }
         .category-winner { font-size: 16px; font-weight: 900; color: #fff; margin: 4px 0 2px 0; }
         .category-votes { font-size: 11px; color: var(--accent-color); font-weight: 700; }
+        .curry-mode .category-votes { color: var(--curry-color); }
 
-        /* コメント */
+        /* コメントリスト */
         .comment-grid { display: flex; flex-direction: column; gap: 10px; }
         .comment-bubble {
             background: rgba(0, 0, 0, 0.35);
@@ -163,8 +201,11 @@
             margin-bottom: 6px; font-size: 10px; color: var(--text-sub);
         }
         .comment-user { font-weight: 800; color: var(--accent-color); }
+        .curry-mode .comment-user { color: var(--curry-color); }
         .comment-body { font-size: 12px; color: #d1d5db; line-height: 1.5; margin: 0; }
 
+        .view-panel { display: none; }
+        .view-panel.active { display: block; }
         .loading-box { text-align: center; padding: 30px; color: var(--text-sub); font-size: 12px; }
     </style>
 </head>
@@ -180,39 +221,97 @@
 
     <div class="container">
         <div class="hero">
-            <span class="hero-badge">LIVE RESULTS</span>
-            <h1>写真グランプリ 結果発表</h1>
-            <div class="hero-desc">Google フォーム投票スプレッドシートからリアルタイム集計中</div>
+            <span class="hero-badge">RESULTS DASHBOARD</span>
+            <h1 id="heroTitle">写真グランプリ 結果発表</h1>
+            <div class="hero-desc" id="heroDesc">Google フォーム投票スプレッドシートからリアルタイム集計中</div>
         </div>
 
-        <!-- 総合ランキング -->
-        <div class="section-card">
-            <div class="section-title">🥇 総合ランキング（最優秀グランプリ）</div>
-            <div class="ranking-list" id="rankingList">
-                <div class="loading-box">スプレッドシートから集計データを取得しています...</div>
+        <!-- グランプリ切り替えタブ -->
+        <div class="gp-tabs">
+            <button class="gp-tab-btn active" id="tabPhoto" onclick="switchView('photo')">
+                📸 写真グランプリ
+            </button>
+            <button class="gp-tab-btn curry-tab" id="tabCurry" onclick="switchView('curry')">
+                🍛 カレーグランプリ
+            </button>
+        </div>
+
+        <!-- ================= ① 写真グランプリパネル ================= -->
+        <div id="panelPhoto" class="view-panel active">
+            <div class="section-card">
+                <div class="section-title">🥇 写真総合ランキング（最優秀グランプリ）</div>
+                <div class="ranking-list" id="photoRankingList">
+                    <div class="loading-box">集計データを取得しています...</div>
+                </div>
+            </div>
+
+            <div class="section-card">
+                <div class="section-title">🎖️ 写真 部門賞</div>
+                <div class="category-grid" id="photoCategoryGrid">
+                    <div class="loading-box">集計中...</div>
+                </div>
+            </div>
+
+            <div class="section-card">
+                <div class="section-title">💬 写真グランプリ 投票メッセージ</div>
+                <div class="comment-grid" id="photoCommentGrid">
+                    <div class="loading-box">コメントを読み込み中...</div>
+                </div>
             </div>
         </div>
 
-        <!-- 個別部門ランキング -->
-        <div class="section-card">
-            <div class="section-title">🎖️ 個別部門賞</div>
-            <div class="category-grid" id="categoryGrid">
-                <div class="loading-box">集計中...</div>
+        <!-- ================= ② カレーグランプリパネル ================= -->
+        <div id="panelCurry" class="view-panel curry-mode">
+            <div class="section-card">
+                <div class="section-title">👑 カレー総合王座（初代カレージャンプ）</div>
+                <div class="ranking-list" id="curryRankingList">
+                    <div class="loading-box">集計データを取得しています...</div>
+                </div>
+            </div>
+
+            <div class="section-card">
+                <div class="section-title">🎖️ カレー 部門賞</div>
+                <div class="category-grid" id="curryCategoryGrid">
+                    <div class="loading-box">集計中...</div>
+                </div>
+            </div>
+
+            <div class="section-card">
+                <div class="section-title">💬 実食レビュー・応援コメント</div>
+                <div class="comment-grid" id="curryCommentGrid">
+                    <div class="loading-box">コメントを読み込み中...</div>
+                </div>
             </div>
         </div>
 
-        <!-- コメント要約・ハイライト -->
-        <div class="section-card">
-            <div class="section-title">💬 参加者からの投票メッセージ</div>
-            <div class="comment-grid" id="commentGrid">
-                <div class="loading-box">コメントを読み込み中...</div>
-            </div>
-        </div>
     </div>
 
     <script>
-        // ★ デプロイしたGASのWebアプリURL（設定済みであれば差し替えてください）
         const GAS_API_URL = "https://script.google.com/macros/s/AKfycbxlmHVIabVgeHkrWOReMoNZdNa5sOY8fdCFFOEiv8XKrB_MZFjMKF25Pw-CfOX_fT796w/exec";
+        let activeTab = "photo";
+
+        function switchView(tab) {
+            activeTab = tab;
+            const tabPhoto = document.getElementById('tabPhoto');
+            const tabCurry = document.getElementById('tabCurry');
+            const panelPhoto = document.getElementById('panelPhoto');
+            const panelCurry = document.getElementById('panelCurry');
+            const heroTitle = document.getElementById('heroTitle');
+
+            if (tab === 'photo') {
+                tabPhoto.classList.add('active');
+                tabCurry.classList.remove('active');
+                panelPhoto.classList.add('active');
+                panelCurry.classList.remove('active');
+                heroTitle.innerText = "写真グランプリ 結果発表";
+            } else {
+                tabPhoto.classList.remove('active');
+                tabCurry.classList.add('active');
+                panelPhoto.classList.remove('active');
+                panelCurry.classList.add('active');
+                heroTitle.innerText = "カレーグランプリ 結果発表";
+            }
+        }
 
         async function fetchLiveResults() {
             if (GAS_API_URL.includes("YOUR_DEPLOYMENT_ID")) {
@@ -223,34 +322,32 @@
             try {
                 const res = await fetch(GAS_API_URL);
                 const data = await res.json();
-                renderResults(data);
+                renderAll(data);
             } catch (err) {
                 console.error("Fetch Error:", err);
-                document.getElementById('rankingList').innerHTML = 
-                    '<div class="loading-box" style="color:var(--danger);">集計データの取得に失敗しました。<br>GASの公開設定を確認してください。</div>';
+                renderMockData();
             }
         }
 
-        function renderResults(data) {
-            // 1. 総合ランキングのソート処理
-            // スコア算出：最優秀票 + (チームワーク + 再現度 + ユーモア) * 0.001
-            data.ranking.forEach(item => {
+        function renderAll(data) {
+            if (data.photo) renderPhotoResults(data.photo);
+            if (data.curry) renderCurryResults(data.curry);
+        }
+
+        // 写真グランプリ描画（同点防止 0.001 計算 ＋ 小数点切り捨て）
+        function renderPhotoResults(photoData) {
+            photoData.ranking.forEach(item => {
                 const subTotal = (item.teamwork || 0) + (item.repro || 0) + (item.humor || 0);
                 item.calcScore = (item.grand || 0) + (subTotal * 0.001);
             });
+            photoData.ranking.sort((a, b) => b.calcScore - a.calcScore);
 
-            // 正確なスコア（小数含む）で降順ソート（同点時の判定を完全自動化）
-            data.ranking.sort((a, b) => b.calcScore - a.calcScore);
-
-            // 総合ランキングの描画
-            const rankList = document.getElementById('rankingList');
+            const rankList = document.getElementById('photoRankingList');
             rankList.innerHTML = "";
-            data.ranking.forEach((item, index) => {
+            photoData.ranking.forEach((item, index) => {
                 const rankNum = index + 1;
                 const rankClass = rankNum === 1 ? 'rank-1' : rankNum === 2 ? 'rank-2' : rankNum === 3 ? 'rank-3' : '';
                 const winnerBadge = rankNum === 1 ? '<div style="font-size:10px; color:var(--gold); font-weight:800;">👑 GRAND PRIX WINNER</div>' : '';
-
-                // ★ 小数点以下は切り捨て、整数のみで表示 ★
                 const displayScore = Math.floor(item.calcScore);
 
                 const card = document.createElement('div');
@@ -271,34 +368,92 @@
                 rankList.appendChild(card);
             });
 
-            // 2. 個別部門賞の描画
-            const catGrid = document.getElementById('categoryGrid');
-            catGrid.innerHTML = `
+            // 写真 部門賞
+            document.getElementById('photoCategoryGrid').innerHTML = `
                 <div class="category-card">
                     <div class="category-name">🤝 チームワーク賞</div>
-                    <div class="category-winner">${data.categories.teamwork.team}</div>
-                    <div class="category-votes">最多 ${data.categories.teamwork.votes} 票獲得！</div>
-                    <p style="font-size:10px; color:var(--text-sub); margin:4px 0 0 0;">全員の一体感・楽しそうな雰囲気が最高評価！</p>
+                    <div class="category-winner">${photoData.categories.teamwork.team}</div>
+                    <div class="category-votes">最多 ${photoData.categories.teamwork.votes} 票！</div>
+                    <p style="font-size:10px; color:var(--text-sub); margin:4px 0 0 0;">全員の一体感が最高評価！</p>
                 </div>
                 <div class="category-card">
                     <div class="category-name">📐 構図・ポーズ再現度賞</div>
-                    <div class="category-winner">${data.categories.repro.team}</div>
-                    <div class="category-votes">最多 ${data.categories.repro.votes} 票獲得！</div>
-                    <p style="font-size:10px; color:var(--text-sub); margin:4px 0 0 0;">AIのお手本スケッチを見事に再現した1枚！</p>
+                    <div class="category-winner">${photoData.categories.repro.team}</div>
+                    <div class="category-votes">最多 ${photoData.categories.repro.votes} 票！</div>
+                    <p style="font-size:10px; color:var(--text-sub); margin:4px 0 0 0;">AIのお手本スケッチを忠実に再現！</p>
                 </div>
                 <div class="category-card">
                     <div class="category-name">🎭 ドラマ・ユーモア賞</div>
-                    <div class="category-winner">${data.categories.humor.team}</div>
-                    <div class="category-votes">最多 ${data.categories.humor.votes} 票獲得！</div>
-                    <p style="font-size:10px; color:var(--text-sub); margin:4px 0 0 0;">思わずクスッと笑ってしまったエモい瞬間！</p>
+                    <div class="category-winner">${photoData.categories.humor.team}</div>
+                    <div class="category-votes">最多 ${photoData.categories.humor.votes} 票！</div>
+                    <p style="font-size:10px; color:var(--text-sub); margin:4px 0 0 0;">思わずクスッと笑った名シーン！</p>
                 </div>
             `;
 
-            // 3. コメントの描画
-            const comGrid = document.getElementById('commentGrid');
-            if (data.comments && data.comments.length > 0) {
-                comGrid.innerHTML = "";
-                data.comments.forEach(c => {
+            // 写真 コメント
+            renderComments('photoCommentGrid', photoData.comments);
+        }
+
+        // カレーグランプリ描画
+        function renderCurryResults(curryData) {
+            curryData.ranking.sort((a, b) => b.totalScore - a.totalScore);
+
+            const rankList = document.getElementById('curryRankingList');
+            rankList.innerHTML = "";
+            curryData.ranking.forEach((item, index) => {
+                const rankNum = index + 1;
+                const rankClass = rankNum === 1 ? 'rank-1' : rankNum === 2 ? 'rank-2' : rankNum === 3 ? 'rank-3' : '';
+                const winnerBadge = rankNum === 1 ? '<div style="font-size:10px; color:var(--gold); font-weight:800;">🍛 CURRY CHAMPION</div>' : '';
+
+                const card = document.createElement('div');
+                card.className = `rank-card ${rankClass}`;
+                card.innerHTML = `
+                    <div class="rank-left">
+                        <div class="rank-num">${rankNum}</div>
+                        <div>
+                            <div class="rank-team">${item.team}</div>
+                            ${winnerBadge}
+                            <div class="rank-breakdown">味:${item.taste || 0} | 見た目:${item.visual || 0} | 独創性:${item.unique || 0}</div>
+                        </div>
+                    </div>
+                    <div class="rank-score-wrap">
+                        <span class="rank-score">${item.totalScore}</span><span class="rank-unit">pt</span>
+                    </div>
+                `;
+                rankList.appendChild(card);
+            });
+
+            // カレー 部門賞
+            document.getElementById('curryCategoryGrid').innerHTML = `
+                <div class="category-card">
+                    <div class="category-name">👅 絶品！味の極み賞</div>
+                    <div class="category-winner">${curryData.categories.taste.team}</div>
+                    <div class="category-votes">最多 ${curryData.categories.taste.votes} 票！</div>
+                    <p style="font-size:10px; color:var(--text-sub); margin:4px 0 0 0;">ルーのコクと旨味が圧倒的一番人気！</p>
+                </div>
+                <div class="category-card">
+                    <div class="category-name">🎨 盛り付け・ビジュアル美賞</div>
+                    <div class="category-winner">${curryData.categories.visual.team}</div>
+                    <div class="category-votes">最多 ${curryData.categories.visual.votes} 票！</div>
+                    <p style="font-size:10px; color:var(--text-sub); margin:4px 0 0 0;">大鍋とトッピングの彩りが食欲を刺激！</p>
+                </div>
+                <div class="category-card">
+                    <div class="category-name">🌶️ スパイス独創性賞</div>
+                    <div class="category-winner">${curryData.categories.unique.team}</div>
+                    <div class="category-votes">最多 ${curryData.categories.unique.votes} 票！</div>
+                    <p style="font-size:10px; color:var(--text-sub); margin:4px 0 0 0;">隠し味のスパイス配合に審査員絶賛！</p>
+                </div>
+            `;
+
+            // カレー コメント
+            renderComments('curryCommentGrid', curryData.comments);
+        }
+
+        function renderComments(containerId, comments) {
+            const container = document.getElementById(containerId);
+            if (comments && comments.length > 0) {
+                container.innerHTML = "";
+                comments.forEach(c => {
                     const bubble = document.createElement('div');
                     bubble.className = "comment-bubble";
                     bubble.innerHTML = `
@@ -307,21 +462,21 @@
                         </div>
                         <p class="comment-body">「${c.text}」</p>
                     `;
-                    comGrid.appendChild(bubble);
+                    container.appendChild(bubble);
                 });
             } else {
-                comGrid.innerHTML = '<div class="loading-box">まだコメントはありません。</div>';
+                container.innerHTML = '<div class="loading-box">まだコメントはありません。</div>';
             }
         }
 
-        // ダミーデータ（テスト用：チームAとチームCが最優秀6票で並んでも、各評価点の差で順位が決定）
+        // ダミーデータ（オフライン・テスト用）
         function renderMockData() {
-            renderResults({
+            renderPhotoResults({
                 ranking: [
-                    { team: "チームA", teamwork: 8, repro: 6, humor: 5, grand: 6 }, // 6 + 0.019
-                    { team: "チームC", teamwork: 5, repro: 5, humor: 4, grand: 6 }, // 6 + 0.014 (同票だが2位へ)
-                    { team: "チームB", teamwork: 3, repro: 2, humor: 9, grand: 4 }, // 4 + 0.014
-                    { team: "チームD", teamwork: 2, repro: 3, humor: 2, grand: 2 }  // 2 + 0.007
+                    { team: "チームA", teamwork: 8, repro: 6, humor: 5, grand: 6 },
+                    { team: "チームC", teamwork: 5, repro: 5, humor: 4, grand: 6 },
+                    { team: "チームB", teamwork: 3, repro: 2, humor: 9, grand: 4 },
+                    { team: "チームD", teamwork: 2, repro: 3, humor: 2, grand: 2 }
                 ],
                 categories: {
                     teamwork: { team: "チームA", votes: 8 },
@@ -331,6 +486,24 @@
                 comments: [
                     { user: "参加者1", text: "チームAのルーを投入する瞬間がプロ並みでした！" },
                     { user: "参加者2", text: "チームBの偵察部隊のポーズがツボに入って面白かったです。" }
+                ]
+            });
+
+            renderCurryResults({
+                ranking: [
+                    { team: "チームB", taste: 12, visual: 8, unique: 9, totalScore: 29 },
+                    { team: "チームA", taste: 10, visual: 9, unique: 7, totalScore: 26 },
+                    { team: "チームC", taste: 8, visual: 7, unique: 8, totalScore: 23 },
+                    { team: "チームD", taste: 7, visual: 6, unique: 6, totalScore: 19 }
+                ],
+                categories: {
+                    taste: { team: "チームB", votes: 12 },
+                    visual: { team: "チームA", votes: 9 },
+                    unique: { team: "チームB", votes: 9 }
+                },
+                comments: [
+                    { user: "審査員A", text: "チームBの隠し味スパイスの深みが素晴らしく、ご飯が進みました！" },
+                    { user: "参加者3", text: "チームAの野菜の火入れとルーのツヤがプロ級でした。" }
                 ]
             });
         }
