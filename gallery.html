@@ -24,6 +24,8 @@
             color: var(--text-main);
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Hiragino Kaku Gothic ProN", sans-serif;
             min-height: 100vh;
+            display: flex;
+            flex-direction: column;
         }
 
         header {
@@ -32,25 +34,43 @@
             backdrop-filter: blur(16px);
             -webkit-backdrop-filter: blur(16px);
             border-bottom: 1px solid var(--surface-border);
-            padding: 14px 20px;
+            padding: 12px 16px;
             display: flex;
             align-items: center;
             justify-content: space-between;
             z-index: 100;
         }
-        .header-title { font-size: 15px; font-weight: 800; color: var(--accent-color); letter-spacing: 0.5px; }
-        .reload-btn {
+        .header-title { font-size: 14px; font-weight: 800; color: var(--accent-color); letter-spacing: 0.5px; }
+        
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .header-btn {
             background: rgba(255, 255, 255, 0.08);
             border: 1px solid var(--surface-border);
             color: #fff;
-            padding: 6px 12px;
+            padding: 6px 10px;
             border-radius: 8px;
             font-size: 11px;
             font-weight: 700;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
             cursor: pointer;
+            transition: all 0.15s ease;
+        }
+        .header-btn:active { transform: scale(0.96); }
+        .header-btn.accent {
+            background: rgba(255, 159, 26, 0.15);
+            border-color: rgba(255, 159, 26, 0.4);
+            color: var(--accent-color);
         }
 
-        .container { max-width: 900px; margin: 0 auto; padding: 16px; }
+        .container { max-width: 900px; margin: 0 auto; padding: 16px; flex: 1; width: 100%; }
 
         /* チーム切り替えタブ */
         .team-tabs {
@@ -154,13 +174,37 @@
         .modal-info { color: #fff; font-size: 12px; font-weight: 700; text-align: center; }
 
         .loading-text { text-align: center; padding: 40px; color: var(--text-sub); font-size: 13px; }
+
+        /* 画面下部ナビゲーション */
+        footer {
+            border-top: 1px solid var(--surface-border);
+            padding: 20px 16px;
+            text-align: center;
+            display: flex;
+            justify-content: center;
+            gap: 16px;
+            font-size: 12px;
+            background: rgba(11, 13, 16, 0.6);
+        }
+        footer a {
+            color: var(--text-sub);
+            text-decoration: none;
+            transition: color 0.15s ease;
+        }
+        footer a:hover {
+            color: var(--accent-color);
+        }
     </style>
 </head>
 <body>
 
     <header>
         <div class="header-title">📷 PHOTO GALLERY</div>
-        <button class="reload-btn" id="reloadBtn">🔄 最新に更新</button>
+        <div class="header-actions">
+            <!-- ★取扱説明書へのリンク★ -->
+            <a href="guide.html" class="header-btn accent">📖 取説を見る</a>
+            <button class="header-btn" id="reloadBtn">🔄 最新に更新</button>
+        </div>
     </header>
 
     <div class="container">
@@ -183,6 +227,13 @@
         </div>
     </div>
 
+    <!-- フッターナビ -->
+    <footer>
+        <a href="guide.html">📖 アプリ取扱説明書</a>
+        <span>|</span>
+        <a href="index.html">📷 カメラアプリへ戻る</a>
+    </footer>
+
     <!-- 拡大モーダル -->
     <div id="photo-modal" onclick="closeModal()">
         <div class="modal-content">
@@ -197,7 +248,6 @@
         import { getStorage, ref, listAll, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
         import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
-        // アプリ本体と同じ設定値
         const firebaseConfig = {
             apiKey: "AIzaSyDHqQDeEMrFV09YI0n_ARr1Tzta5aqmE2U",
             authDomain: "my-retro-cam.firebaseapp.com",
@@ -214,7 +264,6 @@
         let allPhotos = [];
         let currentTeam = "A";
 
-        // ミッション名辞書
         const missionNames = {
             "00": "0. 操作練習",
             "01": "1. 決起集会",
@@ -226,7 +275,6 @@
             "free": "フリー撮影"
         };
 
-        // ミッションの並び順優先度（free は一番大きな数値にして最後に配置）
         const missionOrder = {
             "00": 0,
             "01": 1,
@@ -246,7 +294,6 @@
             }
         });
 
-        // Firebase Storageから全写真を取得
         async function fetchPhotos() {
             const grid = document.getElementById('galleryGrid');
             grid.innerHTML = '<div class="loading-text">写真を取得しています...</div>';
@@ -265,9 +312,9 @@
                     let time = "";
 
                     if (parts.length >= 4) {
-                        team = parts[1].replace('team', ''); // "A"
-                        mission = parts[2];                  // "01" or "free"
-                        time = parts[3];                     // "20261029-123000"
+                        team = parts[1].replace('team', '');
+                        mission = parts[2];
+                        time = parts[3];
                     }
 
                     const url = await getDownloadURL(itemRef);
@@ -276,9 +323,6 @@
 
                 allPhotos = await Promise.all(promises);
 
-                // 【並び順のロジック】
-                // 1. ミッション番号順（00 -> 01 -> ... -> 06 -> free）
-                // 2. 同じミッション内は撮影時刻順（昇順）
                 allPhotos.sort((a, b) => {
                     const orderA = missionOrder[a.mission] !== undefined ? missionOrder[a.mission] : 500;
                     const orderB = missionOrder[b.mission] !== undefined ? missionOrder[b.mission] : 500;
@@ -295,7 +339,6 @@
             }
         }
 
-        // 選択中チームの写真を描画
         function renderTeamPhotos() {
             const grid = document.getElementById('galleryGrid');
             const teamPhotos = allPhotos.filter(p => p.team === currentTeam);
@@ -316,7 +359,6 @@
                 const isFree = p.mission === "free";
                 const mLabel = missionNames[p.mission] || `ミッション:${p.mission}`;
 
-                // 日時フォーマット (20261029-123000 -> 10/29 12:30)
                 let dateDisplay = "";
                 if (p.time && p.time.length >= 13) {
                     dateDisplay = `${p.time.slice(4,6)}/${p.time.slice(6,8)} ${p.time.slice(9,11)}:${p.time.slice(11,13)}`;
@@ -335,7 +377,6 @@
             });
         }
 
-        // タブ切り替え
         document.querySelectorAll('.tab-btn').forEach(btn => {
             btn.onclick = () => {
                 document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
@@ -345,7 +386,6 @@
             };
         });
 
-        // モーダル表示
         window.openModal = (url, info) => {
             document.getElementById('modalImg').src = url;
             document.getElementById('modalInfo').innerText = info;
