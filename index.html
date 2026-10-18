@@ -332,7 +332,19 @@
     </style>
 </head>
 <body>
-
+    <!-- ロック画面オーバーレイ -->
+    <div id="accessLockOverlay" style="display:none; position:fixed; inset:0; background:rgba(11,13,16,0.98); backdrop-filter:blur(20px); z-index:9999; align-items:center; justify-content:center; padding:20px;">
+        <div style="background:rgba(26,31,42,0.9); border:1px solid #ff9f1a; border-radius:16px; padding:24px; max-width:320px; width:100%; text-align:center; box-shadow:0 10px 30px rgba(0,0,0,0.8);">
+            <div style="font-size:36px; margin-bottom:8px;">🔒</div>
+            <div style="font-weight:800; color:#fff; font-size:16px;">関係者・参加者専用ページ</div>
+            <div style="font-size:11.5px; color:#9aa4b2; margin:6px 0 16px 0;">配布された専用URLからアクセスするか、合言葉を入力してください。</div>
+            
+            <input type="text" id="manualKeyInput" placeholder="合言葉を入力" style="width:100%; padding:10px; border-radius:8px; border:1px solid rgba(255,255,255,0.15); background:#000; color:#fff; text-align:center; font-size:14px; outline:none; box-sizing:border-box;">
+            <button onclick="submitManualKey()" style="width:100%; margin-top:10px; padding:10px; border-radius:8px; background:#ff9f1a; color:#000; font-weight:800; border:none; cursor:pointer;">認証する</button>
+            <div id="keyErrorMsg" style="color:#ff4757; font-size:10px; margin-top:8px; display:none;">合言葉が一致しません</div>
+        </div>
+    </div>
+    
     <div class="container">
         <!-- ヘッダー -->
         <header class="brand-header">
