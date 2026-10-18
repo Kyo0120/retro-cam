@@ -378,7 +378,76 @@
         let allPhotos = [];
         let currentFilter = "ALL";
 
-        onAuthStateChanged(auth, (user) => {
+        // ★ 追加：GASのURL（ご自身のURLに差し替え） ★
+        const GAS_API_URL = "https://script.google.com/macros/s/YOUR_DEPLOYMENT_ID/exec";
+        
+        // 🔒 認証チェック & 初期化関数（ここを追加・置き換え）
+        async function initGalleryWithAuth() {
+            const pin = sessionStorage.getItem("event_user_pin");
+            const userInfoRaw = sessionStorage.getItem("event_user_info");
+        
+            // 1. PINがセッションに無ければ即ブロック（直リンク防止）
+            if (!pin) {
+                showGalleryBlocked("PINコードが確認できません。ポータル画面からログインしてください。");
+                return;
+            }
+        
+            try {
+                // 2. GASへ問い合わせてPINを検証
+                const res = await fetch(`${GAS_API_URL}?action=gallery&pin=${encodeURIComponent(pin)}`);
+                const result = await res.json();
+        
+                if (!result.success) {
+                    showGalleryBlocked(result.message || "認証に失敗しました。アクセス権がありません。");
+                    return;
+                }
+        
+                // 3. 認証成功：所属チームがあればそのチームのタブを初期選択
+                if (userInfoRaw) {
+                    try {
+                        const user = JSON.parse(userInfoRaw);
+                        // チームA〜Dの場合、そのチームのタブをアクティブ化
+                        if (user.team && ["A", "B", "C", "D"].includes(user.team)) {
+                            currentTeam = user.team; // 既存コードのチーム変数名に合わせてください
+                            updateTeamTabUI(user.team);
+                        }
+                    } catch (e) {
+                        console.error("ユーザー情報のパース失敗:", e);
+                    }
+                }
+        
+                // 4. 検証クリア後に初めてFirebaseから写真をロード
+                onAuthStateChanged(auth, (user) => {
+                    if (user) {
+                        loadPhotos();
+                    } else {
+                        signInAnonymously(auth);
+                    }
+                });
+        
+            } catch (err) {
+                console.error("Gallery Auth Error:", err);
+                showGalleryBlocked("認証サーバーとの通信に失敗しました。");
+            }
+        }
+        
+        // 🔒 ブロック時の画面表示用ヘルパー
+        function showGalleryBlocked(msg) {
+            const grid = document.getElementById('galleryGrid');
+            if (grid) {
+                grid.innerHTML = `
+                    <div style="grid-column: 1 / -1; text-align: center; padding: 60px 16px;">
+                        <div style="font-size: 42px; margin-bottom: 12px;">🔒</div>
+                        <div style="color: #ff4757; font-weight: 800; font-size: 16px; margin-bottom: 8px;">閲覧が制限されています</div>
+                        <div style="color: #8a94a6; font-size: 12px; margin-bottom: 20px; line-height: 1.5;">${msg}</div>
+                        <a href="index.html" style="background: #ff9f1a; color: #000; padding: 10px 20px; border-radius: 8px; text-decoration: none; font-weight: 800; font-size: 12px;">🏠️ ポータルへ戻る</a>
+                    </div>
+                `;
+            }
+        }
+
+// ページ読み込み完了時に認証チェックを実行
+window.addEventListener('DOMContentLoaded', initGalleryWithAuth);onAuthStateChanged(auth, (user) => {
             if (user) {
                 loadPhotos();
             } else {
