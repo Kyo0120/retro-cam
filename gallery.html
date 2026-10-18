@@ -378,10 +378,10 @@
         let allPhotos = [];
         let currentFilter = "ALL";
 
-        // ★ 追加：GASのURL（ご自身のURLに差し替え） ★
+// ★ 追加：GASのURL（ご自身のURLに差し替え） ★
         const GAS_API_URL = "https://script.google.com/macros/s/YOUR_DEPLOYMENT_ID/exec";
         
-        // 🔒 認証チェック & 初期化関数（ここを追加・置き換え）
+        // 🔒 認証チェック & 初期化関数
         async function initGalleryWithAuth() {
             const pin = sessionStorage.getItem("event_user_pin");
             const userInfoRaw = sessionStorage.getItem("event_user_info");
@@ -406,9 +406,8 @@
                 if (userInfoRaw) {
                     try {
                         const user = JSON.parse(userInfoRaw);
-                        // チームA〜Dの場合、そのチームのタブをアクティブ化
                         if (user.team && ["A", "B", "C", "D"].includes(user.team)) {
-                            currentTeam = user.team; // 既存コードのチーム変数名に合わせてください
+                            currentTeam = user.team;
                             updateTeamTabUI(user.team);
                         }
                     } catch (e) {
@@ -446,16 +445,17 @@
             }
         }
 
-// ページ読み込み完了時に認証チェックを実行
-window.addEventListener('DOMContentLoaded', initGalleryWithAuth);onAuthStateChanged(auth, (user) => {
-            if (user) {
-                loadPhotos();
-            } else {
-                signInAnonymously(auth);
-            }
-        });
+        // ページ読み込み完了時に認証チェックを実行
+        window.addEventListener('DOMContentLoaded', initGalleryWithAuth);
 
+        // 写真ロード処理
         async function loadPhotos() {
+            // 🔒 二重ガード：万が一直接呼ばれても未認証なら即中断
+            if (!sessionStorage.getItem("event_user_pin")) {
+                console.warn("未認証のため写真取得を停止しました");
+                return;
+            }
+
             const grid = document.getElementById('galleryGrid');
             grid.innerHTML = '<div class="status-box">最新写真を読み込んでいます...</div>';
 
@@ -481,7 +481,7 @@ window.addEventListener('DOMContentLoaded', initGalleryWithAuth);onAuthStateChan
                     return { url, name, team, mission, timeStr };
                 }));
 
-                // ★ 00〜06 を先、その後に free、同一ミッション内は日時昇順（古い順） ★
+                // 00〜06 を先、その後に free、同一ミッション内は日時昇順
                 items.sort((a, b) => {
                     const orderA = missionOrder[a.mission] !== undefined ? missionOrder[a.mission] : 50;
                     const orderB = missionOrder[b.mission] !== undefined ? missionOrder[b.mission] : 50;
