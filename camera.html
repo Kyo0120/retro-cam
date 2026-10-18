@@ -707,13 +707,13 @@
     // 🔄 GASからチームの最新撮影状況（ミッション消化数・フリー数）を取得
     async function syncCloudStatus() {
         if (!currentPin || GAS_API_URL.includes("YOUR_DEPLOYMENT_ID")) {
-            // GAS_API_URL未設定時のローカルフォールバック
             shotCount = parseInt(localStorage.getItem(`curry_count_${selectedCar}`)) || 0;
             return;
         }
 
         try {
-            const res = await fetch(`${GAS_API_URL}?action=camera_status&pin=${encodeURIComponent(currentPin)}`);
+            // ★ &team=${encodeURIComponent(selectedCar)} を追加 ★
+            const res = await fetch(`${GAS_API_URL}?action=camera_status&pin=${encodeURIComponent(currentPin)}&team=${encodeURIComponent(selectedCar)}`);
             const data = await res.json();
             if (data.success) {
                 shotCount = data.missionShotCount || 0;
