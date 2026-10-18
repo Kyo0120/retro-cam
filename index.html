@@ -31,47 +31,113 @@
         .container {
             width: 100%;
             max-width: 480px;
-            padding: 24px 16px 48px 16px;
+            padding: 20px 16px 48px 16px;
             display: flex;
             flex-direction: column;
-            gap: 20px;
+            gap: 16px;
         }
 
-        /* ヘッダーエリア */
+        /* ヘッダーエリア（タイトル3回タップで後半メニュー解除入力表示） */
         .hero {
             text-align: center;
-            padding: 12px 0 4px 0;
+            padding: 8px 0 2px 0;
             user-select: none;
             -webkit-user-select: none;
             cursor: pointer;
         }
         .hero-tag {
-            font-size: 11.5px;
+            font-size: 11px;
             font-weight: 800;
             color: var(--accent-color);
             letter-spacing: 1.5px;
         }
         .hero-title {
-            font-size: 23px;
+            font-size: 22px;
             font-weight: 900;
-            margin: 8px 0 0 0;
+            margin: 6px 0 0 0;
             background: linear-gradient(135deg, #fff 40%, var(--accent-color));
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             letter-spacing: 0.5px;
         }
 
-        /* 隠しパスワード入力パネル */
+        /* 🔑 GAS用 PIN認証カード（トラブルシューティング用常設） */
+        .auth-card {
+            background: var(--surface-card);
+            border: 1px solid var(--surface-border);
+            border-radius: 14px;
+            padding: 12px 14px;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+        }
+        .auth-card-head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 8px;
+        }
+        .auth-title {
+            font-size: 12px;
+            font-weight: 800;
+            color: #fff;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .auth-badge {
+            font-size: 10.5px;
+            font-weight: 800;
+            padding: 2px 7px;
+            border-radius: 5px;
+        }
+        .badge-none { background: rgba(255, 71, 87, 0.15); color: var(--danger); border: 1px solid rgba(255, 71, 87, 0.3); }
+        .badge-ok { background: rgba(46, 213, 115, 0.15); color: var(--success); border: 1px solid rgba(46, 213, 115, 0.3); }
+
+        .auth-form {
+            display: flex;
+            gap: 8px;
+        }
+        .auth-pin-input {
+            flex: 1;
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid var(--surface-border);
+            border-radius: 8px;
+            color: #fff;
+            font-size: 15px;
+            font-weight: 700;
+            text-align: center;
+            letter-spacing: 3px;
+            padding: 8px;
+            outline: none;
+        }
+        .auth-pin-input:focus { border-color: var(--accent-color); }
+        .auth-btn {
+            background: var(--accent-color);
+            color: #000;
+            border: none;
+            border-radius: 8px;
+            font-weight: 800;
+            font-size: 12px;
+            padding: 0 14px;
+            cursor: pointer;
+        }
+        .auth-status-desc {
+            font-size: 11px;
+            margin-top: 6px;
+            min-height: 15px;
+            text-align: center;
+        }
+
+        /* 隠しパスワード入力パネル（0120用） */
         .secret-panel {
             display: none;
             background: var(--surface-card);
             border: 1px dashed var(--accent-color);
             border-radius: 14px;
-            padding: 14px 16px;
+            padding: 12px 14px;
             animation: fadeIn 0.25s ease-out;
         }
         @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(-8px); }
+            from { opacity: 0; transform: translateY(-6px); }
             to { opacity: 1; transform: translateY(0); }
         }
         .unlock-input-group {
@@ -84,14 +150,13 @@
             border: 1px solid var(--surface-border);
             border-radius: 8px;
             color: #fff;
-            font-size: 15px;
+            font-size: 14px;
             font-weight: 700;
             text-align: center;
             letter-spacing: 4px;
-            padding: 8px 12px;
+            padding: 8px;
             outline: none;
         }
-        .unlock-input:focus { border-color: var(--accent-color); }
         .btn-unlock {
             background: var(--accent-color);
             color: #000;
@@ -99,17 +164,9 @@
             border-radius: 8px;
             font-weight: 800;
             font-size: 12px;
-            padding: 0 16px;
+            padding: 0 14px;
             cursor: pointer;
         }
-        .unlock-msg {
-            font-size: 11px;
-            margin-top: 6px;
-            min-height: 15px;
-            text-align: center;
-        }
-
-        /* 解除済ステータスバー */
         .unlocked-banner {
             display: none;
             align-items: center;
@@ -117,7 +174,7 @@
             background: rgba(46, 213, 115, 0.12);
             border: 1px solid rgba(46, 213, 115, 0.3);
             border-radius: 10px;
-            padding: 8px 14px;
+            padding: 8px 12px;
             font-size: 11.5px;
             font-weight: 800;
             color: var(--success);
@@ -128,7 +185,7 @@
             color: var(--text-sub);
             border-radius: 6px;
             font-size: 10px;
-            padding: 3px 8px;
+            padding: 2px 6px;
             cursor: pointer;
         }
 
@@ -146,7 +203,6 @@
             font-weight: 800;
             color: var(--text-sub);
             padding-left: 4px;
-            letter-spacing: 0.5px;
         }
 
         /* メニューカード */
@@ -165,7 +221,7 @@
             padding: 14px 16px;
             text-decoration: none;
             color: var(--text-main);
-            transition: transform 0.15s ease, border-color 0.15s ease;
+            transition: transform 0.15s ease;
         }
         .menu-item:active { transform: scale(0.98); }
         .menu-item.highlight {
@@ -188,7 +244,7 @@
         .locked-content {
             display: none;
             flex-direction: column;
-            gap: 20px;
+            gap: 16px;
             animation: fadeIn 0.3s ease-out;
         }
     </style>
@@ -202,19 +258,41 @@
             <h1 class="hero-title">カレー ＆ フォト グランプリ</h1>
         </div>
 
-        <!-- 解除済み時のステータスバナー -->
+        <!-- 🔑 1. GAS用 参加者PIN認証カード（常設） -->
+        <div class="auth-card">
+            <div class="auth-card-head">
+                <div class="auth-title">
+                    <span>👤</span> 参加者認証（カメラ・ギャラリー連動）
+                </div>
+                <span id="authBadge" class="auth-badge badge-none">未認証</span>
+            </div>
+
+            <!-- PIN入力フォーム -->
+            <div class="auth-form" id="pinFormWrap">
+                <input type="password" id="gasPinInput" class="auth-pin-input" placeholder="チームPIN (4桁)" maxlength="8" inputmode="numeric">
+                <button class="auth-btn" onclick="submitGasPin()">登録</button>
+            </div>
+
+            <div id="authStatusDesc" class="auth-status-desc" style="color: var(--text-sub);">
+                写真の提出やギャラリー閲覧用のPINを入力してください
+            </div>
+        </div>
+
+        <!-- 解除済み時のステータスバナー（0120用） -->
         <div id="unlockedBanner" class="unlocked-banner">
             <span>🔓 全メニュー表示中</span>
             <button class="btn-re-lock" onclick="relockMenu()">隠す</button>
         </div>
 
-        <!-- 隠しパスワード入力パネル -->
+        <!-- 隠しパスワード入力パネル（タイトル3回タップで表示） -->
         <div id="secretPanel" class="secret-panel">
             <div class="unlock-input-group">
                 <input type="password" id="passInput" class="unlock-input" placeholder="暗証番号" maxlength="8" inputmode="numeric">
                 <button class="btn-unlock" onclick="checkPassword()">解除</button>
             </div>
-            <div id="unlockMsg" class="unlock-msg" style="color: var(--text-sub);">後半メニューの暗証番号を入力してください</div>
+            <div id="unlockMsg" style="font-size: 11px; margin-top: 6px; text-align: center; color: var(--text-sub);">
+                後半メニューの暗証番号を入力してください
+            </div>
         </div>
 
         <!-- ========== 区分1：常時オープン（イベント進行・撮影） ========== -->
@@ -241,7 +319,7 @@
                         <span class="menu-icon">📖</span>
                         <div class="menu-info">
                             <span class="menu-title">イベント取扱説明書</span>
-                            <span class="menu-desc">ルール・タイムスケジュール・操作ガイド</span>
+                            <span class="menu-desc">ルール・ミッション一覧・操作ガイド</span>
                         </div>
                     </div>
                     <span class="menu-arrow">▶</span>
@@ -318,20 +396,113 @@
     </div>
 
     <script>
+        // ★ ステップB-2でデプロイしたご自身のGASウェブアプリURL ★
+        const GAS_API_URL = "https://script.google.com/macros/s/AKfycbxdc51YIhCJS3WE-6qJXNC8jPpeTazBYDTkflCYSBJeU3zN1jTU3ry2mGYYGLpXjiX8Iw/exec";
+
+        // 後半メニュー解除用パスワード
         const MASTER_PASS = "0120";
         const STORAGE_KEY = "event_menu_unlocked";
 
         let clickCount = 0;
         let clickTimer = null;
 
-        window.onload = () => {
-            // 前回復号済みなら自動展開
+        window.onload = async () => {
+            // 1. 後半メニューの復号状態をチェック
             if (localStorage.getItem(STORAGE_KEY) === "true") {
                 showLockedMenus();
             }
+
+            // 2. URLパラメータ（?pin=XXXX）がある場合は自動でPIN認証を実行
+            const urlParams = new URLSearchParams(window.location.search);
+            const queryPin = urlParams.get('pin');
+            if (queryPin) {
+                document.getElementById('gasPinInput').value = queryPin;
+                await verifyGasPin(queryPin);
+                return;
+            }
+
+            // 3. 既存のPINがsessionStorageに残っているか確認してUI反映
+            checkStoredAuth();
         };
 
-        // タイトル3回クリック判定（1.2秒以内に3回タップ）
+        // セッション内の認証状態をチェックして表示を更新
+        function checkStoredAuth() {
+            const savedPin = sessionStorage.getItem("event_user_pin");
+            const savedInfo = sessionStorage.getItem("event_user_info");
+
+            const badge = document.getElementById('authBadge');
+            const desc = document.getElementById('authStatusDesc');
+
+            if (savedPin && savedInfo) {
+                try {
+                    const u = JSON.parse(savedInfo);
+                    badge.innerText = `チーム${u.team}`;
+                    badge.className = "auth-badge badge-ok";
+                    desc.innerText = `✅ 認証中: チーム${u.team} (${u.label})`;
+                    desc.style.color = "var(--success)";
+                    document.getElementById('gasPinInput').placeholder = `登録済: ${savedPin}`;
+                } catch(e) {
+                    setUnauthenticatedUI();
+                }
+            } else {
+                setUnauthenticatedUI();
+            }
+        }
+
+        function setUnauthenticatedUI() {
+            const badge = document.getElementById('authBadge');
+            const desc = document.getElementById('authStatusDesc');
+            badge.innerText = "未認証";
+            badge.className = "auth-badge badge-none";
+            desc.innerText = "写真の提出やギャラリー閲覧用のPINを入力してください";
+            desc.style.color = "var(--text-sub)";
+        }
+
+        // 🔑 PINの送信処理
+        async function submitGasPin() {
+            const pin = document.getElementById('gasPinInput').value.trim();
+            if (!pin) {
+                showAuthMsg("PINを入力してください", "var(--danger)");
+                return;
+            }
+            await verifyGasPin(pin);
+        }
+
+        // GASへのPIN検証 ＆ 保存
+        async function verifyGasPin(pin) {
+            showAuthMsg("認証確認中...", "var(--accent-color)");
+
+            try {
+                const res = await fetch(`${GAS_API_URL}?action=login&pin=${encodeURIComponent(pin)}`);
+                const result = await res.json();
+
+                if (result.success && result.user) {
+                    // ★ sessionStorage に確実に保存（これでGalleryやCameraが通るようになる）★
+                    sessionStorage.setItem("event_user_pin", pin);
+                    sessionStorage.setItem("event_user_info", JSON.stringify(result.user));
+
+                    // スマホの再読み込み耐性をつけるため localStorage にも予備保存
+                    localStorage.setItem("event_user_pin_backup", pin);
+
+                    checkStoredAuth();
+                    showAuthMsg(`認証成功！チーム${result.user.team}として登録されました`, "var(--success)");
+                    document.getElementById('gasPinInput').value = "";
+                } else {
+                    showAuthMsg(result.message || "無効なPINコードです", "var(--danger)");
+                }
+            } catch (err) {
+                console.error("Auth Error:", err);
+                showAuthMsg("認証サーバーとの通信に失敗しました", "var(--danger)");
+            }
+        }
+
+        function showAuthMsg(msg, color) {
+            const desc = document.getElementById('authStatusDesc');
+            desc.innerText = msg;
+            if (color) desc.style.color = color;
+        }
+
+        // ========== タイトル3回タップ & 0120 判定 ==========
         function handleTitleClick() {
             clickCount++;
             clearTimeout(clickTimer);
@@ -350,12 +521,9 @@
             const panel = document.getElementById('secretPanel');
             const isShown = panel.style.display === "block";
             panel.style.display = isShown ? "none" : "block";
-            if (!isShown) {
-                document.getElementById('passInput').focus();
-            }
+            if (!isShown) document.getElementById('passInput').focus();
         }
 
-        // パスワード判定（平文 0120）
         function checkPassword() {
             const input = document.getElementById('passInput').value.trim();
             const msg = document.getElementById('unlockMsg');
@@ -371,14 +539,12 @@
             }
         }
 
-        // ロック解除・メニュー表示
         function showLockedMenus() {
             document.getElementById('lockedContent').style.display = "flex";
             document.getElementById('unlockedBanner').style.display = "flex";
             document.getElementById('secretPanel').style.display = "none";
         }
 
-        // 再ロック（非表示に戻す）
         function relockMenu() {
             localStorage.removeItem(STORAGE_KEY);
             document.getElementById('lockedContent').style.display = "none";
@@ -390,7 +556,10 @@
             msg.style.color = "var(--text-sub)";
         }
 
-        // Enterキーで解除実行
+        // Enterキー補助
+        document.getElementById('gasPinInput').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') submitGasPin();
+        });
         document.getElementById('passInput').addEventListener('keypress', (e) => {
             if (e.key === 'Enter') checkPassword();
         });
