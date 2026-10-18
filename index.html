@@ -471,6 +471,48 @@
     </div>
 
     <script>
+        // ★ 設定する合言葉（自由に変更可能） ★
+        const VALID_KEY = "curry2026";
+        
+        // URLのパラメータから "?key=〇〇" を取得
+        const urlParams = new URLSearchParams(window.location.search);
+        const keyParam = urlParams.get('key');
+        
+        // 1. URLに正しい合言葉がついている場合
+        if (keyParam === VALID_KEY) {
+            // 認証成功フラグをセッションに保存（タブを閉じるまで有効）
+            sessionStorage.setItem("event_auth_token", "authorized");
+            // アドレスバーから「?key=...」を取り除いてURLを綺麗にする（任意）
+            window.history.replaceState({}, document.title, window.location.pathname);
+        }
+        
+        // 2. セッション認証の確認
+        function checkAccess() {
+            const isAuthorized = sessionStorage.getItem("event_auth_token");
+            const lockOverlay = document.getElementById("accessLockOverlay");
+        
+            if (isAuthorized === "authorized") {
+                if (lockOverlay) lockOverlay.style.display = "none";
+            } else {
+                if (lockOverlay) lockOverlay.style.display = "flex";
+            }
+        }
+        
+        // ページ読み込み時に実行
+        checkAccess();
+        
+        // 合言葉の手動入力ボタン用処理（URLにキーが付いていなかった場合の救済）
+        function submitManualKey() {
+            const inputKey = document.getElementById("manualKeyInput").value.trim();
+            if (inputKey === VALID_KEY) {
+                sessionStorage.setItem("event_auth_token", "authorized");
+                document.getElementById("accessLockOverlay").style.display = "none";
+            } else {
+                document.getElementById("keyErrorMsg").style.display = "block";
+            }
+        }
+
+        
         const SECRET_PASS = "0120";
         let enteredPass = "";
         let longPressTimer = null;
