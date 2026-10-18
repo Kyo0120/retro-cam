@@ -279,12 +279,8 @@
 
             } catch (err) {
                 console.error("Results Fetch Error:", err);
-                // GAS_API_URLが未設定の場合のデモフォールバック
-                if (GAS_API_URL.includes("YOUR_DEPLOYMENT_ID")) {
-                    renderDemoData();
-                } else {
-                    document.getElementById('loadingBox').innerText = "集計データの取得に失敗しました。";
-                }
+                // ★ デモ表示を呼ばず、エラーメッセージを表示して停止させる ★
+                document.getElementById('loadingBox').innerText = "集計データの取得に失敗しました。ポータルからログインしてください。";
             }
         }
 
