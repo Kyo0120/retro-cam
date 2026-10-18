@@ -565,410 +565,537 @@
 
     <canvas id="canvas"></canvas>
 
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getStorage, ref, uploadBytes } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
-        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
+    import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
-        // --- Firebase設定 ---
-        const firebaseConfig = {
-            apiKey: "AIzaSyDHqQDeEMrFV09YI0n_ARr1Tzta5aqmE2U",
-            authDomain: "my-retro-cam.firebaseapp.com",
-            projectId: "my-retro-cam",
-            storageBucket: "my-retro-cam.firebasestorage.app",
-            messagingSenderId: "700098109654",
-            appId: "1:700098109654:web:9d679cbd092c1376642977"
-        };
-        
-        let app, storage, auth;
-        let isAuthReady = false;
-        if (firebaseConfig.apiKey) {
-            app = initializeApp(firebaseConfig);
-            storage = getStorage(app);
-            auth = getAuth(app);
-            onAuthStateChanged(auth, (u) => { if(u) { isAuthReady=true; syncPhotos(); } else signInAnonymously(auth); });
+    // --- Firebase設定 ---
+    const firebaseConfig = {
+        apiKey: "AIzaSyDHqQDeEMrFV09YI0n_ARr1Tzta5aqmE2U",
+        authDomain: "my-retro-cam.firebaseapp.com",
+        projectId: "my-retro-cam",
+        storageBucket: "my-retro-cam.firebasestorage.app",
+        messagingSenderId: "700098109654",
+        appId: "1:700098109654:web:9d679cbd092c1376642977"
+    };
+
+    // ★ ステップB-2でデプロイしたご自身のGASウェブアプリURL ★
+    const GAS_API_URL = "https://script.google.com/macros/s/AKfycbxdc51YIhCJS3WE-6qJXNC8jPpeTazBYDTkflCYSBJeU3zN1jTU3ry2mGYYGLpXjiX8Iw/exec";
+    
+    let app, storage, auth;
+    let isAuthReady = false;
+    if (firebaseConfig.apiKey && firebaseConfig.apiKey !== "xxxxxx") {
+        app = initializeApp(firebaseConfig);
+        storage = getStorage(app);
+        auth = getAuth(app);
+        onAuthStateChanged(auth, (u) => { 
+            if (u) { 
+                isAuthReady = true; 
+                syncPhotos(); 
+            } else { 
+                signInAnonymously(auth); 
+            } 
+        });
+    }
+
+    // オフライン用 IndexedDB（GAS記録用データも一緒にキューに保持）
+    const dbName = "CurryGrandPrixDB";
+    const storeName = "photoQueue";
+    let db, stream = null;
+    const dbRequest = indexedDB.open(dbName, 1);
+    dbRequest.onupgradeneeded = e => e.target.result.createObjectStore(storeName, { keyPath: "id", autoIncrement: true });
+    dbRequest.onsuccess = e => { 
+        db = e.target.result; 
+        syncPhotos(); 
+    };
+
+    const MAX_SHOTS = 20;
+
+    const commonMissions = [
+        { id: "00", threshold: 18, title: "0.操作練習：【テスト撮影】", task: "フラッシュやタイマー、構図を試してみよう！" },
+        { id: "01", threshold: 15, title: "1.集合：【決起集会】", task: "優勝を誓うガッツポーズ集合写真！" },
+        { id: "02", threshold: 12, title: "2.買い出し：【目利きの極意】", task: "極上スパイスや隠し味を真剣に見極める姿。" },
+        { id: "03", threshold: 9,  title: "3.会場散策①：【放課後の記憶】", task: "廃校の長い廊下や教室、黒板を背にしたノスタルジーな青春の1枚。" },
+        { id: "04", threshold: 6,  title: "4.会場散策②：【偵察部隊】", task: "ライバルチームを遠巻きに観察・警戒する姿。" },
+        { id: "05", threshold: 3,  title: "5.調理中：【シェフの神業】", task: "ルーを投入する瞬間や躍動感ある鍋振り！" },
+        { id: "06", threshold: 0,  title: "6.BBQ：【完成の歓喜】", task: "丹精込めて完成させたカレーを全員で囲んだ笑顔ショット。" }
+    ];
+
+    const missionsData = {
+        "A": commonMissions,
+        "B": commonMissions,
+        "C": commonMissions,
+        "D": commonMissions
+    };
+
+    // UI要素参照
+    const carSelect = document.getElementById('carSelect');
+    const teamDisplayName = document.getElementById('teamDisplayName');
+    const counterDisplay = document.getElementById('counter');
+    const counterLabel = document.getElementById('counterLabel');
+    const shutterBtn = document.getElementById('shutter');
+    const guideTitle = document.getElementById('guide-title');
+    const guideTask = document.getElementById('guide-task');
+    const statusMsg = document.getElementById('status-msg');
+    const flashBtn = document.getElementById('flashBtn');
+    const previewModal = document.getElementById('preview-modal');
+    const previewImg = document.getElementById('preview-image');
+    const previewConfirmBtn = document.getElementById('preview-confirm-btn');
+    const resetModal = document.getElementById('reset-confirm-modal');
+    
+    // 状態管理
+    let currentPin = "";
+    let currentUser = null;
+    let selectedCar = "";
+    let shotCount = 0;      // ミッション写真の撮影済み枚数（GASと同期）
+    let freeShotCount = 0;  // フリー写真の撮影済み枚数
+    let isFlashOn = false, isCameraOn = false, isTimerActive = false, isCapturing = false;
+    let currentFacingMode = "environment";
+    let resetClickCount = 0;
+
+    // 🔒 起動エントリーポイント：認証検証 ＆ 初期化
+    window.onload = async () => {
+        currentPin = sessionStorage.getItem("event_user_pin");
+        const userInfoRaw = sessionStorage.getItem("event_user_info");
+
+        // 1. PINがない場合は直ちに画面全体をロック
+        if (!currentPin || !userInfoRaw) {
+            showCameraBlocked("PINコードが確認できません。トップページからログインしてください。");
+            return;
         }
 
-        const dbName = "CurryGrandPrixDB";
-        const storeName = "photoQueue";
-        let db, stream = null;
-        const dbRequest = indexedDB.open(dbName, 1);
-        dbRequest.onupgradeneeded = e => e.target.result.createObjectStore(storeName, { keyPath: "id", autoIncrement: true });
-        dbRequest.onsuccess = e => { db = e.target.result; syncPhotos(); };
+        try {
+            currentUser = JSON.parse(userInfoRaw);
 
-        const MAX_SHOTS = 20;
+            // 2. チーム初期設定（参加者は所属チームに自動固定、管理者は切替可能）
+            setupTeamAuth(currentUser);
 
-        const commonMissions = [
-            { id: "00", threshold: 18, title: "0.操作練習：【テスト撮影】", task: "フラッシュやタイマー、構図を試してみよう！" },
-            { id: "01", threshold: 15, title: "1.集合：【決起集会】", task: "優勝を誓うガッツポーズ集合写真！" },
-            { id: "02", threshold: 12, title: "2.買い出し：【目利きの極意】", task: "極上スパイスや隠し味を真剣に見極める姿。" },
-            { id: "03", threshold: 9,  title: "3.会場散策①：【放課後の記憶】", task: "廃校の長い廊下や教室、黒板を背にしたノスタルジーな青春の1枚。" },
-            { id: "04", threshold: 6,  title: "4.会場散策②：【偵察部隊】", task: "ライバルチームを遠巻きに観察・警戒する姿。" },
-            { id: "05", threshold: 3,  title: "5.調理中：【シェフの神業】", task: "ルーを投入する瞬間や躍動感ある鍋振り！" },
-            { id: "06", threshold: 0,  title: "6.BBQ：【完成の歓喜】", task: "丹精込めて完成させたカレーを全員で囲んだ笑顔ショット。" }
-        ];
+            // 3. GASからクラウド残枚数を同期
+            await syncCloudStatus();
 
-        const missionsData = {
-            "A": commonMissions,
-            "B": commonMissions,
-            "C": commonMissions,
-            "D": commonMissions
-        };
-
-        const carSelect = document.getElementById('carSelect');
-        const teamDisplayName = document.getElementById('teamDisplayName');
-        const counterDisplay = document.getElementById('counter');
-        const counterLabel = document.getElementById('counterLabel');
-        const shutterBtn = document.getElementById('shutter');
-        const guideTitle = document.getElementById('guide-title');
-        const guideTask = document.getElementById('guide-task');
-        const statusMsg = document.getElementById('status-msg');
-        const flashBtn = document.getElementById('flashBtn');
-        const previewModal = document.getElementById('preview-modal');
-        const previewImg = document.getElementById('preview-image');
-        const previewConfirmBtn = document.getElementById('preview-confirm-btn');
-        const resetModal = document.getElementById('reset-confirm-modal');
-        
-        let selectedCar = localStorage.getItem('curry_team') || "";
-        let shotCount = 0;
-        let isFlashOn = false, isCameraOn = false, isTimerActive = false, isCapturing = false;
-        let currentFacingMode = "environment";
-        let resetClickCount = 0;
-
-        window.onload = () => {
-            if (selectedCar) {
-                applySelectedTeamUI(selectedCar);
-                loadCount();
-            }
+            // 4. カメラ起動＆UI描画
             startCamera();
             updateUI();
-        };
-
-        function applySelectedTeamUI(teamKey) {
-            carSelect.style.display = "none";
-            teamDisplayName.style.display = "block";
-            teamDisplayName.innerText = `チーム${teamKey}`;
+        } catch (err) {
+            console.error("Camera Init Error:", err);
+            showCameraBlocked("カメラの初期化に失敗しました。");
         }
+    };
 
-        function loadCount() {
-            if (!selectedCar) return;
-            shotCount = parseInt(localStorage.getItem(`curry_count_${selectedCar}`)) || 0;
-        }
-
-        function updateUI() {
-            if (!selectedCar) {
-                counterDisplay.innerText = MAX_SHOTS;
-                counterLabel.innerText = "残り枚数";
-                guideTitle.innerText = "グループ選択";
-                guideTask.innerText = "";
-                shutterBtn.disabled = true;
-                return;
-            }
-            const remaining = MAX_SHOTS - shotCount;
-            const mList = missionsData[selectedCar];
-
-            if (remaining > 0) {
-                counterDisplay.innerText = remaining;
-                counterLabel.innerText = "残り枚数";
-                const current = mList.find(m => remaining > m.threshold);
-                if (current) {
-                    guideTitle.innerText = current.title;
-                    guideTask.innerText = current.task;
-                }
-            } else {
-                counterDisplay.innerText = shotCount;
-                counterLabel.innerText = "撮影枚数";
-                guideTitle.innerText = "フリー撮影モード";
-                guideTask.innerText = "全ミッション達成！自由に思い出を記録しよう！";
-            }
-
-            shutterBtn.disabled = (isCapturing || !isCameraOn);
-        }
-
-        carSelect.onchange = () => {
-            if (carSelect.value) {
-                selectedCar = carSelect.value;
-                localStorage.setItem('curry_team', selectedCar);
-                applySelectedTeamUI(selectedCar);
-                loadCount();
-                updateUI();
-            }
-        };
-
-        async function startCamera() {
-            if (stream) stream.getTracks().forEach(t => t.stop());
-            try {
-                stream = await navigator.mediaDevices.getUserMedia({
-                    video: { facingMode: currentFacingMode, width: { ideal: 1920 }, height: { ideal: 1080 } }
-                });
-                document.getElementById('video').srcObject = stream;
-                isCameraOn = true;
-                updateUI();
-                if (isFlashOn) setTimeout(() => applyTorch(true), 1000);
-            } catch (e) {
-                statusMsg.innerText = "CAMERA ERROR";
-            }
-        }
-
-        async function applyTorch(state) {
-            if (!stream || currentFacingMode === "user") return;
-            const track = stream.getVideoTracks()[0];
-            const capabilities = track.getCapabilities ? track.getCapabilities() : {};
-            if (capabilities.torch) {
-                try { await track.applyConstraints({ advanced: [{ torch: state }] }); } catch (err) {}
-            }
-        }
-
-        flashBtn.onclick = () => {
-            if (currentFacingMode === "user") return;
-            isFlashOn = !isFlashOn;
-            flashBtn.innerText = isFlashOn ? "FLASH ON" : "FLASH OFF";
-            flashBtn.classList.toggle('active', isFlashOn);
-            applyTorch(isFlashOn);
-        };
-
-        document.getElementById('switchBtn').onclick = () => {
-            currentFacingMode = (currentFacingMode === "environment") ? "user" : "environment";
-            startCamera();
-        };
-
-        document.getElementById('timerBtn').onclick = () => {
-            isTimerActive = !isTimerActive;
-            document.getElementById('timerBtn').classList.toggle('active', isTimerActive);
-        };
-
-        document.getElementById('powerBtn').onclick = () => {
-            if (isCameraOn) {
-                if (stream) stream.getTracks().forEach(t => t.stop());
-                isCameraOn = false;
-            } else {
-                startCamera();
-            }
-            updateUI();
-        };
-
-        document.getElementById('zoomRange').oninput = (e) => {
-            const val = parseFloat(e.target.value).toFixed(1);
-            document.getElementById('video').style.setProperty('--zoom-level', val);
-            document.getElementById('zoomVal').innerText = `${val}x`;
-        };
-        
-        shutterBtn.onclick = () => {
-            if (isCapturing || shutterBtn.disabled) return;
-            isCapturing = true;
-            shutterBtn.disabled = true;
-
-            if (isTimerActive) {
-                let c = 5;
-                const timerDisp = document.getElementById('timer-display');
-                timerDisp.innerText = c;
-                timerDisp.style.visibility = "visible";
-                const itv = setInterval(() => {
-                    c--;
-                    if (c > 0) {
-                        timerDisp.innerText = c;
-                    } else {
-                        clearInterval(itv);
-                        timerDisp.style.visibility = "hidden";
-                        executeCapture();
-                        isTimerActive = false;
-                        document.getElementById('timerBtn').classList.remove('active');
-                    }
-                }, 1000);
-            } else {
-                executeCapture();
-            }
-        };
-
-        function executeCapture() {
-            takePicture();
-            statusMsg.innerText = "CHARGING...";
-            setTimeout(() => {
-                isCapturing = false;
-                statusMsg.innerText = "READY";
-                updateUI();
-            }, 3000);
-        }
-
-        function takePicture() {
-            const targetW = 1800, targetH = 1200;
-            const canvas = document.getElementById('canvas');
-            canvas.width = targetW;
-            canvas.height = targetH;
-            const ctx = canvas.getContext('2d');
-            const v = document.getElementById('video');
-            const vw = v.videoWidth, vh = v.videoHeight;
-            const zoom = parseFloat(document.getElementById('zoomRange').value);
-
-            let sH = vh / zoom, sW = (sH * 1.5);
-            if (sW > vw) { sW = vw / zoom; sH = sW / 1.5; }
-            const sX = (vw - sW) / 2, sY = (vh - sH) / 2;
-
-            ctx.drawImage(v, sX, sY, sW, sH, 0, 0, targetW, targetH);
-            applyEffects(ctx, targetW, targetH);
-
-            const remainingBeforeShot = MAX_SHOTS - shotCount;
-            const isPracticeMission = (remainingBeforeShot > 18);
-            const isFreeMode = (remainingBeforeShot <= 0);
-
-            let currentMissionId = "free";
-            if (!isFreeMode) {
-                const mList = missionsData[selectedCar];
-                currentMissionId = (mList.find(m => remainingBeforeShot > m.threshold) || { id: "99" }).id;
-            }
-
-            addStamps(ctx, targetW, targetH, currentMissionId, isFreeMode);
-
-            canvas.toBlob(async (blob) => {
-                const now = new Date();
-                const timeStr = `${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}-${String(now.getHours()).padStart(2,'0')}${String(now.getMinutes()).padStart(2,'0')}${String(now.getSeconds()).padStart(2,'0')}`;
-                const fileName = `curry_team${selectedCar}_${currentMissionId}_${timeStr}.jpg`;
-
-                if (db) {
-                    const tx = db.transaction(storeName, "readwrite");
-                    tx.objectStore(storeName).add({ blob, fileName });
-                }
-
-                shotCount++;
-                localStorage.setItem(`curry_count_${selectedCar}`, shotCount);
-
-                updateUI();
-                syncPhotos();
-
-                if (isPracticeMission) {
-                    const previewUrl = URL.createObjectURL(blob);
-                    previewImg.src = previewUrl;
-                    previewModal.style.display = "flex";
-
-                    previewConfirmBtn.onclick = () => {
-                        previewModal.style.display = "none";
-                        previewImg.src = "";
-                        URL.revokeObjectURL(previewUrl);
-                    };
-                }
-            }, 'image/jpeg', 0.80);
-        }
-
-        async function syncPhotos() {
-            if (!navigator.onLine || !db || !isAuthReady || !storage) return;
-            const store = db.transaction(storeName, "readwrite").objectStore(storeName);
-            const req = store.getAll();
-            req.onsuccess = async () => {
-                const items = req.result;
-                for (const item of items) {
-                    try {
-                        await uploadBytes(ref(storage, `photos/${item.fileName}`), item.blob);
-                        db.transaction(storeName, "readwrite").objectStore(storeName).delete(item.id);
-                    } catch (e) { break; }
-                }
-            };
-        }
-
-        function applyEffects(ctx, w, h) {
-            ctx.globalCompositeOperation = 'overlay';
-            ctx.fillStyle = 'rgba(255, 140, 0, 0.12)'; ctx.fillRect(0, 0, w, h);
-            ctx.fillStyle = isFlashOn ? 'rgba(255, 255, 255, 0.2)' : 'rgba(255, 200, 60, 0.12)'; ctx.fillRect(0, 0, w, h);
-            ctx.globalCompositeOperation = 'source-over';
-
-            const grain = (w * h) / 1.6;
-            for (let i = 0; i < grain; i++) {
-                const x = Math.random() * w, y = Math.random() * h, opacity = Math.random() * 0.08;
-                ctx.fillStyle = `rgba(255, 255, 255, ${opacity})`; ctx.fillRect(x, y, 1.2, 1.2);
-            }
-
-            const g = ctx.createRadialGradient(w/2, h/2, w/4, w/2, h/2, w/0.8);
-            g.addColorStop(0, 'transparent'); g.addColorStop(1, 'rgba(0,0,0,0.6)');
-            ctx.fillStyle = g; ctx.fillRect(0, 0, w, h);
-        }
-
-        function addStamps(ctx, w, h, mId, isFree) {
-            const n = new Date();
-            const year = n.getFullYear();
-            const month = String(n.getMonth() + 1).padStart(2, '0');
-            const day = String(n.getDate()).padStart(2, '0');
-            const hours = String(n.getHours()).padStart(2, '0');
-            const minutes = String(n.getMinutes()).padStart(2, '0');
-
-            const dateStr = `${year}.${month}.${day} ${hours}:${minutes}`;
-            const missionLabel = isFree ? "ミッション:フリーモード" : `ミッション:${mId}`;
-            const leftText = `チーム${selectedCar} ${missionLabel}`;
-            
-            const fs = Math.floor(w * 0.035);
-            ctx.font = `bold ${fs}px "Courier New", "Hiragino Kaku Gothic ProN", sans-serif`;
-            ctx.globalAlpha = 0.75;
-            ctx.lineWidth = fs / 7;
-            ctx.strokeStyle = "rgba(0,0,0,0.55)";
-            ctx.fillStyle = "#ff8c21";
-
-            ctx.textAlign = "left";
-            ctx.strokeText(leftText, w * 0.04, h * 0.96);
-            ctx.fillText(leftText, w * 0.04, h * 0.96);
-
-            ctx.textAlign = "right";
-            ctx.strokeText(dateStr, w * 0.96, h * 0.96);
-            ctx.fillText(dateStr, w * 0.96, h * 0.96);
-
-            ctx.globalAlpha = 1.0;
-        }
-
-        document.getElementById('resetTrigger').onclick = () => {
-            resetClickCount++;
-            if (resetClickCount >= 5) {
-                resetModal.style.display = "flex";
-                resetClickCount = 0;
-            }
-            setTimeout(() => { resetClickCount = 0; }, 2000);
-        };
-
-        document.getElementById('resetCancelBtn').onclick = () => {
-            resetModal.style.display = "none";
-        };
-
-        document.getElementById('resetConfirmBtn').onclick = () => {
-            localStorage.clear();
-            shotCount = 0;
-            selectedCar = "";
+    // チーム認証・表示の適用
+    function setupTeamAuth(user) {
+        if (user.role === "管理者") {
+            // 管理者の場合はセレクトボックスを表示して自由に切替可能
+            selectedCar = localStorage.getItem('curry_team') || "A";
             carSelect.style.display = "block";
-            carSelect.value = "";
+            carSelect.value = selectedCar;
             teamDisplayName.style.display = "none";
-            teamDisplayName.innerText = "";
-            resetModal.style.display = "none";
+        } else {
+            // 参加者の場合は名簿シートの所属チームに強制固定
+            selectedCar = user.team;
+            applySelectedTeamUI(selectedCar);
+        }
+    }
+
+    function applySelectedTeamUI(teamKey) {
+        carSelect.style.display = "none";
+        teamDisplayName.style.display = "block";
+        teamDisplayName.innerText = `チーム${teamKey}`;
+    }
+
+    // 🔄 GASからチームの最新撮影状況（ミッション消化数・フリー数）を取得
+    async function syncCloudStatus() {
+        if (!currentPin || GAS_API_URL.includes("YOUR_DEPLOYMENT_ID")) {
+            // GAS_API_URL未設定時のローカルフォールバック
+            shotCount = parseInt(localStorage.getItem(`curry_count_${selectedCar}`)) || 0;
+            return;
+        }
+
+        try {
+            const res = await fetch(`${GAS_API_URL}?action=camera_status&pin=${encodeURIComponent(currentPin)}`);
+            const data = await res.json();
+            if (data.success) {
+                shotCount = data.missionShotCount || 0;
+                freeShotCount = data.freeShotCount || 0;
+                updateUI();
+            }
+        } catch (e) {
+            console.warn("クラウド残枚数の同期失敗:", e);
+        }
+    }
+
+    function updateUI() {
+        if (!selectedCar) {
+            counterDisplay.innerText = MAX_SHOTS;
+            counterLabel.innerText = "残り枚数";
+            guideTitle.innerText = "グループ選択";
+            guideTask.innerText = "";
+            shutterBtn.disabled = true;
+            return;
+        }
+
+        const remaining = Math.max(0, MAX_SHOTS - shotCount);
+        const mList = missionsData[selectedCar] || commonMissions;
+
+        if (remaining > 0) {
+            counterDisplay.innerText = remaining;
+            counterLabel.innerText = "残り枚数";
+            const current = mList.find(m => remaining > m.threshold);
+            if (current) {
+                guideTitle.innerText = current.title;
+                guideTask.innerText = current.task;
+            }
+        } else {
+            // 20枚を使い切ったら自動でフリー撮影モードへ移行
+            counterDisplay.innerText = freeShotCount;
+            counterLabel.innerText = "フリー撮影";
+            guideTitle.innerText = "フリー撮影モード（無制限）";
+            guideTask.innerText = "全ミッション達成！自由に思い出を記録しよう！";
+        }
+
+        shutterBtn.disabled = (isCapturing || !isCameraOn);
+    }
+
+    // 管理者用のチーム切替イベント
+    carSelect.onchange = async () => {
+        if (carSelect.value) {
+            selectedCar = carSelect.value;
+            localStorage.setItem('curry_team', selectedCar);
+            await syncCloudStatus();
             updateUI();
-        };
+        }
+    };
 
-        document.getElementById('missionBtn').onclick = () => {
-            if (!selectedCar) return;
-            const list = document.getElementById('mission-list-content');
-            list.innerHTML = "";
-
-            const remaining = MAX_SHOTS - shotCount;
-            const mList = missionsData[selectedCar];
-            const currentMission = remaining > 0 ? mList.find(m => remaining > m.threshold) : null;
-            const currentId = currentMission ? currentMission.id : null;
-
-            mList.forEach(m => {
-                const isCurrent = (m.id === currentId);
-                const card = document.createElement('div');
-                card.className = `mission-item-card ${isCurrent ? 'is-current' : ''}`;
-                card.innerHTML = `
-                    <span class="current-badge">CURRENT</span>
-                    <div style="font-weight:700; font-size:11.5px; color:${isCurrent ? 'var(--accent-color)' : '#fff'};">
-                        MISSION ${m.id}: ${m.title}
-                    </div>
-                    <p style="font-size:10px; color:${isCurrent ? '#f0f3f6' : '#9ca3af'}; margin:4px 0 0 0; line-height:1.4;">
-                        ${m.task}
-                    </p>
-                `;
-                list.appendChild(card);
+    async function startCamera() {
+        if (stream) stream.getTracks().forEach(t => t.stop());
+        try {
+            stream = await navigator.mediaDevices.getUserMedia({
+                video: { facingMode: currentFacingMode, width: { ideal: 1920 }, height: { ideal: 1080 } }
             });
-            document.getElementById('mission-overlay').style.display = "block";
-        };
+            document.getElementById('video').srcObject = stream;
+            isCameraOn = true;
+            updateUI();
+            if (isFlashOn) setTimeout(() => applyTorch(true), 1000);
+        } catch (e) {
+            statusMsg.innerText = "CAMERA ERROR";
+        }
+    }
 
-        document.getElementById('mission-overlay').onclick = () => {
-            document.getElementById('mission-overlay').style.display = "none";
-        };
+    async function applyTorch(state) {
+        if (!stream || currentFacingMode === "user") return;
+        const track = stream.getVideoTracks()[0];
+        const capabilities = track.getCapabilities ? track.getCapabilities() : {};
+        if (capabilities.torch) {
+            try { await track.applyConstraints({ advanced: [{ torch: state }] }); } catch (err) {}
+        }
+    }
 
-        window.addEventListener('online', syncPhotos);
-    </script>
+    flashBtn.onclick = () => {
+        if (currentFacingMode === "user") return;
+        isFlashOn = !isFlashOn;
+        flashBtn.innerText = isFlashOn ? "FLASH ON" : "FLASH OFF";
+        flashBtn.classList.toggle('active', isFlashOn);
+        applyTorch(isFlashOn);
+    };
+
+    document.getElementById('switchBtn').onclick = () => {
+        currentFacingMode = (currentFacingMode === "environment") ? "user" : "environment";
+        startCamera();
+    };
+
+    document.getElementById('timerBtn').onclick = () => {
+        isTimerActive = !isTimerActive;
+        document.getElementById('timerBtn').classList.toggle('active', isTimerActive);
+    };
+
+    document.getElementById('powerBtn').onclick = () => {
+        if (isCameraOn) {
+            if (stream) stream.getTracks().forEach(t => t.stop());
+            isCameraOn = false;
+        } else {
+            startCamera();
+        }
+        updateUI();
+    };
+
+    document.getElementById('zoomRange').oninput = (e) => {
+        const val = parseFloat(e.target.value).toFixed(1);
+        document.getElementById('video').style.setProperty('--zoom-level', val);
+        document.getElementById('zoomVal').innerText = `${val}x`;
+    };
+    
+    shutterBtn.onclick = () => {
+        if (isCapturing || shutterBtn.disabled) return;
+        isCapturing = true;
+        shutterBtn.disabled = true;
+
+        if (isTimerActive) {
+            let c = 5;
+            const timerDisp = document.getElementById('timer-display');
+            timerDisp.innerText = c;
+            timerDisp.style.visibility = "visible";
+            const itv = setInterval(() => {
+                c--;
+                if (c > 0) {
+                    timerDisp.innerText = c;
+                } else {
+                    clearInterval(itv);
+                    timerDisp.style.visibility = "hidden";
+                    executeCapture();
+                    isTimerActive = false;
+                    document.getElementById('timerBtn').classList.remove('active');
+                }
+            }, 1000);
+        } else {
+            executeCapture();
+        }
+    };
+
+    function executeCapture() {
+        takePicture();
+        statusMsg.innerText = "CHARGING...";
+        setTimeout(() => {
+            isCapturing = false;
+            statusMsg.innerText = "READY";
+            updateUI();
+        }, 2500);
+    }
+
+    function takePicture() {
+        const targetW = 1800, targetH = 1200;
+        const canvas = document.getElementById('canvas');
+        canvas.width = targetW;
+        canvas.height = targetH;
+        const ctx = canvas.getContext('2d');
+        const v = document.getElementById('video');
+        const vw = v.videoWidth, vh = v.videoHeight;
+        const zoom = parseFloat(document.getElementById('zoomRange').value);
+
+        let sH = vh / zoom, sW = (sH * 1.5);
+        if (sW > vw) { sW = vw / zoom; sH = sW / 1.5; }
+        const sX = (vw - sW) / 2, sY = (vh - sH) / 2;
+
+        ctx.drawImage(v, sX, sY, sW, sH, 0, 0, targetW, targetH);
+        applyEffects(ctx, targetW, targetH);
+
+        const remainingBeforeShot = Math.max(0, MAX_SHOTS - shotCount);
+        const isPracticeMission = (remainingBeforeShot > 18);
+        const isFreeMode = (remainingBeforeShot <= 0);
+
+        let currentMissionId = "free";
+        if (!isFreeMode) {
+            const mList = missionsData[selectedCar] || commonMissions;
+            currentMissionId = (mList.find(m => remainingBeforeShot > m.threshold) || { id: "06" }).id;
+        }
+
+        addStamps(ctx, targetW, targetH, currentMissionId, isFreeMode);
+
+        canvas.toBlob(async (blob) => {
+            const now = new Date();
+            const timeStr = `${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}-${String(now.getHours()).padStart(2,'0')}${String(now.getMinutes()).padStart(2,'0')}${String(now.getSeconds()).padStart(2,'0')}`;
+            const fileName = `curry_team${selectedCar}_${currentMissionId}_${timeStr}.jpg`;
+
+            // キュー保存用のペイロード（GAS記録に必要なメタデータも保持）
+            const itemData = {
+                blob: blob,
+                fileName: fileName,
+                team: selectedCar,
+                mission: currentMissionId,
+                pin: currentPin
+            };
+
+            if (db) {
+                const tx = db.transaction(storeName, "readwrite");
+                tx.objectStore(storeName).add(itemData);
+            }
+
+            // ローカルカウントを仮更新して即座にUIへ反映
+            if (isFreeMode) {
+                freeShotCount++;
+            } else {
+                shotCount++;
+            }
+            updateUI();
+
+            // Firebase ＆ GASへの非同期アップロード実行
+            syncPhotos();
+
+            // 操作練習（00）プレビューモーダル
+            if (isPracticeMission) {
+                const previewUrl = URL.createObjectURL(blob);
+                previewImg.src = previewUrl;
+                previewModal.style.display = "flex";
+
+                previewConfirmBtn.onclick = () => {
+                    previewModal.style.display = "none";
+                    previewImg.src = "";
+                    URL.revokeObjectURL(previewUrl);
+                };
+            }
+        }, 'image/jpeg', 0.80);
+    }
+
+    // 🔄 写真のFirebaseアップロード ＋ GAS「写真一覧」シートへの記録同期
+    async function syncPhotos() {
+        if (!navigator.onLine || !db || !isAuthReady || !storage) return;
+        const store = db.transaction(storeName, "readwrite").objectStore(storeName);
+        const req = store.getAll();
+        
+        req.onsuccess = async () => {
+            const items = req.result;
+            for (const item of items) {
+                try {
+                    // 1. Firebase Storage へアップロード
+                    const fileRef = ref(storage, `photos/${item.fileName}`);
+                    await uploadBytes(fileRef, item.blob);
+                    
+                    // 2. 公開ダウンロードURLを取得
+                    const downloadUrl = await getDownloadURL(fileRef);
+
+                    // 3. GASの写真一覧シートへPOST送信
+                    if (!GAS_API_URL.includes("YOUR_DEPLOYMENT_ID")) {
+                        const postPayload = {
+                            pin: item.pin || currentPin,
+                            team: item.team,
+                            mission: item.mission,
+                            fileName: item.fileName,
+                            imageUrl: downloadUrl
+                        };
+
+                        await fetch(GAS_API_URL, {
+                            method: "POST",
+                            body: JSON.stringify(postPayload)
+                        });
+                    }
+
+                    // 4. アップロード・GAS登録成功：キューから削除
+                    db.transaction(storeName, "readwrite").objectStore(storeName).delete(item.id);
+
+                } catch (e) {
+                    console.error("写真同期エラー:", e);
+                    break;
+                }
+            }
+            // 同期完了後にクラウドの最新残枚数を再取得
+            await syncCloudStatus();
+        };
+    }
+
+    function applyEffects(ctx, w, h) {
+        ctx.globalCompositeOperation = 'overlay';
+        ctx.fillStyle = 'rgba(255, 140, 0, 0.12)'; ctx.fillRect(0, 0, w, h);
+        ctx.fillStyle = isFlashOn ? 'rgba(255, 255, 255, 0.2)' : 'rgba(255, 200, 60, 0.12)'; ctx.fillRect(0, 0, w, h);
+        ctx.globalCompositeOperation = 'source-over';
+
+        const grain = (w * h) / 1.6;
+        for (let i = 0; i < grain; i++) {
+            const x = Math.random() * w, y = Math.random() * h, opacity = Math.random() * 0.08;
+            ctx.fillStyle = `rgba(255, 255, 255, ${opacity})`; ctx.fillRect(x, y, 1.2, 1.2);
+        }
+
+        const g = ctx.createRadialGradient(w/2, h/2, w/4, w/2, h/2, w/0.8);
+        g.addColorStop(0, 'transparent'); g.addColorStop(1, 'rgba(0,0,0,0.6)');
+        ctx.fillStyle = g; ctx.fillRect(0, 0, w, h);
+    }
+
+    function addStamps(ctx, w, h, mId, isFree) {
+        const n = new Date();
+        const year = n.getFullYear();
+        const month = String(n.getMonth() + 1).padStart(2, '0');
+        const day = String(n.getDate()).padStart(2, '0');
+        const hours = String(n.getHours()).padStart(2, '0');
+        const minutes = String(n.getMinutes()).padStart(2, '0');
+
+        const dateStr = `${year}.${month}.${day} ${hours}:${minutes}`;
+        const missionLabel = isFree ? "ミッション:フリーモード" : `ミッション:${mId}`;
+        const leftText = `チーム${selectedCar} ${missionLabel}`;
+        
+        const fs = Math.floor(w * 0.035);
+        ctx.font = `bold ${fs}px "Courier New", "Hiragino Kaku Gothic ProN", sans-serif`;
+        ctx.globalAlpha = 0.75;
+        ctx.lineWidth = fs / 7;
+        ctx.strokeStyle = "rgba(0,0,0,0.55)";
+        ctx.fillStyle = "#ff8c21";
+
+        ctx.textAlign = "left";
+        ctx.strokeText(leftText, w * 0.04, h * 0.96);
+        ctx.fillText(leftText, w * 0.04, h * 0.96);
+
+        ctx.textAlign = "right";
+        ctx.strokeText(dateStr, w * 0.96, h * 0.96);
+        ctx.fillText(dateStr, w * 0.96, h * 0.96);
+
+        ctx.globalAlpha = 1.0;
+    }
+
+    // 🔒 未認証時のブロック画面表示
+    function showCameraBlocked(msg) {
+        document.body.innerHTML = `
+            <div style="height:100vh; background:#0b0d10; color:#fff; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:24px; text-align:center; font-family:-apple-system, sans-serif;">
+                <div style="font-size:48px; margin-bottom:16px;">🔒</div>
+                <div style="color:#ff4757; font-size:18px; font-weight:800; margin-bottom:8px;">カメラの利用が制限されています</div>
+                <div style="color:#8a94a6; font-size:12px; margin-bottom:24px; line-height:1.6;">${msg}</div>
+                <a href="index.html" style="background:#ff9f1a; color:#000; padding:12px 24px; border-radius:8px; text-decoration:none; font-weight:800; font-size:13px;">🏠️ ポータルへ戻る</a>
+            </div>
+        `;
+    }
+
+    // リセットモーダル処理（ローカルキャッシュ消去 ＆ クラウドから再同期）
+    document.getElementById('resetTrigger').onclick = () => {
+        resetClickCount++;
+        if (resetClickCount >= 5) {
+            resetModal.style.display = "flex";
+            resetClickCount = 0;
+        }
+        setTimeout(() => { resetClickCount = 0; }, 2000);
+    };
+
+    document.getElementById('resetCancelBtn').onclick = () => {
+        resetModal.style.display = "none";
+    };
+
+    document.getElementById('resetConfirmBtn').onclick = async () => {
+        localStorage.removeItem(`curry_count_${selectedCar}`);
+        await syncCloudStatus();
+        resetModal.style.display = "none";
+        updateUI();
+    };
+
+    // お題確認モーダル
+    document.getElementById('missionBtn').onclick = () => {
+        if (!selectedCar) return;
+        const list = document.getElementById('mission-list-content');
+        list.innerHTML = "";
+
+        const remaining = Math.max(0, MAX_SHOTS - shotCount);
+        const mList = missionsData[selectedCar] || commonMissions;
+        const currentMission = remaining > 0 ? mList.find(m => remaining > m.threshold) : null;
+        const currentId = currentMission ? currentMission.id : null;
+
+        mList.forEach(m => {
+            const isCurrent = (m.id === currentId);
+            const card = document.createElement('div');
+            card.className = `mission-item-card ${isCurrent ? 'is-current' : ''}`;
+            card.innerHTML = `
+                <span class="current-badge">CURRENT</span>
+                <div style="font-weight:700; font-size:11.5px; color:${isCurrent ? 'var(--accent-color, #ff9f1a)' : '#fff'};">
+                    MISSION ${m.id}: ${m.title}
+                </div>
+                <p style="font-size:10px; color:${isCurrent ? '#f0f3f6' : '#9ca3af'}; margin:4px 0 0 0; line-height:1.4;">
+                    ${m.task}
+                </p>
+            `;
+            list.appendChild(card);
+        });
+        document.getElementById('mission-overlay').style.display = "block";
+    };
+
+    document.getElementById('mission-overlay').onclick = () => {
+        document.getElementById('mission-overlay').style.display = "none";
+    };
+
+    window.addEventListener('online', syncPhotos);
+</script>
 </body>
 </html>
