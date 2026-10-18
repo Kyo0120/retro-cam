@@ -2,23 +2,25 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>表彰式・結果発表 | カレーGP & フォトアワード</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>表彰式・結果発表 | CURRY × PHOTO GP</title>
     <style>
         :root {
             --bg-color: #0b0d10;
-            --surface-bg: rgba(20, 24, 32, 0.85);
-            --surface-card: rgba(26, 31, 42, 0.75);
+            --surface-bg: rgba(20, 24, 32, 0.88);
+            --surface-card: rgba(26, 31, 42, 0.85);
             --surface-border: rgba(255, 255, 255, 0.08);
-            --accent-color: #ff9f1a;
-            --accent-glow: rgba(255, 159, 26, 0.4);
-            --gold: #ffd700;
-            --silver: #c0c0c0;
-            --bronze: #cd7f32;
-            --text-main: #f0f3f6;
-            --text-sub: #9aa4b2;
+            --accent-gold: #ffbe0b;
+            --accent-gold-glow: rgba(255, 190, 11, 0.35);
             --curry-color: #ff5e3a;
-            --curry-glow: rgba(255, 94, 58, 0.4);
+            --curry-glow: rgba(255, 94, 58, 0.35);
+            --photo-color: #00d2d3;
+            --text-main: #f0f3f6;
+            --text-sub: #8a94a6;
+            --danger: #ff4757;
+            --rank-1: linear-gradient(135deg, #ffd700, #ffae19);
+            --rank-2: linear-gradient(135deg, #e0e0e0, #9e9e9e);
+            --rank-3: linear-gradient(135deg, #cd7f32, #8d5524);
         }
 
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -28,12 +30,13 @@
             color: var(--text-main);
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Hiragino Kaku Gothic ProN", sans-serif;
             min-height: 100vh;
-            line-height: 1.6;
+            display: flex;
+            flex-direction: column;
         }
 
         header {
             position: sticky; top: 0;
-            background: rgba(11, 13, 16, 0.92);
+            background: rgba(11, 13, 16, 0.94);
             backdrop-filter: blur(16px);
             -webkit-backdrop-filter: blur(16px);
             border-bottom: 1px solid var(--surface-border);
@@ -43,651 +46,390 @@
             justify-content: space-between;
             z-index: 100;
         }
-        .header-title { font-size: 14px; font-weight: 800; color: var(--accent-color); letter-spacing: 0.5px; }
-        .nav-links { display: flex; gap: 8px; }
-        .nav-btn {
-            background: rgba(255, 255, 255, 0.06);
+        .header-title { font-size: 15px; font-weight: 900; color: var(--accent-gold); letter-spacing: 0.5px; }
+        .back-btn {
+            background: rgba(255, 255, 255, 0.08);
             border: 1px solid var(--surface-border);
-            color: var(--text-sub);
-            padding: 6px 12px;
+            color: var(--text-main);
+            padding: 5px 12px;
             border-radius: 8px;
-            font-size: 11px;
-            font-weight: 700;
             text-decoration: none;
-            cursor: pointer;
-        }
-        .nav-btn.accent {
-            color: var(--accent-color);
-            border-color: rgba(255, 159, 26, 0.35);
+            font-size: 12px;
+            font-weight: 700;
         }
 
-        .container { max-width: 800px; margin: 0 auto; padding: 20px 16px 60px 16px; }
-
-        .hero { text-align: center; margin-bottom: 20px; }
-        .hero-badge {
-            display: inline-block;
-            background: rgba(255, 159, 26, 0.12);
-            border: 1px solid rgba(255, 159, 26, 0.4);
-            color: var(--accent-color);
-            font-size: 10px; font-weight: 800;
-            padding: 4px 12px; border-radius: 20px;
-            letter-spacing: 1.5px; margin-bottom: 8px;
+        .container {
+            flex: 1;
+            max-width: 640px;
+            width: 100%;
+            margin: 0 auto;
+            padding: 16px 16px 40px 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
         }
-        h1 { margin: 0 0 6px 0; font-size: 1.7rem; font-weight: 900; letter-spacing: -0.5px; }
-        .hero-desc { font-size: 12px; color: var(--text-sub); }
 
-        /* 切り替えタブ */
-        .gp-tabs {
+        /* タブ切り替え（フォトGP / カレーGP） */
+        .tab-switch {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 10px;
-            margin-bottom: 22px;
-        }
-        .gp-tab-btn {
-            background: var(--surface-card);
-            border: 1px solid var(--surface-border);
-            color: var(--text-sub);
-            padding: 12px 0;
+            gap: 8px;
+            background: rgba(0, 0, 0, 0.4);
+            padding: 4px;
             border-radius: 12px;
-            font-size: 13.5px;
+            border: 1px solid var(--surface-border);
+        }
+        .tab-btn {
+            padding: 10px;
+            border-radius: 8px;
+            border: none;
+            background: transparent;
+            color: var(--text-sub);
+            font-size: 13px;
             font-weight: 800;
             cursor: pointer;
-            text-align: center;
             transition: all 0.2s ease;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 6px;
         }
-        .gp-tab-btn.active {
-            background: var(--accent-color);
+        .tab-btn.active.photo {
+            background: var(--photo-color);
             color: #000;
-            border-color: var(--accent-color);
-            box-shadow: 0 4px 15px var(--accent-glow);
+            box-shadow: 0 2px 12px rgba(0, 210, 211, 0.4);
         }
-        .gp-tab-btn.curry-tab.active {
+        .tab-btn.active.curry {
             background: var(--curry-color);
             color: #fff;
-            border-color: var(--curry-color);
-            box-shadow: 0 4px 15px var(--curry-glow);
+            box-shadow: 0 2px 12px var(--curry-glow);
         }
 
-        .section-card {
+        .section-box {
             background: var(--surface-card);
             border: 1px solid var(--surface-border);
             border-radius: 16px;
-            padding: 20px;
-            margin-bottom: 22px;
-            backdrop-filter: blur(12px);
+            padding: 18px 16px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
         }
-        .section-title {
-            font-size: 13.5px; font-weight: 800; color: var(--accent-color);
-            margin: 0 0 16px 0; display: flex; align-items: center; justify-content: space-between;
-            border-bottom: 1px solid var(--surface-border); padding-bottom: 10px;
+        .section-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 14px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid var(--surface-border);
         }
-        .curry-mode .section-title { color: var(--curry-color); }
+        .section-title { font-size: 14px; font-weight: 900; letter-spacing: 0.5px; }
 
-        /* 総合ランキングカード */
-        .ranking-list { display: flex; flex-direction: column; gap: 10px; }
+        /* ランキングリスト */
+        .rank-list { display: flex; flex-direction: column; gap: 10px; }
         .rank-card {
-            background: rgba(0, 0, 0, 0.4);
+            background: rgba(0, 0, 0, 0.3);
             border: 1px solid var(--surface-border);
             border-radius: 12px;
-            padding: 14px 16px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            position: relative;
-            overflow: hidden;
-        }
-        .rank-card.rank-1 {
-            border: 2px solid var(--gold);
-            background: linear-gradient(90deg, rgba(255, 215, 0, 0.12), rgba(0,0,0,0.4));
-            box-shadow: 0 0 24px rgba(255, 215, 0, 0.25);
-        }
-        .rank-card.rank-2 { border: 1.5px solid var(--silver); }
-        .rank-card.rank-3 { border: 1.5px solid var(--bronze); }
-
-        .rank-left { display: flex; align-items: center; gap: 14px; }
-        .rank-num {
-            font-size: 1.6rem; font-weight: 900; line-height: 1;
-            font-family: "Courier New", monospace;
-            width: 32px; text-align: center;
-        }
-        .rank-1 .rank-num { color: var(--gold); }
-        .rank-2 .rank-num { color: var(--silver); }
-        .rank-3 .rank-num { color: var(--bronze); }
-        .rank-team { font-size: 15px; font-weight: 800; color: #fff; }
-        .rank-breakdown { font-size: 10px; color: var(--text-sub); margin-top: 2px; }
-        
-        .rank-score-wrap { text-align: right; }
-        .rank-score {
-            font-size: 1.6rem; font-weight: 900; color: var(--accent-color);
-            font-feature-settings: "tnum";
-            font-family: "Courier New", monospace;
-        }
-        .curry-mode .rank-score { color: var(--curry-color); }
-        .rank-unit { font-size: 11px; color: var(--text-sub); margin-left: 2px; font-weight: 700; }
-
-        /* 部門賞グラフUI */
-        .chart-category-card {
-            background: rgba(0, 0, 0, 0.35);
-            border: 1px solid var(--surface-border);
-            border-radius: 14px;
-            padding: 16px 18px;
-            margin-bottom: 16px;
-            border-top: 3px solid var(--accent-color);
-        }
-        .curry-mode .chart-category-card { border-top-color: var(--curry-color); }
-        .chart-cat-header {
-            display: flex; justify-content: space-between; align-items: center;
-            margin-bottom: 12px;
-        }
-        .chart-cat-title { font-size: 13px; font-weight: 800; color: #fff; }
-        .chart-cat-winner {
-            font-size: 11px; font-weight: 800; color: var(--gold);
-            background: rgba(255, 215, 0, 0.1); border: 1px solid rgba(255, 215, 0, 0.3);
-            padding: 2px 8px; border-radius: 6px;
-        }
-
-        .bar-group { display: flex; flex-direction: column; gap: 8px; }
-        .bar-row {
-            display: grid;
-            grid-template-columns: 60px 1fr 45px;
-            align-items: center;
-            gap: 10px;
-            font-size: 11px;
-        }
-        .bar-team { font-weight: 700; color: var(--text-sub); white-space: nowrap; }
-        .bar-team.is-top { color: #fff; font-weight: 800; }
-        .bar-track {
-            background: rgba(255, 255, 255, 0.06);
-            height: 12px;
-            border-radius: 6px;
-            overflow: hidden;
-            position: relative;
-        }
-        .bar-fill {
-            height: 100%;
-            border-radius: 6px;
-            background: var(--text-sub);
-            opacity: 0.6;
-            transition: width 0.6s cubic-bezier(0.2, 0.8, 0.2, 1);
-        }
-        .bar-fill.is-top {
-            background: linear-gradient(90deg, var(--accent-color), #ffb84d);
-            opacity: 1;
-            box-shadow: 0 0 10px var(--accent-glow);
-        }
-        .curry-mode .bar-fill.is-top {
-            background: linear-gradient(90deg, var(--curry-color), #ff8566);
-            box-shadow: 0 0 10px var(--curry-glow);
-        }
-        .bar-val {
-            text-align: right;
-            font-weight: 800;
-            color: var(--text-sub);
-            font-family: "Courier New", monospace;
-            font-size: 12px;
-        }
-        .bar-val.is-top { color: var(--accent-color); }
-        .curry-mode .bar-val.is-top { color: var(--curry-color); }
-
-        /* コメントリスト（スクロール対応） */
-        .comment-grid {
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-            max-height: 380px;
-            overflow-y: auto;
-            padding-right: 4px;
-        }
-        .comment-grid::-webkit-scrollbar { width: 5px; }
-        .comment-grid::-webkit-scrollbar-track { background: rgba(0,0,0,0.2); border-radius: 4px; }
-        .comment-grid::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 4px; }
-
-        .comment-bubble {
-            background: rgba(0, 0, 0, 0.35);
-            border: 1px solid var(--surface-border);
-            border-radius: 10px;
             padding: 12px 14px;
-        }
-        .comment-header {
-            display: flex; justify-content: space-between; align-items: center;
-            margin-bottom: 6px; font-size: 10px; color: var(--text-sub);
-        }
-        .comment-user { font-weight: 800; color: var(--accent-color); }
-        .curry-mode .comment-user { color: var(--curry-color); }
-        .comment-body { font-size: 12px; color: #d1d5db; line-height: 1.5; margin: 0; }
-
-        /* ★ 個別画像表示用グリッド ★ */
-        .photo-gallery-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-            gap: 12px;
-        }
-        .gallery-item {
-            background: rgba(0, 0, 0, 0.5);
-            border: 1px solid var(--surface-border);
-            border-radius: 12px;
-            overflow: hidden;
             display: flex;
-            flex-direction: column;
-            cursor: pointer;
-            transition: transform 0.15s ease, border-color 0.15s ease;
-        }
-        .gallery-item:active { transform: scale(0.97); }
-        .gallery-item:hover { border-color: rgba(255, 159, 26, 0.5); }
-        .gallery-thumb {
-            width: 100%;
-            aspect-ratio: 3 / 2;
-            object-fit: cover;
-            background: #000;
-            display: block;
-        }
-        .gallery-caption {
-            padding: 8px 10px;
-            font-size: 11px;
-            font-weight: 700;
-            color: #fff;
-            display: flex;
+            align-items: center;
             justify-content: space-between;
-            align-items: center;
         }
-        .gallery-sub {
-            font-size: 9.5px;
-            color: var(--accent-color);
+        .rank-card.top1 {
+            border-color: rgba(255, 190, 11, 0.5);
+            background: linear-gradient(135deg, rgba(255, 190, 11, 0.12), rgba(0,0,0,0.4));
         }
+        .rank-left { display: flex; align-items: center; gap: 12px; }
+        .rank-badge {
+            width: 30px; height: 30px;
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 13px; font-weight: 900; color: #000;
+            background: var(--surface-border);
+        }
+        .rank-badge.r1 { background: var(--rank-1); }
+        .rank-badge.r2 { background: var(--rank-2); }
+        .rank-badge.r3 { background: var(--rank-3); }
+        .rank-badge.r4 { background: #333; color: #aaa; }
+        .team-name { font-size: 15px; font-weight: 800; }
+        .score-box { text-align: right; }
+        .main-score { font-size: 18px; font-weight: 900; color: var(--accent-gold); }
+        .sub-score { font-size: 10px; color: var(--text-sub); }
 
-        /* 画像拡大用モーダル */
-        #photoModal {
-            position: fixed; inset: 0;
-            background: rgba(0, 0, 0, 0.92);
-            backdrop-filter: blur(14px);
-            z-index: 2000;
+        /* 部門賞バー */
+        .category-group { margin-bottom: 14px; }
+        .cat-title { font-size: 12px; font-weight: 800; color: var(--text-sub); margin-bottom: 6px; }
+        .cat-bar-wrap {
+            display: flex; align-items: center; justify-content: space-between;
+            font-size: 11px; margin-bottom: 4px;
+        }
+        .cat-progress {
+            height: 7px; border-radius: 4px;
+            background: rgba(255, 255, 255, 0.08);
+            overflow: hidden; margin-bottom: 8px;
+        }
+        .cat-bar { height: 100%; border-radius: 4px; transition: width 0.6s ease; }
+
+        /* 審査員コメント */
+        .comment-list {
+            display: flex; flex-direction: column; gap: 8px;
+            max-height: 220px; overflow-y: auto;
+        }
+        .comment-item {
+            background: rgba(0,0,0,0.25);
+            border: 1px solid var(--surface-border);
+            border-radius: 8px;
+            padding: 8px 10px;
+            font-size: 11.5px;
+            line-height: 1.4;
+        }
+        .comment-author { font-size: 9.5px; color: var(--text-sub); margin-bottom: 2px; }
+
+        /* 🔒 認証ブロック */
+        #authBlock {
             display: none;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
+            text-align: center;
+            padding: 60px 20px;
         }
-        .modal-body {
-            max-width: 95%; max-height: 90vh;
-            display: flex; flex-direction: column; align-items: center; gap: 10px;
-        }
-        .modal-img {
-            max-width: 100%; max-height: 75vh;
-            border-radius: 10px; border: 1px solid var(--surface-border);
-            object-fit: contain;
-        }
-        .modal-caption { color: #fff; font-size: 12.5px; font-weight: 700; text-align: center; }
-
-        .view-panel { display: none; }
-        .view-panel.active { display: block; }
-        .loading-box { text-align: center; padding: 30px; color: var(--text-sub); font-size: 12px; }
+        .loading-box { text-align: center; padding: 40px; color: var(--text-sub); font-size: 13px; }
     </style>
 </head>
 <body>
 
     <header>
-        <div class="header-title">🏆 GRAND PRIX AWARDS</div>
-        <div class="nav-links">
-            <button class="nav-btn accent" id="refreshBtn">🔄 最新に更新</button>
-            <a href="index.html" class="nav-btn">🏠️ Home</a>
-        </div>
+        <div class="header-title">🏆️ 表彰式・結果発表</div>
+        <a href="index.html" class="back-btn">ポータルへ</a>
     </header>
 
-    <div class="container">
-        <div class="hero">
-            <span class="hero-badge">RESULTS DASHBOARD</span>
-            <h1 id="heroTitle">写真グランプリ 結果発表</h1>
-            <div class="hero-desc">集計スプレッドシートよりリアルタイム同期中</div>
+    <div class="container" id="mainContainer">
+        <!-- タブ切り替え -->
+        <div class="tab-switch">
+            <button class="tab-btn active photo" id="photoTabBtn" onclick="switchTab('photo')">📷️ フォトGP</button>
+            <button class="tab-btn" id="curryTabBtn" onclick="switchTab('curry')">🍛 カレーGP</button>
         </div>
 
-        <!-- グランプリ切り替えタブ -->
-        <div class="gp-tabs">
-            <button class="gp-tab-btn active" id="tabPhoto" onclick="switchView('photo')">
-                📸 写真グランプリ
-            </button>
-            <button class="gp-tab-btn curry-tab" id="tabCurry" onclick="switchView('curry')">
-                🍛 カレーグランプリ
-            </button>
+        <div id="loadingBox" class="loading-box">
+            スプレッドシートから集計データを取得中...
         </div>
 
-        <!-- ① 写真グランプリパネル -->
-        <div id="panelPhoto" class="view-panel active">
-            <div class="section-card">
-                <div class="section-title">🥇 写真総合ランキング（最優秀グランプリ）</div>
-                <div class="ranking-list" id="photoRankingList">
-                    <div class="loading-box">集計データを取得しています...</div>
+        <!-- 結果表示エリア -->
+        <div id="resultsContent" style="display: none; flex-direction: column; gap: 16px;">
+            <!-- 総合ランキング -->
+            <div class="section-box">
+                <div class="section-header">
+                    <span class="section-title" id="rankSectionTitle">👑 総合ランキング</span>
+                    <span style="font-size: 10px; color: var(--text-sub);">最優秀票 ＋ 部門合計点</span>
                 </div>
+                <div class="rank-list" id="rankingList"></div>
             </div>
 
-            <!-- 部門賞グラフ -->
-            <div class="section-card">
-                <div class="section-title">📊 写真 部門賞 得票グラフ</div>
-                <div id="photoCategoryCharts">
-                    <div class="loading-box">集計中...</div>
+            <!-- 部門賞プレビュー -->
+            <div class="section-box">
+                <div class="section-header">
+                    <span class="section-title">🎖️ 部門賞 得票状況</span>
                 </div>
+                <div id="categoryContainer"></div>
             </div>
 
-            <!-- 投票メッセージ -->
-            <div class="section-card">
-                <div class="section-title">💬 写真グランプリ 投票メッセージ</div>
-                <div class="comment-grid" id="photoCommentGrid">
-                    <div class="loading-box">コメントを読み込み中...</div>
+            <!-- 審査員・参加者コメント -->
+            <div class="section-box">
+                <div class="section-header">
+                    <span class="section-title">💬 投票コメント・講評</span>
                 </div>
-            </div>
-
-            <!-- ★ ここに追加：保存画像表示枠（Firebase不使用・静的配置） ★ -->
-            <div class="section-card">
-                <div class="section-title">
-                    <span>📷 正解構図</span>
-                    <span style="font-size:10px; color:var(--text-sub); font-weight:normal;">タップで拡大</span>
-                </div>
-                
-                <div class="photo-gallery-grid">
-                    <!-- 正解構図 -->
-                    <div class="gallery-item" onclick="openPhotoModal('フォトGP_正解構図.jpeg', '正解構図')">
-                        <img class="gallery-thumb" src="フォトGP_正解構図.jpeg" alt="正解構図" onerror="this.src='https://picsum.photos/600/400?random=1'">
-                        <div class="gallery-caption">
-                            <span>正解構図</span>
-                            <span class="gallery-sub">正解構図</span>
-                        </div>
-                    </div>
-                </div>
+                <div class="comment-list" id="commentList"></div>
             </div>
         </div>
 
-        <!-- ② カレーグランプリパネル -->
-        <div id="panelCurry" class="view-panel curry-mode">
-            <div class="section-card">
-                <div class="section-title">👑 カレー総合王座（総合優勝）</div>
-                <div class="ranking-list" id="curryRankingList">
-                    <div class="loading-box">集計データを取得しています...</div>
-                </div>
-            </div>
-
-            <!-- 部門賞グラフ -->
-            <div class="section-card">
-                <div class="section-title">📊 カレー 部門賞 得票グラフ</div>
-                <div id="curryCategoryCharts">
-                    <div class="loading-box">集計中...</div>
-                </div>
-            </div>
-
-            <!-- 投票メッセージ -->
-            <div class="section-card">
-                <div class="section-title">💬 カレー実食コメント・推薦理由</div>
-                <div class="comment-grid" id="curryCommentGrid">
-                    <div class="loading-box">コメントを読み込み中...</div>
-                </div>
-            </div>
-        </div>
-
-    </div>
-
-    <!-- 画像拡大用モーダル -->
-    <div id="photoModal" onclick="closePhotoModal()">
-        <div class="modal-body">
-            <img id="modalImg" class="modal-img" src="" alt="拡大画像">
-            <div id="modalCaption" class="modal-caption"></div>
-            <div style="font-size:10px; color:var(--text-sub);">(タップで閉じる)</div>
+        <!-- 🔒 未認証・ブロック画面 -->
+        <div id="authBlock">
+            <div style="font-size: 48px; margin-bottom: 12px;">🔒</div>
+            <h2 style="color: var(--danger); font-size: 18px; margin: 0 0 8px 0;">アクセス権がありません</h2>
+            <p style="color: var(--text-sub); font-size: 12px; line-height: 1.6; margin-bottom: 24px;">
+                このページを閲覧するには参加認証が必要です。<br>トップページ（ポータル）から正しいPINコードでアクセスしてください。
+            </p>
+            <a href="index.html" class="back-btn" style="padding: 10px 24px; font-size: 13px; background: var(--accent-gold); color: #000; border: none;">ポータルへ戻る</a>
         </div>
     </div>
 
     <script>
-        // ★ GASのWebアプリURL（設定済みURLをそのまま使用）
+        // ★ ご自身のGASウェブアプリURLに差し替えてください ★
         const GAS_API_URL = "https://script.google.com/macros/s/AKfycbxdc51YIhCJS3WE-6qJXNC8jPpeTazBYDTkflCYSBJeU3zN1jTU3ry2mGYYGLpXjiX8Iw/exec";
 
-        function switchView(tab) {
-            const tabPhoto = document.getElementById('tabPhoto');
-            const tabCurry = document.getElementById('tabCurry');
-            const panelPhoto = document.getElementById('panelPhoto');
-            const panelCurry = document.getElementById('panelCurry');
-            const heroTitle = document.getElementById('heroTitle');
+        let appData = null;
+        let currentTab = "photo";
 
-            if (tab === 'photo') {
-                tabPhoto.classList.add('active');
-                tabCurry.classList.remove('active');
-                panelPhoto.classList.add('active');
-                panelCurry.classList.remove('active');
-                heroTitle.innerText = "写真グランプリ 結果発表";
-            } else {
-                tabPhoto.classList.remove('active');
-                tabCurry.classList.add('active');
-                panelPhoto.classList.remove('active');
-                panelCurry.classList.add('active');
-                heroTitle.innerText = "カレーグランプリ 結果発表";
-            }
-        }
+        async function initResults() {
+            const pin = sessionStorage.getItem("event_user_pin");
 
-        async function fetchLiveResults() {
-            if (GAS_API_URL.includes("YOUR_DEPLOYMENT_ID")) {
-                renderMockData();
+            // 1. PINが存在しない場合は即ブロック
+            if (!pin) {
+                showBlocked();
                 return;
             }
 
             try {
-                const res = await fetch(GAS_API_URL);
+                // 2. GASへPINを渡して集計データを取得
+                const res = await fetch(`${GAS_API_URL}?action=results&pin=${encodeURIComponent(pin)}`);
                 const data = await res.json();
-                if (data.photo) renderPhotoResults(data.photo);
-                if (data.curry) renderCurryResults(data.curry);
+
+                if (!data.success) {
+                    showBlocked();
+                    return;
+                }
+
+                // 3. 認証成功：データを描画
+                appData = data;
+                document.getElementById('loadingBox').style.display = 'none';
+                document.getElementById('resultsContent').style.display = 'flex';
+                renderContent();
+
             } catch (err) {
-                console.error("Fetch Error:", err);
-                renderMockData();
+                console.error("Results Fetch Error:", err);
+                // GAS_API_URLが未設定の場合のデモフォールバック
+                if (GAS_API_URL.includes("YOUR_DEPLOYMENT_ID")) {
+                    renderDemoData();
+                } else {
+                    document.getElementById('loadingBox').innerText = "集計データの取得に失敗しました。";
+                }
             }
         }
 
-        function renderPhotoResults(photoData) {
-            const rankList = document.getElementById('photoRankingList');
-            rankList.innerHTML = "";
-            photoData.ranking.forEach((item, index) => {
-                const rankNum = index + 1;
-                const rankClass = rankNum === 1 ? 'rank-1' : rankNum === 2 ? 'rank-2' : rankNum === 3 ? 'rank-3' : '';
-                const winnerBadge = rankNum === 1 ? '<div style="font-size:10px; color:var(--gold); font-weight:800;">👑 GRAND PRIX WINNER</div>' : '';
-                const displayScore = Math.floor(item.calcScore);
+        function showBlocked() {
+            document.getElementById('loadingBox').style.display = 'none';
+            document.getElementById('resultsContent').style.display = 'none';
+            document.getElementById('authBlock').style.display = 'block';
+        }
+
+        function switchTab(tab) {
+            currentTab = tab;
+            const photoBtn = document.getElementById('photoTabBtn');
+            const curryBtn = document.getElementById('curryTabBtn');
+
+            if (tab === 'photo') {
+                photoBtn.className = "tab-btn active photo";
+                curryBtn.className = "tab-btn";
+            } else {
+                curryBtn.className = "tab-btn active curry";
+                photoBtn.className = "tab-btn";
+            }
+            renderContent();
+        }
+
+        function renderContent() {
+            if (!appData) return;
+            const isPhoto = (currentTab === "photo");
+            const dataSet = isPhoto ? appData.photo : appData.curry;
+            const themeColor = isPhoto ? "var(--photo-color)" : "var(--curry-color)";
+
+            // 1. 総合ランキング描画（整数切り捨て表示）
+            const rankListEl = document.getElementById('rankingList');
+            rankListEl.innerHTML = "";
+
+            dataSet.ranking.forEach((item, idx) => {
+                const rankNum = idx + 1;
+                const grandVotes = item.grand || 0;
+                // 表示用スコア：最優秀票（整数部）
+                const displayScore = Math.floor(item.calcScore || grandVotes);
 
                 const card = document.createElement('div');
-                card.className = `rank-card ${rankClass}`;
+                card.className = `rank-card ${rankNum === 1 ? 'top1' : ''}`;
                 card.innerHTML = `
                     <div class="rank-left">
-                        <div class="rank-num">${rankNum}</div>
-                        <div>
-                            <div class="rank-team">${item.team}</div>
-                            ${winnerBadge}
-                            <div class="rank-breakdown">最優秀:${item.grand}票 | チームワーク:${item.teamwork} 再現度:${item.repro} 劇的:${item.humor}</div>
-                        </div>
+                        <div class="rank-badge r${rankNum}">${rankNum}</div>
+                        <div class="team-name">${item.team}</div>
                     </div>
-                    <div class="rank-score-wrap">
-                        <span class="rank-score">${displayScore}</span><span class="rank-unit">票</span>
+                    <div class="score-box">
+                        <div class="main-score">${displayScore}<span style="font-size:11px; margin-left:2px;">票</span></div>
+                        <div class="sub-score">最優秀 ${grandVotes} 票</div>
                     </div>
                 `;
-                rankList.appendChild(card);
+                rankListEl.appendChild(card);
             });
 
-            // 部門賞グラフ
-            const chartsContainer = document.getElementById('photoCategoryCharts');
-            chartsContainer.innerHTML = "";
-            chartsContainer.appendChild(createCategoryChartCard("🤝 チームワーク賞", photoData.categories.teamwork));
-            chartsContainer.appendChild(createCategoryChartCard("📐 構図・ポーズ再現度賞", photoData.categories.repro));
-            chartsContainer.appendChild(createCategoryChartCard("🎭 ドラマ・ユーモア賞", photoData.categories.humor));
+            // 2. 部門賞グラフ描画
+            const catContainer = document.getElementById('categoryContainer');
+            catContainer.innerHTML = "";
 
-            renderComments('photoCommentGrid', photoData.comments);
-        }
+            const categories = isPhoto
+                ? [ { key: "teamwork", name: "🤝 チームワーク賞" }, { key: "repro", name: "🎯 再現度賞" }, { key: "humor", name: "🤣 ユーモア賞" } ]
+                : [ { key: "taste", name: "👅 味・完成度賞" }, { key: "orig", name: "💡 オリジナリティ賞" }, { key: "teamwork", name: "🤝 チームワーク賞" } ];
 
-        function renderCurryResults(curryData) {
-            const rankList = document.getElementById('curryRankingList');
-            rankList.innerHTML = "";
-            curryData.ranking.forEach((item, index) => {
-                const rankNum = index + 1;
-                const rankClass = rankNum === 1 ? 'rank-1' : rankNum === 2 ? 'rank-2' : rankNum === 3 ? 'rank-3' : '';
-                const winnerBadge = rankNum === 1 ? '<div style="font-size:10px; color:var(--gold); font-weight:800;">🍛 CURRY CHAMPION</div>' : '';
-                const displayScore = Math.floor(item.calcScore);
+            categories.forEach(cat => {
+                const teamVotes = dataSet.categories[cat.key] || [];
+                const maxVote = Math.max(...teamVotes.map(t => t.votes), 1);
 
-                const card = document.createElement('div');
-                card.className = `rank-card ${rankClass}`;
-                card.innerHTML = `
-                    <div class="rank-left">
-                        <div class="rank-num">${rankNum}</div>
-                        <div>
-                            <div class="rank-team">${item.team}</div>
-                            ${winnerBadge}
-                            <div class="rank-breakdown">総合:${item.grand}票 | 味:${item.taste} オリジナリティ:${item.orig} チームワーク:${item.teamwork}</div>
+                let catHtml = `<div class="category-group"><div class="cat-title">${cat.name}</div>`;
+                teamVotes.forEach(tv => {
+                    const pct = Math.round((tv.votes / maxVote) * 100);
+                    catHtml += `
+                        <div class="cat-bar-wrap">
+                            <span>${tv.team}</span>
+                            <span style="font-weight:bold;">${tv.votes} 票</span>
                         </div>
-                    </div>
-                    <div class="rank-score-wrap">
-                        <span class="rank-score">${displayScore}</span><span class="rank-unit">票</span>
-                    </div>
-                `;
-                rankList.appendChild(card);
-            });
-
-            // 部門賞グラフ
-            const chartsContainer = document.getElementById('curryCategoryCharts');
-            chartsContainer.innerHTML = "";
-            chartsContainer.appendChild(createCategoryChartCard("👅 味 部門賞", curryData.categories.taste));
-            chartsContainer.appendChild(createCategoryChartCard("💡 オリジナリティ 部門賞", curryData.categories.orig));
-            chartsContainer.appendChild(createCategoryChartCard("🤝 チームワーク 部門賞", curryData.categories.teamwork));
-
-            renderComments('curryCommentGrid', curryData.comments);
-        }
-
-        function createCategoryChartCard(title, teamList) {
-            const card = document.createElement('div');
-            card.className = "chart-category-card";
-
-            const maxVotes = Math.max(...teamList.map(t => t.votes), 1);
-            const winner = teamList[0];
-
-            let rowsHtml = "";
-            teamList.forEach((t, i) => {
-                const isTop = (i === 0 && t.votes > 0);
-                const percent = Math.round((t.votes / maxVotes) * 100);
-
-                rowsHtml += `
-                    <div class="bar-row">
-                        <span class="bar-team ${isTop ? 'is-top' : ''}">${t.team}</span>
-                        <div class="bar-track">
-                            <div class="bar-fill ${isTop ? 'is-top' : ''}" style="width: ${percent}%;"></div>
+                        <div class="cat-progress">
+                            <div class="cat-bar" style="width: ${pct}%; background: ${themeColor};"></div>
                         </div>
-                        <span class="bar-val ${isTop ? 'is-top' : ''}">${t.votes}票</span>
-                    </div>
-                `;
-            });
-
-            card.innerHTML = `
-                <div class="chart-cat-header">
-                    <span class="chart-cat-title">${title}</span>
-                    <span class="chart-cat-winner">👑 1位: ${winner && winner.votes > 0 ? winner.team : '集計中'}</span>
-                </div>
-                <div class="bar-group">
-                    ${rowsHtml}
-                </div>
-            `;
-            return card;
-        }
-
-        function renderComments(containerId, comments) {
-            const container = document.getElementById(containerId);
-            if (comments && comments.length > 0) {
-                container.innerHTML = "";
-                comments.forEach(c => {
-                    const bubble = document.createElement('div');
-                    bubble.className = "comment-bubble";
-                    bubble.innerHTML = `
-                        <div class="comment-header">
-                            <span class="comment-user">👤 ${c.user}</span>
-                        </div>
-                        <p class="comment-body">「${c.text}」</p>
                     `;
-                    container.appendChild(bubble);
+                });
+                catHtml += `</div>`;
+                catContainer.innerHTML += catHtml;
+            });
+
+            // 3. コメント一覧
+            const commentListEl = document.getElementById('commentList');
+            commentListEl.innerHTML = "";
+            if (dataSet.comments && dataSet.comments.length > 0) {
+                dataSet.comments.forEach(c => {
+                    const item = document.createElement('div');
+                    item.className = 'comment-item';
+                    item.innerHTML = `
+                        <div class="comment-author">${escapeHtml(c.user)}</div>
+                        <div>${escapeHtml(c.text)}</div>
+                    `;
+                    commentListEl.appendChild(item);
                 });
             } else {
-                container.innerHTML = '<div class="loading-box">まだコメントはありません。</div>';
+                commentListEl.innerHTML = `<div style="text-align:center; color:var(--text-sub); font-size:11px; padding:10px;">コメントはまだありません</div>`;
             }
         }
 
-        // モーダル操作関数
-        function openPhotoModal(src, caption) {
-            document.getElementById('modalImg').src = src;
-            document.getElementById('modalCaption').innerText = caption;
-            document.getElementById('photoModal').style.display = 'flex';
+        function escapeHtml(str) {
+            return String(str || "").replace(/[&<>'"]/g, tag => ({
+                '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;'
+            }[tag] || tag));
         }
 
-        function closePhotoModal() {
-            document.getElementById('photoModal').style.display = 'none';
-        }
-
-        // デモ用データ
-        function renderMockData() {
-            renderPhotoResults({
-                ranking: [
-                    { team: "チームA", teamwork: 8, repro: 6, humor: 5, grand: 6, calcScore: 6.019 },
-                    { team: "チームC", teamwork: 5, repro: 5, humor: 4, grand: 6, calcScore: 6.014 },
-                    { team: "チームB", teamwork: 3, repro: 2, humor: 9, grand: 4, calcScore: 4.014 },
-                    { team: "チームD", teamwork: 2, repro: 3, humor: 2, grand: 2, calcScore: 2.007 }
-                ],
-                categories: {
-                    teamwork: [
-                        { team: "チームA", votes: 8 },
-                        { team: "チームC", votes: 5 },
-                        { team: "チームB", votes: 3 },
-                        { team: "チームD", votes: 2 }
+        function renderDemoData() {
+            document.getElementById('loadingBox').style.display = 'none';
+            document.getElementById('resultsContent').style.display = 'flex';
+            appData = {
+                photo: {
+                    ranking: [
+                        { team: "チームA", calcScore: 12.015, grand: 12 },
+                        { team: "チームB", calcScore: 8.020, grand: 8 },
+                        { team: "チームC", calcScore: 5.010, grand: 5 },
+                        { team: "チームD", calcScore: 3.008, grand: 3 }
                     ],
-                    repro: [
-                        { team: "チームA", votes: 6 },
-                        { team: "チームC", votes: 5 },
-                        { team: "チームD", votes: 3 },
-                        { team: "チームB", votes: 2 }
-                    ],
-                    humor: [
-                        { team: "チームB", votes: 9 },
-                        { team: "チームA", votes: 5 },
-                        { team: "チームC", votes: 4 },
-                        { team: "チームD", votes: 2 }
-                    ]
+                    categories: {
+                        teamwork: [{ team: "チームA", votes: 8 }, { team: "チームB", votes: 6 }, { team: "チームC", votes: 3 }, { team: "チームD", votes: 2 }],
+                        repro: [{ team: "チームB", votes: 10 }, { team: "チームA", votes: 7 }, { team: "チームC", votes: 4 }, { team: "チームD", votes: 1 }],
+                        humor: [{ team: "チームC", votes: 9 }, { team: "チームA", votes: 5 }, { team: "チームB", votes: 4 }, { team: "チームD", votes: 2 }]
+                    },
+                    comments: [{ user: "参加者", text: "チームAの再現度が素晴らしかった！" }]
                 },
-                comments: [
-                    { user: "参加者1", text: "チームAのルーを投入する瞬間がプロ並みでした！" },
-                    { user: "参加者2", text: "チームBの偵察部隊のポーズがツボに入って面白かったです。" }
-                ]
-            });
-
-            renderCurryResults({
-                ranking: [
-                    { team: "チームB", taste: 12, orig: 9, teamwork: 8, grand: 5, calcScore: 5.029 },
-                    { team: "チームA", taste: 10, orig: 7, teamwork: 9, grand: 4, calcScore: 4.026 },
-                    { team: "チームC", taste: 8, orig: 8, teamwork: 7, grand: 3, calcScore: 3.023 },
-                    { team: "チームD", taste: 7, orig: 6, teamwork: 6, grand: 2, calcScore: 2.019 }
-                ],
-                categories: {
-                    taste: [
-                        { team: "チームB", votes: 12 },
-                        { team: "チームA", votes: 10 },
-                        { team: "チームC", votes: 8 },
-                        { team: "チームD", votes: 7 }
+                curry: {
+                    ranking: [
+                        { team: "チームB", calcScore: 14.025, grand: 14 },
+                        { team: "チームA", calcScore: 9.018, grand: 9 },
+                        { team: "チームD", calcScore: 6.012, grand: 6 },
+                        { team: "チームC", calcScore: 4.009, grand: 4 }
                     ],
-                    orig: [
-                        { team: "チームB", votes: 9 },
-                        { team: "チームC", votes: 8 },
-                        { team: "チームA", votes: 7 },
-                        { team: "チームD", votes: 6 }
-                    ],
-                    teamwork: [
-                        { team: "チームA", votes: 9 },
-                        { team: "チームB", votes: 8 },
-                        { team: "チームC", votes: 7 },
-                        { team: "チームD", votes: 6 }
-                    ]
-                },
-                comments: [
-                    { user: "審査員A", text: "チームBのスパイスの深みが素晴らしく、ご飯が進みました！" }
-                ]
-            });
+                    categories: {
+                        taste: [{ team: "チームB", votes: 12 }, { team: "チームA", votes: 7 }, { team: "チームD", votes: 4 }, { team: "チームC", votes: 2 }],
+                        orig: [{ team: "チームD", votes: 10 }, { team: "チームB", votes: 8 }, { team: "チームA", votes: 5 }, { team: "チームC", votes: 3 }],
+                        teamwork: [{ team: "チームA", votes: 9 }, { team: "チームB", votes: 7 }, { team: "チームC", votes: 5 }, { team: "チームD", votes: 4 }]
+                    },
+                    comments: [{ user: "審査員", text: "チームBのスパイス使いが本格的でした。" }]
+                }
+            };
+            renderContent();
         }
 
-        document.getElementById('refreshBtn').onclick = fetchLiveResults;
-        window.onload = fetchLiveResults;
+        window.onload = initResults;
     </script>
 </body>
 </html>
