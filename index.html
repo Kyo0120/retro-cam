@@ -3,19 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Curry Grand Prix & Photo Awards</title>
+    <title>CURRY × PHOTO GP 2026 ポータル</title>
     <style>
         :root {
             --bg-color: #0b0d10;
-            --surface-bg: rgba(20, 24, 32, 0.88);
             --surface-card: rgba(26, 31, 42, 0.85);
             --surface-border: rgba(255, 255, 255, 0.08);
             --accent-color: #ff9f1a;
-            --accent-glow: rgba(255, 159, 26, 0.35);
-            --curry-color: #ff5e3a;
-            --curry-glow: rgba(255, 94, 58, 0.35);
-            --photo-color: #00d2d3;
-            --photo-glow: rgba(0, 210, 211, 0.35);
             --text-main: #f0f3f6;
             --text-sub: #8a94a6;
             --danger: #ff4757;
@@ -31,50 +25,13 @@
             min-height: 100vh;
             display: flex;
             flex-direction: column;
-        }
-
-        header {
-            position: sticky; top: 0;
-            background: rgba(11, 13, 16, 0.94);
-            backdrop-filter: blur(16px);
-            -webkit-backdrop-filter: blur(16px);
-            border-bottom: 1px solid var(--surface-border);
-            padding: 12px 16px;
-            display: flex;
             align-items: center;
-            justify-content: space-between;
-            z-index: 100;
-        }
-        .header-brand {
-            font-size: 14px;
-            font-weight: 900;
-            color: var(--accent-color);
-            letter-spacing: 0.5px;
-        }
-        .user-status-pill {
-            display: none;
-            align-items: center;
-            gap: 6px;
-            background: rgba(255, 255, 255, 0.06);
-            border: 1px solid var(--surface-border);
-            padding: 4px 10px;
-            border-radius: 20px;
-            font-size: 11px;
-            font-weight: 800;
-        }
-        .logout-btn {
-            background: none; border: none;
-            color: var(--text-sub);
-            font-size: 10px; cursor: pointer;
-            text-decoration: underline; padding: 0;
         }
 
         .container {
-            flex: 1;
-            max-width: 600px;
             width: 100%;
-            margin: 0 auto;
-            padding: 20px 16px 40px 16px;
+            max-width: 480px;
+            padding: 24px 16px 40px 16px;
             display: flex;
             flex-direction: column;
             gap: 16px;
@@ -82,425 +39,270 @@
 
         .hero {
             text-align: center;
-            padding: 8px 0 4px 0;
+            padding: 16px 0 8px 0;
         }
-        .hero-badge {
-            display: inline-block;
-            background: rgba(255, 159, 26, 0.12);
-            border: 1px solid rgba(255, 159, 26, 0.35);
-            color: var(--accent-color);
-            font-size: 10px;
-            font-weight: 800;
-            padding: 4px 12px;
-            border-radius: 20px;
-            letter-spacing: 1.5px;
-            margin-bottom: 8px;
-        }
-        h1 {
-            margin: 0 0 6px 0;
-            font-size: 1.65rem;
-            font-weight: 900;
-            line-height: 1.3;
-            letter-spacing: -0.5px;
-        }
-        .hero-sub {
-            font-size: 12px;
-            color: var(--text-sub);
-        }
-
-        /* セクション見出し */
-        .menu-section-label {
+        .hero-tag {
             font-size: 11px;
             font-weight: 800;
-            color: var(--text-sub);
-            letter-spacing: 1px;
-            margin: 8px 0 2px 4px;
+            color: var(--accent-color);
+            letter-spacing: 2px;
+            text-transform: uppercase;
+        }
+        .hero-title {
+            font-size: 24px;
+            font-weight: 900;
+            margin: 6px 0 0 0;
+            background: linear-gradient(135deg, #fff 40%, var(--accent-color));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
         }
 
-        /* メニューカード一覧 */
-        .menu-grid {
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-        }
-
-        .menu-card {
+        /* パスコード解除カード */
+        .unlock-card {
             background: var(--surface-card);
             border: 1px solid var(--surface-border);
             border-radius: 14px;
-            padding: 16px 18px;
-            text-decoration: none;
-            color: var(--text-main);
+            padding: 14px 16px;
+        }
+        .unlock-input-group {
+            display: flex;
+            gap: 8px;
+        }
+        .unlock-input {
+            flex: 1;
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid var(--surface-border);
+            border-radius: 8px;
+            color: #fff;
+            font-size: 15px;
+            font-weight: 700;
+            text-align: center;
+            letter-spacing: 3px;
+            padding: 8px 12px;
+            outline: none;
+        }
+        .unlock-input:focus { border-color: var(--accent-color); }
+        .btn-unlock {
+            background: var(--accent-color);
+            color: #000;
+            border: none;
+            border-radius: 8px;
+            font-weight: 800;
+            font-size: 12px;
+            padding: 0 16px;
+            cursor: pointer;
+        }
+        .btn-reset {
+            background: transparent;
+            border: 1px solid var(--surface-border);
+            color: var(--text-sub);
+            border-radius: 6px;
+            font-size: 11px;
+            padding: 4px 8px;
+            cursor: pointer;
+        }
+        .unlock-msg {
+            font-size: 11px;
+            margin-top: 6px;
+            min-height: 15px;
+            text-align: center;
+        }
+
+        /* メニュー一覧 */
+        .menu-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        .menu-item {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            transition: transform 0.15s ease, border-color 0.15s ease;
-            box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+            background: var(--surface-card);
+            border: 1px solid var(--surface-border);
+            border-radius: 14px;
+            padding: 14px 16px;
+            text-decoration: none;
+            color: var(--text-main);
+            transition: transform 0.15s ease;
         }
-        .menu-card:active {
-            transform: scale(0.98);
-        }
-
-        /* カードのカラーバリエーション */
-        .menu-card.primary {
+        .menu-item:active { transform: scale(0.98); }
+        .menu-item.highlight {
             border-color: rgba(255, 159, 26, 0.4);
-            background: linear-gradient(135deg, rgba(255, 159, 26, 0.12), rgba(26, 31, 42, 0.85));
-            box-shadow: 0 4px 20px var(--accent-glow);
-        }
-        .menu-card.photo-vote {
-            border-color: rgba(0, 210, 211, 0.4);
-            background: linear-gradient(135deg, rgba(0, 210, 211, 0.1), rgba(26, 31, 42, 0.85));
-            box-shadow: 0 4px 16px var(--photo-glow);
-        }
-        .menu-card.curry-vote {
-            border-color: rgba(255, 94, 58, 0.4);
-            background: linear-gradient(135deg, rgba(255, 94, 58, 0.12), rgba(26, 31, 42, 0.85));
-            box-shadow: 0 4px 16px var(--curry-glow);
+            background: linear-gradient(135deg, rgba(255, 159, 26, 0.12), rgba(26, 31, 42, 0.9));
         }
 
         .menu-left {
             display: flex;
             align-items: center;
-            gap: 14px;
+            gap: 12px;
         }
-        .menu-icon {
-            font-size: 26px;
-            width: 36px;
-            text-align: center;
-        }
-        .menu-info {
-            display: flex;
+        .menu-icon { font-size: 24px; }
+        .menu-info { display: flex; flex-direction: column; gap: 2px; }
+        .menu-title { font-size: 14px; font-weight: 800; }
+        .menu-desc { font-size: 11px; color: var(--text-sub); }
+        .menu-arrow { color: var(--text-sub); font-size: 14px; }
+
+        /* 初期非表示エリア */
+        .secret-menu {
+            display: none;
             flex-direction: column;
-            gap: 3px;
+            gap: 12px;
         }
-        .menu-title {
-            font-size: 14.5px;
-            font-weight: 800;
-        }
-        .photo-vote .menu-title { color: #5eead4; }
-        .curry-vote .menu-title { color: #ff8566; }
-
-        .menu-desc {
-            font-size: 11px;
-            color: var(--text-sub);
-            line-height: 1.4;
-        }
-        .menu-arrow {
-            font-size: 18px;
-            color: var(--text-sub);
-            font-weight: bold;
-            padding-left: 8px;
-        }
-
-        /* 🔒 認証ロックオーバーレイ */
-        #authOverlay {
-            position: fixed; inset: 0;
-            background: rgba(11, 13, 16, 0.98);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            z-index: 1000;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
-        }
-        .auth-card {
-            background: var(--surface-card);
-            border: 1px solid rgba(255, 159, 26, 0.35);
-            border-radius: 18px;
-            padding: 28px 24px;
-            width: 100%;
-            max-width: 330px;
-            text-align: center;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.8);
-        }
-        .auth-lock-icon { font-size: 38px; margin-bottom: 8px; }
-        .auth-title { font-size: 16px; font-weight: 900; color: #fff; }
-        .auth-desc { font-size: 11.5px; color: var(--text-sub); margin: 6px 0 20px 0; line-height: 1.5; }
-        
-        .auth-input {
-            width: 100%;
-            padding: 14px;
-            border-radius: 10px;
-            border: 1px solid var(--surface-border);
-            background: rgba(0, 0, 0, 0.6);
-            color: var(--accent-color);
-            font-size: 20px;
-            letter-spacing: 4px;
-            text-align: center;
-            font-weight: 900;
-            font-family: "Courier New", monospace;
-            outline: none;
-            box-sizing: border-box;
-            margin-bottom: 12px;
-        }
-        .auth-input:focus { border-color: var(--accent-color); }
-
-        .auth-btn {
-            width: 100%;
-            padding: 13px;
-            border-radius: 10px;
-            background: var(--accent-color);
-            color: #000;
-            font-weight: 900;
-            font-size: 14px;
-            border: none;
-            cursor: pointer;
-            box-shadow: 0 4px 16px var(--accent-glow);
-            transition: opacity 0.15s ease;
-        }
-        .auth-btn:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
-
-        .auth-msg {
-            margin-top: 10px;
-            font-size: 11px;
-            min-height: 16px;
-        }
-        .auth-msg.error { color: var(--danger); }
-        .auth-msg.loading { color: var(--accent-color); }
     </style>
 </head>
 <body>
 
-    <header>
-        <div class="header-brand">🍛 CURRY × PHOTO GP</div>
-        <div class="user-status-pill" id="userPill">
-            <span id="userPillLabel" style="color:var(--accent-color);">チームA</span>
-            <button class="logout-btn" onclick="logout()">解除</button>
-        </div>
-    </header>
-
     <div class="container">
         <div class="hero">
-            <span class="hero-badge">OFFICIAL PORTAL</span>
-            <h1>オータムイベント 2026</h1>
-            <div class="hero-sub">カレーGP ＆ フォトアワード ポータル</div>
+            <span class="hero-tag">AUTUMN SEMINAR 2026</span>
+            <h1 class="hero-title">🍛 PHOTO × CURRY GP</h1>
         </div>
 
-        <!-- 1. メインツール -->
-        <div class="menu-section-label">MAIN TOOLS</div>
+        <!-- パスコード入力欄（平文判定） -->
+        <div class="unlock-card">
+            <!-- 未解除時 -->
+            <div id="unlockForm">
+                <div class="unlock-input-group">
+                    <input type="password" id="passInput" class="unlock-input" placeholder="パスワード入力" maxlength="8" inputmode="numeric">
+                    <button class="btn-unlock" onclick="checkPassword()">表示</button>
+                </div>
+                <div id="unlockMsg" class="unlock-msg" style="color: var(--text-sub);">後半メニューを表示するにはパスワードを入力してください</div>
+            </div>
+
+            <!-- 解除後表示 -->
+            <div id="unlockedStatus" style="display: none; align-items: center; justify-content: space-between;">
+                <span style="font-size: 12px; font-weight: 700; color: var(--success);">🔓 全メニュー表示中</span>
+                <button class="btn-reset" onclick="resetPassword()">隠す</button>
+            </div>
+        </div>
+
+        <!-- メニュー一覧 -->
         <div class="menu-grid">
-            <!-- カメラ（元indexからcamera.htmlに変更） -->
-            <a href="camera.html" class="menu-card primary">
+            <!-- 常時表示：カメラ -->
+            <a href="camera.html" class="menu-item highlight">
                 <div class="menu-left">
-                    <div class="menu-icon">📸</div>
+                    <span class="menu-icon">📷️</span>
                     <div class="menu-info">
                         <span class="menu-title">ミッションカメラ</span>
-                        <span class="menu-desc">お題の構図を再現して撮影・提出</span>
+                        <span class="menu-desc">写ルンです風カメラでミッション撮影</span>
                     </div>
                 </div>
-                <span class="menu-arrow">❯</span>
+                <span class="menu-arrow">▶</span>
             </a>
 
-            <!-- 取扱説明書 -->
-            <a href="guide.html" class="menu-card">
+            <!-- 常時表示：取説 -->
+            <a href="guide.html" class="menu-item">
                 <div class="menu-left">
-                    <div class="menu-icon">📖</div>
+                    <span class="menu-icon">📖</span>
                     <div class="menu-info">
-                        <span class="menu-title">カメラ・イベント取説</span>
-                        <span class="menu-desc">ルール、ミッション一覧、操作方法</span>
+                        <span class="menu-title">イベント取扱説明書</span>
+                        <span class="menu-desc">ルール・タイムスケジュール・操作ガイド</span>
                     </div>
                 </div>
-                <span class="menu-arrow">❯</span>
+                <span class="menu-arrow">▶</span>
             </a>
 
-            <!-- 写真ギャラリー -->
-            <a href="gallery.html" class="menu-card">
-                <div class="menu-left">
-                    <div class="menu-icon">🖼️</div>
-                    <div class="menu-info">
-                        <span class="menu-title">提出写真ギャラリー</span>
-                        <span class="menu-desc">全チームの激闘写真をリアルタイム閲覧</span>
+            <!-- ★ パスワード「0120」で初めて姿を現すメニュー群 ★ -->
+            <div id="secretMenu" class="secret-menu">
+                <!-- 写真ギャラリー -->
+                <a href="gallery.html" class="menu-item">
+                    <div class="menu-left">
+                        <span class="menu-icon">🖼️</span>
+                        <div class="menu-info">
+                            <span class="menu-title">提出写真ギャラリー</span>
+                            <span class="menu-desc">各チームの写真一覧をリアルタイム閲覧</span>
+                        </div>
                     </div>
-                </div>
-                <span class="menu-arrow">❯</span>
-            </a>
-        </div>
+                    <span class="menu-arrow">▶</span>
+                </a>
 
-        <!-- 2. 投票フォーム -->
-        <div class="menu-section-label">VOTING FORMS</div>
-        <div class="menu-grid">
-            <!-- 📷 フォトGP投票フォーム -->
-            <a href="https://docs.google.com/forms/d/e/1FAIpQLSfclOEtqxyxx7KH1pMNSPJBOdLcDayRltPzgp_m8JLP5JZiAQ/viewform?usp=header" target="_blank" rel="noopener noreferrer" class="menu-card photo-vote">
-                <div class="menu-left">
-                    <div class="menu-icon">🗳️</div>
-                    <div class="menu-info">
-                        <span class="menu-title">📷 フォトグランプリ投票</span>
-                        <span class="menu-desc">チームワーク・再現度・ユーモア・最優秀投票</span>
+                <!-- 表彰式・結果発表 -->
+                <a href="results.html" class="menu-item">
+                    <div class="menu-left">
+                        <span class="menu-icon">🏆️</span>
+                        <div class="menu-info">
+                            <span class="menu-title">表彰式・結果発表</span>
+                            <span class="menu-desc">リアルタイム集計グラフ＆受賞結果発表</span>
+                        </div>
                     </div>
-                </div>
-                <span class="menu-arrow">↗</span>
-            </a>
+                    <span class="menu-arrow">▶</span>
+                </a>
 
-            <!-- 🍛 カレーGP投票フォーム -->
-            <a href="https://docs.google.com/forms/d/e/1FAIpQLSdHYturzJAQerFhW3RBee-kmVwX4a1hfLm39GvICkyNJe7qlQ/viewform?usp=header" target="_blank" rel="noopener noreferrer" class="menu-card curry-vote">
-                <div class="menu-left">
-                    <div class="menu-icon">🗳️</div>
-                    <div class="menu-info">
-                        <span class="menu-title">🍛 カレーグランプリ投票</span>
-                        <span class="menu-desc">チームワーク・味・オリジナリティ・最優秀投票</span>
+                <!-- フォトGP 投票 -->
+                <a href="https://docs.google.com/forms/d/e/YOUR_PHOTO_FORM_ID/viewform" target="_blank" class="menu-item">
+                    <div class="menu-left">
+                        <span class="menu-icon">🗳️</span>
+                        <div class="menu-info">
+                            <span class="menu-title">フォトGP 投票</span>
+                            <span class="menu-desc">最も心に刺さったベストショットに投票</span>
+                        </div>
                     </div>
-                </div>
-                <span class="menu-arrow">↗</span>
-            </a>
-        </div>
+                    <span class="menu-arrow">▶</span>
+                </a>
 
-        <!-- 3. 結果発表 -->
-        <div class="menu-section-label">AWARDS CEREMONY</div>
-        <div class="menu-grid">
-            <a href="results.html" class="menu-card">
-                <div class="menu-left">
-                    <div class="menu-icon">🏆️</div>
-                    <div class="menu-info">
-                        <span class="menu-title">表彰式・結果発表</span>
-                        <span class="menu-desc">リアルタイム集計ランキング・部門賞グラフ</span>
+                <!-- カレーGP 投票 -->
+                <a href="https://docs.google.com/forms/d/e/YOUR_CURRY_FORM_ID/viewform" target="_blank" class="menu-item">
+                    <div class="menu-left">
+                        <span class="menu-icon">🍛</span>
+                        <div class="menu-info">
+                            <span class="menu-title">カレーGP 審査投票</span>
+                            <span class="menu-desc">味・アイデア・チームワークを審査採点</span>
+                        </div>
                     </div>
-                </div>
-                <span class="menu-arrow">❯</span>
-            </a>
-        </div>
-    </div>
-
-    <!-- 🔒 認証ロックモーダル -->
-    <div id="authOverlay">
-        <div class="auth-card">
-            <div class="auth-lock-icon">🔒</div>
-            <div class="auth-title">イベント参加認証</div>
-            <div class="auth-desc">配布されたアクセスコード（PIN）を<br>入力してください</div>
-            
-            <input type="text" id="pinInput" class="auth-input" placeholder="0000" inputmode="numeric" maxlength="8">
-            <button class="auth-btn" id="loginBtn" onclick="submitPin()">参加する</button>
-            <div id="authMsg" class="auth-msg"></div>
+                    <span class="menu-arrow">▶</span>
+                </a>
+            </div>
         </div>
     </div>
 
     <script>
-        // ★ ステップ2でデプロイしたご自身のGASウェブアプリURLに差し替えてください ★
-        const GAS_API_URL = "https://script.google.com/macros/s/AKfycbxdc51YIhCJS3WE-6qJXNC8jPpeTazBYDTkflCYSBJeU3zN1jTU3ry2mGYYGLpXjiX8Iw/exec";
+        // 平文パスワード
+        const PASS = "0120";
+        const STORAGE_KEY = "portal_menu_unlocked";
 
-        async function initAuth() {
-            // 1. セッションストレージに保存されているか確認
-            const savedPin = sessionStorage.getItem("event_user_pin");
-            const savedUser = sessionStorage.getItem("event_user_info");
-
-            if (savedPin && savedUser) {
-                applyLoginState(JSON.parse(savedUser));
-                return;
+        window.onload = () => {
+            // 前回復号済みであれば自動表示
+            if (localStorage.getItem(STORAGE_KEY) === "true") {
+                showSecretMenu();
             }
+        };
 
-            // 2. URLクエリ（?key=〇〇 または ?pin=〇〇）があるか確認
-            const urlParams = new URLSearchParams(window.location.search);
-            const queryPin = urlParams.get('key') || urlParams.get('pin');
+        function checkPassword() {
+            const input = document.getElementById('passInput').value.trim();
+            const msg = document.getElementById('unlockMsg');
 
-            if (queryPin) {
-                document.getElementById('pinInput').value = queryPin;
-                await verifyPinWithGas(queryPin, true);
-            }
-        }
-
-        async function submitPin() {
-            const pinVal = document.getElementById('pinInput').value.trim();
-            if (!pinVal) {
-                showMsg("PINコードを入力してください", "error");
-                return;
-            }
-            await verifyPinWithGas(pinVal, false);
-        }
-
-        async function verifyPinWithGas(pin, isFromQuery) {
-            const loginBtn = document.getElementById('loginBtn');
-            const pinInput = document.getElementById('pinInput');
-            loginBtn.disabled = true;
-            pinInput.disabled = true;
-            showMsg("認証中...", "loading");
-
-            try {
-                // デモモード（GAS_API_URL未設定時）
-                if (GAS_API_URL.includes("YOUR_DEPLOYMENT_ID")) {
-                    setTimeout(() => {
-                        handleMockLogin(pin);
-                        loginBtn.disabled = false;
-                        pinInput.disabled = false;
-                    }, 400);
-                    return;
-                }
-
-                const res = await fetch(`${GAS_API_URL}?action=login&pin=${encodeURIComponent(pin)}`);
-                const data = await res.json();
-
-                if (data.success) {
-                    sessionStorage.setItem("event_user_pin", pin);
-                    sessionStorage.setItem("event_user_info", JSON.stringify(data.user));
-
-                    if (isFromQuery) {
-                        window.history.replaceState({}, document.title, window.location.pathname);
-                    }
-
-                    applyLoginState(data.user);
-                } else {
-                    showMsg(data.message || "無効なPINコードです", "error");
-                    loginBtn.disabled = false;
-                    pinInput.disabled = false;
-                }
-            } catch (err) {
-                console.error(err);
-                showMsg("通信エラーが発生しました", "error");
-                loginBtn.disabled = false;
-                pinInput.disabled = false;
-            }
-        }
-
-        function applyLoginState(user) {
-            document.getElementById('authOverlay').style.display = 'none';
-            const userPill = document.getElementById('userPill');
-            const userPillLabel = document.getElementById('userPillLabel');
-            
-            userPillLabel.innerText = `${user.label} (${user.role})`;
-            userPill.style.display = 'inline-flex';
-        }
-
-        function logout() {
-            if (confirm("認証を解除してログアウトしますか？")) {
-                sessionStorage.removeItem("event_user_pin");
-                sessionStorage.removeItem("event_user_info");
-                location.reload();
-            }
-        }
-
-        function showMsg(text, type) {
-            const msgEl = document.getElementById('authMsg');
-            msgEl.innerText = text;
-            msgEl.className = `auth-msg ${type}`;
-        }
-
-        document.getElementById('pinInput').addEventListener('keydown', (e) => {
-            if (e.key === 'Enter') submitPin();
-        });
-
-        function handleMockLogin(pin) {
-            const mockMap = {
-                "1001": { label: "チームA", team: "A", role: "参加者" },
-                "1002": { label: "チームB", team: "B", role: "参加者" },
-                "1003": { label: "チームC", team: "C", role: "参加者" },
-                "1004": { label: "チームD", team: "D", role: "参加者" },
-                "9001": { label: "運営メイン", team: "ADMIN", role: "管理者" },
-                "9002": { label: "審査員", team: "ADMIN", role: "管理者" }
-            };
-
-            if (mockMap[pin]) {
-                const user = mockMap[pin];
-                sessionStorage.setItem("event_user_pin", pin);
-                sessionStorage.setItem("event_user_info", JSON.stringify(user));
-                applyLoginState(user);
+            if (input === PASS) {
+                localStorage.setItem(STORAGE_KEY, "true");
+                showSecretMenu();
+                msg.innerText = "";
             } else {
-                showMsg("無効なPINコードです", "error");
+                msg.innerText = "パスワードが正しくありません";
+                msg.style.color = "var(--danger)";
             }
         }
 
-        window.onload = initAuth;
+        function showSecretMenu() {
+            document.getElementById('secretMenu').style.display = "flex";
+            document.getElementById('unlockForm').style.display = "none";
+            document.getElementById('unlockedStatus').style.display = "flex";
+        }
+
+        function resetPassword() {
+            localStorage.removeItem(STORAGE_KEY);
+            document.getElementById('secretMenu').style.display = "none";
+            document.getElementById('unlockForm').style.display = "block";
+            document.getElementById('unlockedStatus').style.display = "none";
+            document.getElementById('passInput').value = "";
+            const msg = document.getElementById('unlockMsg');
+            msg.innerText = "後半メニューを非表示にしました";
+            msg.style.color = "var(--text-sub)";
+        }
+
+        // Enterキーで送信
+        document.getElementById('passInput').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') checkPassword();
+        });
     </script>
 </body>
 </html>
