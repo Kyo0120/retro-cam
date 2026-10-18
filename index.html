@@ -3,21 +3,23 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>カレーグランプリ ポータル</title>
+    <title>Curry Grand Prix & Photo Awards</title>
     <style>
         :root {
             --bg-color: #0b0d10;
-            --surface-bg: rgba(20, 24, 32, 0.85);
-            --surface-card: rgba(26, 31, 42, 0.75);
+            --surface-bg: rgba(20, 24, 32, 0.88);
+            --surface-card: rgba(26, 31, 42, 0.85);
             --surface-border: rgba(255, 255, 255, 0.08);
             --accent-color: #ff9f1a;
             --accent-glow: rgba(255, 159, 26, 0.35);
+            --curry-color: #ff5e3a;
+            --curry-glow: rgba(255, 94, 58, 0.35);
+            --photo-color: #00d2d3;
+            --photo-glow: rgba(0, 210, 211, 0.35);
             --text-main: #f0f3f6;
-            --text-sub: #9aa4b2;
+            --text-sub: #8a94a6;
             --danger: #ff4757;
-            --secret-color: #00d2d3;
-            --secret-glow: rgba(0, 210, 211, 0.35);
-            --gold: #ffd700;
+            --success: #2ed573;
         }
 
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -29,105 +31,97 @@
             min-height: 100vh;
             display: flex;
             flex-direction: column;
+        }
+
+        header {
+            position: sticky; top: 0;
+            background: rgba(11, 13, 16, 0.94);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border-bottom: 1px solid var(--surface-border);
+            padding: 12px 16px;
+            display: flex;
             align-items: center;
             justify-content: space-between;
-            background-image: 
-                radial-gradient(circle at 50% 0%, rgba(255, 159, 26, 0.15) 0%, transparent 60%),
-                radial-gradient(circle at 50% 100%, rgba(0, 0, 0, 0.8) 0%, transparent 80%);
-            padding: max(20px, env(safe-area-inset-top)) 16px max(24px, env(safe-area-inset-bottom)) 16px;
+            z-index: 100;
+        }
+        .header-brand {
+            font-size: 14px;
+            font-weight: 900;
+            color: var(--accent-color);
+            letter-spacing: 0.5px;
+        }
+        .user-status-pill {
+            display: none;
+            align-items: center;
+            gap: 6px;
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid var(--surface-border);
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 800;
+        }
+        .logout-btn {
+            background: none; border: none;
+            color: var(--text-sub);
+            font-size: 10px; cursor: pointer;
+            text-decoration: underline; padding: 0;
         }
 
         .container {
+            flex: 1;
+            max-width: 600px;
             width: 100%;
-            max-width: 440px;
+            margin: 0 auto;
+            padding: 20px 16px 40px 16px;
             display: flex;
             flex-direction: column;
-            align-items: center;
+            gap: 16px;
         }
 
-        /* ヘッダー・ロゴ */
-        .brand-header {
+        .hero {
             text-align: center;
-            margin-top: 10px;
-            margin-bottom: 28px;
-            position: relative;
-            width: 100%;
+            padding: 8px 0 4px 0;
         }
-
-        /* 隠しコマンド起動トリガー（ロゴ長押し） */
-        .brand-logo-trigger {
-            display: inline-flex;
-            flex-direction: column;
-            align-items: center;
-            cursor: pointer;
-            user-select: none;
-            padding: 8px 16px;
-            border-radius: 14px;
-            transition: transform 0.15s ease;
-        }
-        .brand-logo-trigger:active {
-            transform: scale(0.96);
-        }
-
-        .brand-icon {
-            font-size: 2.8rem;
-            filter: drop-shadow(0 4px 12px var(--accent-glow));
-            margin-bottom: 6px;
-        }
-
-        .event-tag {
-            font-size: 9.5px;
-            font-weight: 800;
-            letter-spacing: 2px;
-            color: var(--accent-color);
+        .hero-badge {
+            display: inline-block;
             background: rgba(255, 159, 26, 0.12);
             border: 1px solid rgba(255, 159, 26, 0.35);
-            padding: 3px 10px;
-            border-radius: 12px;
-            text-transform: uppercase;
-        }
-
-        h1 {
-            font-size: 1.6rem;
-            margin: 10px 0 4px 0;
-            font-weight: 900;
-            letter-spacing: -0.5px;
-            color: #fff;
-        }
-
-        .sub-lead {
-            font-size: 11.5px;
-            color: var(--text-sub);
-            margin: 0;
-        }
-
-        /* 右上ロック状態インジケータ（タップでもパス入力可能） */
-        .admin-lock-btn {
-            position: absolute;
-            top: 0; right: 0;
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid var(--surface-border);
-            color: var(--text-sub);
-            font-size: 11px;
-            padding: 6px 10px;
+            color: var(--accent-color);
+            font-size: 10px;
+            font-weight: 800;
+            padding: 4px 12px;
             border-radius: 20px;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            gap: 4px;
+            letter-spacing: 1.5px;
+            margin-bottom: 8px;
         }
-        .admin-lock-btn.unlocked {
-            border-color: var(--secret-color);
-            color: var(--secret-color);
-            background: rgba(0, 210, 211, 0.1);
+        h1 {
+            margin: 0 0 6px 0;
+            font-size: 1.65rem;
+            font-weight: 900;
+            line-height: 1.3;
+            letter-spacing: -0.5px;
+        }
+        .hero-sub {
+            font-size: 12px;
+            color: var(--text-sub);
         }
 
-        /* メニューボタングリッド */
-        .menu-list {
-            width: 100%;
+        /* セクション見出し */
+        .menu-section-label {
+            font-size: 11px;
+            font-weight: 800;
+            color: var(--text-sub);
+            letter-spacing: 1px;
+            margin: 8px 0 2px 4px;
+        }
+
+        /* メニューカード一覧 */
+        .menu-grid {
             display: flex;
             flex-direction: column;
-            gap: 12px;
+            gap: 10px;
         }
 
         .menu-card {
@@ -136,28 +130,33 @@
             border-radius: 14px;
             padding: 16px 18px;
             text-decoration: none;
-            color: #fff;
+            color: var(--text-main);
             display: flex;
             align-items: center;
             justify-content: space-between;
-            box-shadow: 0 4px 16px rgba(0,0,0,0.4);
-            backdrop-filter: blur(10px);
-            transition: all 0.2s ease;
-            position: relative;
-            overflow: hidden;
+            transition: transform 0.15s ease, border-color 0.15s ease;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.3);
         }
         .menu-card:active {
             transform: scale(0.98);
         }
 
-        /* カメラ起動（メインCTA） */
+        /* カードのカラーバリエーション */
         .menu-card.primary {
-            background: linear-gradient(135deg, rgba(255, 71, 87, 0.95), rgba(192, 57, 43, 0.95));
-            border: 1px solid rgba(255, 71, 87, 0.5);
-            box-shadow: 0 6px 20px rgba(235, 47, 6, 0.45);
+            border-color: rgba(255, 159, 26, 0.4);
+            background: linear-gradient(135deg, rgba(255, 159, 26, 0.12), rgba(26, 31, 42, 0.85));
+            box-shadow: 0 4px 20px var(--accent-glow);
         }
-        .menu-card.primary .menu-title { font-size: 16px; font-weight: 900; }
-        .menu-card.primary .menu-desc { color: rgba(255, 255, 255, 0.85); font-size: 11px; }
+        .menu-card.photo-vote {
+            border-color: rgba(0, 210, 211, 0.4);
+            background: linear-gradient(135deg, rgba(0, 210, 211, 0.1), rgba(26, 31, 42, 0.85));
+            box-shadow: 0 4px 16px var(--photo-glow);
+        }
+        .menu-card.curry-vote {
+            border-color: rgba(255, 94, 58, 0.4);
+            background: linear-gradient(135deg, rgba(255, 94, 58, 0.12), rgba(26, 31, 42, 0.85));
+            box-shadow: 0 4px 16px var(--curry-glow);
+        }
 
         .menu-left {
             display: flex;
@@ -165,480 +164,343 @@
             gap: 14px;
         }
         .menu-icon {
-            font-size: 1.6rem;
-            width: 38px; height: 38px;
-            border-radius: 10px;
-            background: rgba(255, 255, 255, 0.08);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            flex-shrink: 0;
+            font-size: 26px;
+            width: 36px;
+            text-align: center;
         }
-        .menu-card.primary .menu-icon {
-            background: rgba(0, 0, 0, 0.25);
-        }
-
         .menu-info {
             display: flex;
             flex-direction: column;
-            gap: 2px;
+            gap: 3px;
         }
         .menu-title {
-            font-size: 14px;
+            font-size: 14.5px;
             font-weight: 800;
-            color: #fff;
-            letter-spacing: 0.3px;
         }
+        .photo-vote .menu-title { color: #5eead4; }
+        .curry-vote .menu-title { color: #ff8566; }
+
         .menu-desc {
-            font-size: 10.5px;
+            font-size: 11px;
             color: var(--text-sub);
-            line-height: 1.35;
+            line-height: 1.4;
         }
         .menu-arrow {
-            font-size: 14px;
+            font-size: 18px;
             color: var(--text-sub);
-            margin-left: 8px;
+            font-weight: bold;
+            padding-left: 8px;
         }
 
-        /* シークレットセクション（解放時にフェードイン） */
-        .secret-section {
-            width: 100%;
-            display: none;
-            flex-direction: column;
-            gap: 12px;
-            margin-top: 14px;
-            animation: fadeIn 0.4s ease-out forwards;
-        }
-        .secret-divider {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            margin: 6px 0;
-        }
-        .secret-divider-line {
-            flex: 1;
-            height: 1px;
-            background: rgba(0, 210, 211, 0.3);
-        }
-        .secret-divider-text {
-            font-size: 10px;
-            font-weight: 800;
-            letter-spacing: 1.5px;
-            color: var(--secret-color);
-            text-transform: uppercase;
-        }
-
-        .menu-card.secret {
-            border: 1px solid rgba(0, 210, 211, 0.35);
-            background: linear-gradient(135deg, rgba(0, 210, 211, 0.08), rgba(26, 31, 42, 0.8));
-        }
-        .menu-card.secret .menu-icon {
-            background: rgba(0, 210, 211, 0.15);
-            color: var(--secret-color);
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        /* パスコードモーダル（レトロテンキー） */
-        #pass-modal {
+        /* 🔒 認証ロックオーバーレイ */
+        #authOverlay {
             position: fixed; inset: 0;
-            background: rgba(0,0,0,0.88);
-            backdrop-filter: blur(14px);
-            z-index: 2000;
-            display: none;
+            background: rgba(11, 13, 16, 0.98);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            z-index: 1000;
+            display: flex;
             align-items: center;
             justify-content: center;
             padding: 20px;
         }
-        .pass-box {
-            background: #141720;
-            border: 1px solid rgba(255, 159, 26, 0.3);
-            box-shadow: 0 10px 40px rgba(0,0,0,0.8);
+        .auth-card {
+            background: var(--surface-card);
+            border: 1px solid rgba(255, 159, 26, 0.35);
             border-radius: 18px;
-            padding: 22px 20px;
+            padding: 28px 24px;
             width: 100%;
-            max-width: 310px;
+            max-width: 330px;
             text-align: center;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.8);
         }
-        .pass-title {
-            font-size: 12.5px;
-            font-weight: 800;
+        .auth-lock-icon { font-size: 38px; margin-bottom: 8px; }
+        .auth-title { font-size: 16px; font-weight: 900; color: #fff; }
+        .auth-desc { font-size: 11.5px; color: var(--text-sub); margin: 6px 0 20px 0; line-height: 1.5; }
+        
+        .auth-input {
+            width: 100%;
+            padding: 14px;
+            border-radius: 10px;
+            border: 1px solid var(--surface-border);
+            background: rgba(0, 0, 0, 0.6);
             color: var(--accent-color);
-            letter-spacing: 1px;
-            margin-bottom: 4px;
-        }
-        .pass-sub {
-            font-size: 10px;
-            color: var(--text-sub);
-            margin-bottom: 16px;
-        }
-        .pass-display {
-            display: flex;
-            justify-content: center;
-            gap: 14px;
-            margin-bottom: 20px;
-        }
-        .pass-dot {
-            width: 14px; height: 14px;
-            border-radius: 50%;
-            border: 1.5px solid rgba(255, 255, 255, 0.25);
-            background: transparent;
-            transition: all 0.15s ease;
-        }
-        .pass-dot.filled {
-            background: var(--accent-color);
-            border-color: var(--accent-color);
-            box-shadow: 0 0 10px var(--accent-glow);
-        }
-
-        /* テンキーグリッド */
-        .keypad-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 10px;
+            font-size: 20px;
+            letter-spacing: 4px;
+            text-align: center;
+            font-weight: 900;
+            font-family: "Courier New", monospace;
+            outline: none;
+            box-sizing: border-box;
             margin-bottom: 12px;
         }
-        .key-btn {
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid var(--surface-border);
-            border-radius: 12px;
-            color: #fff;
-            font-size: 18px;
-            font-weight: 700;
-            padding: 12px 0;
+        .auth-input:focus { border-color: var(--accent-color); }
+
+        .auth-btn {
+            width: 100%;
+            padding: 13px;
+            border-radius: 10px;
+            background: var(--accent-color);
+            color: #000;
+            font-weight: 900;
+            font-size: 14px;
+            border: none;
             cursor: pointer;
-            transition: all 0.1s ease;
+            box-shadow: 0 4px 16px var(--accent-glow);
+            transition: opacity 0.15s ease;
         }
-        .key-btn:active {
-            background: rgba(255, 159, 26, 0.2);
-            transform: scale(0.94);
-        }
-        .key-btn.action {
-            font-size: 11px;
-            color: var(--text-sub);
-            font-weight: 600;
+        .auth-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
         }
 
-        footer {
-            margin-top: 24px;
-            text-align: center;
-            font-size: 10px;
-            color: var(--text-sub);
-            letter-spacing: 0.5px;
+        .auth-msg {
+            margin-top: 10px;
+            font-size: 11px;
+            min-height: 16px;
         }
+        .auth-msg.error { color: var(--danger); }
+        .auth-msg.loading { color: var(--accent-color); }
     </style>
 </head>
 <body>
-    <!-- ロック画面オーバーレイ -->
-    <div id="accessLockOverlay" style="display:none; position:fixed; inset:0; background:rgba(11,13,16,0.98); backdrop-filter:blur(20px); z-index:9999; align-items:center; justify-content:center; padding:20px;">
-        <div style="background:rgba(26,31,42,0.9); border:1px solid #ff9f1a; border-radius:16px; padding:24px; max-width:320px; width:100%; text-align:center; box-shadow:0 10px 30px rgba(0,0,0,0.8);">
-            <div style="font-size:36px; margin-bottom:8px;">🔒</div>
-            <div style="font-weight:800; color:#fff; font-size:16px;">関係者・参加者専用ページ</div>
-            <div style="font-size:11.5px; color:#9aa4b2; margin:6px 0 16px 0;">配布された専用URLからアクセスするか、合言葉を入力してください。</div>
-            
-            <input type="text" id="manualKeyInput" placeholder="合言葉を入力" style="width:100%; padding:10px; border-radius:8px; border:1px solid rgba(255,255,255,0.15); background:#000; color:#fff; text-align:center; font-size:14px; outline:none; box-sizing:border-box;">
-            <button onclick="submitManualKey()" style="width:100%; margin-top:10px; padding:10px; border-radius:8px; background:#ff9f1a; color:#000; font-weight:800; border:none; cursor:pointer;">認証する</button>
-            <div id="keyErrorMsg" style="color:#ff4757; font-size:10px; margin-top:8px; display:none;">合言葉が一致しません</div>
+
+    <header>
+        <div class="header-brand">🍛 CURRY × PHOTO GP</div>
+        <div class="user-status-pill" id="userPill">
+            <span id="userPillLabel" style="color:var(--accent-color);">チームA</span>
+            <button class="logout-btn" onclick="logout()">解除</button>
         </div>
-    </div>
-    
+    </header>
+
     <div class="container">
-        <!-- ヘッダー -->
-        <header class="brand-header">
-            <button class="admin-lock-btn" id="lockToggleBtn">
-                <span id="lockIcon">🔒</span> <span id="lockStatus">LOCKED</span>
-            </button>
+        <div class="hero">
+            <span class="hero-badge">OFFICIAL PORTAL</span>
+            <h1>オータムイベント 2026</h1>
+            <div class="hero-sub">カレーGP ＆ フォトアワード ポータル</div>
+        </div>
 
-            <!-- ロゴ（長押しトリガー） -->
-            <div class="brand-logo-trigger" id="logoTrigger">
-                <div class="brand-icon">🍛</div>
-                <span class="event-tag">Curry & Photo Grand Prix</span>
-                <h1>CURRY GRAND PRIX</h1>
-                <p class="sub-lead">専用レトロカメラ＆グランプリポータル</p>
-            </div>
-        </header>
-
-        <!-- メインメニュー -->
-        <div class="menu-list">
-            
-            <!-- ① カメラ起動（メイン） -->
+        <!-- 1. メインツール -->
+        <div class="menu-section-label">MAIN TOOLS</div>
+        <div class="menu-grid">
+            <!-- カメラ（元indexからcamera.htmlに変更） -->
             <a href="camera.html" class="menu-card primary">
                 <div class="menu-left">
-                    <div class="menu-icon">📷</div>
+                    <div class="menu-icon">📸</div>
                     <div class="menu-info">
-                        <span class="menu-title">カメラアプリ起動</span>
-                        <span class="menu-desc">チーム選択・ミッション撮影・フリー撮影</span>
+                        <span class="menu-title">ミッションカメラ</span>
+                        <span class="menu-desc">お題の構図を再現して撮影・提出</span>
                     </div>
                 </div>
                 <span class="menu-arrow">❯</span>
             </a>
 
-            <!-- ② アプリ取扱説明書 -->
+            <!-- 取扱説明書 -->
             <a href="guide.html" class="menu-card">
                 <div class="menu-left">
                     <div class="menu-icon">📖</div>
                     <div class="menu-info">
-                        <span class="menu-title">アプリ取扱説明書</span>
-                        <span class="menu-desc">遊び方・ミッション一覧・FAQ・画面解説</span>
+                        <span class="menu-title">カメラ・イベント取説</span>
+                        <span class="menu-desc">ルール、ミッション一覧、操作方法</span>
                     </div>
                 </div>
                 <span class="menu-arrow">❯</span>
             </a>
 
-            <!-- ③ 隠しメニューセクション（0120入力で出現） -->
-            <div class="secret-section" id="secretSection">
-                <div class="secret-divider">
-                    <div class="secret-divider-line"></div>
-                    <span class="secret-divider-text">UNLOCKED MENU</span>
-                    <div class="secret-divider-line"></div>
+            <!-- 写真ギャラリー -->
+            <a href="gallery.html" class="menu-card">
+                <div class="menu-left">
+                    <div class="menu-icon">🖼️</div>
+                    <div class="menu-info">
+                        <span class="menu-title">提出写真ギャラリー</span>
+                        <span class="menu-desc">全チームの激闘写真をリアルタイム閲覧</span>
+                    </div>
                 </div>
-
-                <!-- ギャラリー -->
-                <a href="gallery.html" class="menu-card secret">
-                    <div class="menu-left">
-                        <div class="menu-icon">🖼️</div>
-                        <div class="menu-info">
-                            <span class="menu-title">🖼️写真ギャラリー</span>
-                            <span class="menu-desc">チーム別のミッション撮影・現像写真一覧</span>
-                        </div>
-                    </div>
-                    <span class="menu-arrow">❯</span>
-                </a>
-
-                <!-- 投票フォーム（※作成したGoogleフォームの回答URLに置き換えてください） -->
-                <a href="https://docs.google.com/forms/d/e/1FAIpQLSfclOEtqxyxx7KH1pMNSPJBOdLcDayRltPzgp_m8JLP5JZiAQ/viewform?usp=header" target="_blank" rel="noopener noreferrer" class="menu-card secret">
-                    <div class="menu-left">
-                        <div class="menu-icon">🗳️</div>
-                        <div class="menu-info">
-                            <span class="menu-title">📷️フォトグランプリ投票フォーム</span>
-                            <span class="menu-desc">チームワーク・再現度・ユーモア・最優秀投票</span>
-                        </div>
-                    </div>
-                    <span class="menu-arrow">❯</span>
-                </a>
-
-                <a href="https://docs.google.com/forms/d/e/1FAIpQLSdHYturzJAQerFhW3RBee-kmVwX4a1hfLm39GvICkyNJe7qlQ/viewform?usp=header" target="_blank" rel="noopener noreferrer" class="menu-card secret">
-                    <div class="menu-left">
-                        <div class="menu-icon">🗳️</div>
-                        <div class="menu-info">
-                            <span class="menu-title">🍛 カレーグランプリ投票フォーム</span>
-                            <span class="menu-desc">チームワーク・味・オリジナリティ・最優秀投票</span>
-                        </div>
-                    </div>
-                    <span class="menu-arrow">❯</span>
-                </a>
-
-
-                <!-- 投票結果・表彰式披歴ページ -->
-                <a href="results.html" class="menu-card secret">
-                    <div class="menu-left">
-                        <div class="menu-icon">🏆</div>
-                        <div class="menu-info">
-                            <span class="menu-title">表彰式・結果発表</span>
-                            <span class="menu-desc">総合ランキング・個別部門賞・コメント要約</span>
-                        </div>
-                    </div>
-                    <span class="menu-arrow">❯</span>
-                </a>
-            </div>
-
+                <span class="menu-arrow">❯</span>
+            </a>
         </div>
 
-        <footer>
-            CURRY GRAND PRIX × NEO RETRO CAM
-        </footer>
+        <!-- 2. 投票フォーム -->
+        <div class="menu-section-label">VOTING FORMS</div>
+        <div class="menu-grid">
+            <!-- 📷 フォトGP投票フォーム -->
+            <a href="https://docs.google.com/forms/d/e/1FAIpQLSfclOEtqxyxx7KH1pMNSPJBOdLcDayRltPzgp_m8JLP5JZiAQ/viewform?usp=header" target="_blank" rel="noopener noreferrer" class="menu-card photo-vote">
+                <div class="menu-left">
+                    <div class="menu-icon">🗳️</div>
+                    <div class="menu-info">
+                        <span class="menu-title">📷 フォトグランプリ投票</span>
+                        <span class="menu-desc">チームワーク・再現度・ユーモア・最優秀投票</span>
+                    </div>
+                </div>
+                <span class="menu-arrow">↗</span>
+            </a>
+
+            <!-- 🍛 カレーGP投票フォーム -->
+            <a href="https://docs.google.com/forms/d/e/1FAIpQLSdHYturzJAQerFhW3RBee-kmVwX4a1hfLm39GvICkyNJe7qlQ/viewform?usp=header" target="_blank" rel="noopener noreferrer" class="menu-card curry-vote">
+                <div class="menu-left">
+                    <div class="menu-icon">🗳️</div>
+                    <div class="menu-info">
+                        <span class="menu-title">🍛 カレーグランプリ投票</span>
+                        <span class="menu-desc">チームワーク・味・オリジナリティ・最優秀投票</span>
+                    </div>
+                </div>
+                <span class="menu-arrow">↗</span>
+            </a>
+        </div>
+
+        <!-- 3. 結果発表 -->
+        <div class="menu-section-label">AWARDS CEREMONY</div>
+        <div class="menu-grid">
+            <a href="results.html" class="menu-card">
+                <div class="menu-left">
+                    <div class="menu-icon">🏆️</div>
+                    <div class="menu-info">
+                        <span class="menu-title">表彰式・結果発表</span>
+                        <span class="menu-desc">リアルタイム集計ランキング・部門賞グラフ</span>
+                    </div>
+                </div>
+                <span class="menu-arrow">❯</span>
+            </a>
+        </div>
     </div>
 
-    <!-- 暗証番号入力モーダル（テンキー） -->
-    <div id="pass-modal">
-        <div class="pass-box">
-            <div class="pass-title">SECRET PASSCODE</div>
-            <div class="pass-sub">暗証番号（4桁）を入力してください</div>
-
-            <div class="pass-display">
-                <div class="pass-dot" id="dot0"></div>
-                <div class="pass-dot" id="dot1"></div>
-                <div class="pass-dot" id="dot2"></div>
-                <div class="pass-dot" id="dot3"></div>
-            </div>
-
-            <div class="keypad-grid">
-                <button class="key-btn" onclick="pressKey('1')">1</button>
-                <button class="key-btn" onclick="pressKey('2')">2</button>
-                <button class="key-btn" onclick="pressKey('3')">3</button>
-                <button class="key-btn" onclick="pressKey('4')">4</button>
-                <button class="key-btn" onclick="pressKey('5')">5</button>
-                <button class="key-btn" onclick="pressKey('6')">6</button>
-                <button class="key-btn" onclick="pressKey('7')">7</button>
-                <button class="key-btn" onclick="pressKey('8')">8</button>
-                <button class="key-btn" onclick="pressKey('9')">9</button>
-                <button class="key-btn action" onclick="closePassModal()">キャンセル</button>
-                <button class="key-btn" onclick="pressKey('0')">0</button>
-                <button class="key-btn action" onclick="clearKey()">1文字消す</button>
-            </div>
+    <!-- 🔒 認証ロックモーダル -->
+    <div id="authOverlay">
+        <div class="auth-card">
+            <div class="auth-lock-icon">🔒</div>
+            <div class="auth-title">イベント参加認証</div>
+            <div class="auth-desc">配布されたアクセスコード（PIN）を<br>入力してください</div>
+            
+            <input type="text" id="pinInput" class="auth-input" placeholder="0000" inputmode="numeric" maxlength="8">
+            <button class="auth-btn" id="loginBtn" onclick="submitPin()">参加する</button>
+            <div id="authMsg" class="auth-msg"></div>
         </div>
     </div>
 
     <script>
-        // ★ 設定する合言葉（自由に変更可能） ★
-        const VALID_KEY = "curry2026";
-        
-        // URLのパラメータから "?key=〇〇" を取得
-        const urlParams = new URLSearchParams(window.location.search);
-        const keyParam = urlParams.get('key');
-        
-        // 1. URLに正しい合言葉がついている場合
-        if (keyParam === VALID_KEY) {
-            // 認証成功フラグをセッションに保存（タブを閉じるまで有効）
-            sessionStorage.setItem("event_auth_token", "authorized");
-            // アドレスバーから「?key=...」を取り除いてURLを綺麗にする（任意）
-            window.history.replaceState({}, document.title, window.location.pathname);
-        }
-        
-        // 2. セッション認証の確認
-        function checkAccess() {
-            const isAuthorized = sessionStorage.getItem("event_auth_token");
-            const lockOverlay = document.getElementById("accessLockOverlay");
-        
-            if (isAuthorized === "authorized") {
-                if (lockOverlay) lockOverlay.style.display = "none";
-            } else {
-                if (lockOverlay) lockOverlay.style.display = "flex";
+        // ★ ステップ2でデプロイしたご自身のGASウェブアプリURLに差し替えてください ★
+        const GAS_API_URL = "https://script.google.com/macros/s/AKfycbxdc51YIhCJS3WE-6qJXNC8jPpeTazBYDTkflCYSBJeU3zN1jTU3ry2mGYYGLpXjiX8Iw/exec";
+
+        async function initAuth() {
+            // 1. セッションストレージに保存されているか確認
+            const savedPin = sessionStorage.getItem("event_user_pin");
+            const savedUser = sessionStorage.getItem("event_user_info");
+
+            if (savedPin && savedUser) {
+                applyLoginState(JSON.parse(savedUser));
+                return;
             }
-        }
-        
-        // ページ読み込み時に実行
-        checkAccess();
-        
-        // 合言葉の手動入力ボタン用処理（URLにキーが付いていなかった場合の救済）
-        function submitManualKey() {
-            const inputKey = document.getElementById("manualKeyInput").value.trim();
-            if (inputKey === VALID_KEY) {
-                sessionStorage.setItem("event_auth_token", "authorized");
-                document.getElementById("accessLockOverlay").style.display = "none";
-            } else {
-                document.getElementById("keyErrorMsg").style.display = "block";
+
+            // 2. URLクエリ（?key=〇〇 または ?pin=〇〇）があるか確認
+            const urlParams = new URLSearchParams(window.location.search);
+            const queryPin = urlParams.get('key') || urlParams.get('pin');
+
+            if (queryPin) {
+                document.getElementById('pinInput').value = queryPin;
+                await verifyPinWithGas(queryPin, true);
             }
         }
 
-        
-        const SECRET_PASS = "0120";
-        let enteredPass = "";
-        let longPressTimer = null;
-        let isUnlocked = localStorage.getItem('curry_portal_unlocked') === 'true';
-
-        const secretSection = document.getElementById('secretSection');
-        const passModal = document.getElementById('pass-modal');
-        const lockIcon = document.getElementById('lockIcon');
-        const lockStatus = document.getElementById('lockStatus');
-        const lockToggleBtn = document.getElementById('lockToggleBtn');
-        const logoTrigger = document.getElementById('logoTrigger');
-
-        // 初期表示チェック
-        if (isUnlocked) {
-            applyUnlockState();
+        async function submitPin() {
+            const pinVal = document.getElementById('pinInput').value.trim();
+            if (!pinVal) {
+                showMsg("PINコードを入力してください", "error");
+                return;
+            }
+            await verifyPinWithGas(pinVal, false);
         }
 
-        function applyUnlockState() {
-            secretSection.style.display = "flex";
-            lockIcon.innerText = "🔓";
-            lockStatus.innerText = "OPEN";
-            lockToggleBtn.classList.add('unlocked');
-        }
+        async function verifyPinWithGas(pin, isFromQuery) {
+            const loginBtn = document.getElementById('loginBtn');
+            const pinInput = document.getElementById('pinInput');
+            loginBtn.disabled = true;
+            pinInput.disabled = true;
+            showMsg("認証中...", "loading");
 
-        // --- トリガー操作 ---
-        // 1. 右上のロックボタンタップ
-        lockToggleBtn.onclick = () => {
-            if (isUnlocked) {
-                if (confirm("シークレットメニューを再ロックしますか？")) {
-                    localStorage.removeItem('curry_portal_unlocked');
-                    isUnlocked = false;
-                    secretSection.style.display = "none";
-                    lockIcon.innerText = "🔒";
-                    lockStatus.innerText = "LOCKED";
-                    lockToggleBtn.classList.remove('unlocked');
+            try {
+                // デモモード（GAS_API_URL未設定時）
+                if (GAS_API_URL.includes("YOUR_DEPLOYMENT_ID")) {
+                    setTimeout(() => {
+                        handleMockLogin(pin);
+                        loginBtn.disabled = false;
+                        pinInput.disabled = false;
+                    }, 400);
+                    return;
                 }
-            } else {
-                openPassModal();
-            }
-        };
 
-        // 2. ロゴ長押し（1.5秒長押しで起動）
-        logoTrigger.addEventListener('touchstart', startLongPress, { passive: true });
-        logoTrigger.addEventListener('touchend', cancelLongPress);
-        logoTrigger.addEventListener('mousedown', startLongPress);
-        logoTrigger.addEventListener('mouseup', cancelLongPress);
+                const res = await fetch(`${GAS_API_URL}?action=login&pin=${encodeURIComponent(pin)}`);
+                const data = await res.json();
 
-        function startLongPress() {
-            longPressTimer = setTimeout(() => {
-                if (!isUnlocked) {
-                    if (navigator.vibrate) navigator.vibrate(50);
-                    openPassModal();
-                }
-            }, 1200);
-        }
+                if (data.success) {
+                    sessionStorage.setItem("event_user_pin", pin);
+                    sessionStorage.setItem("event_user_info", JSON.stringify(data.user));
 
-        function cancelLongPress() {
-            if (longPressTimer) clearTimeout(longPressTimer);
-        }
+                    if (isFromQuery) {
+                        window.history.replaceState({}, document.title, window.location.pathname);
+                    }
 
-        // --- パスコード入力処理 ---
-        function openPassModal() {
-            enteredPass = "";
-            updateDots();
-            passModal.style.display = "flex";
-        }
-
-        function closePassModal() {
-            passModal.style.display = "none";
-            enteredPass = "";
-        }
-
-        window.pressKey = (num) => {
-            if (enteredPass.length < 4) {
-                enteredPass += num;
-                updateDots();
-
-                if (enteredPass.length === 4) {
-                    setTimeout(verifyPass, 150);
-                }
-            }
-        };
-
-        window.clearKey = () => {
-            if (enteredPass.length > 0) {
-                enteredPass = enteredPass.slice(0, -1);
-                updateDots();
-            }
-        };
-
-        function updateDots() {
-            for (let i = 0; i < 4; i++) {
-                const dot = document.getElementById(`dot${i}`);
-                if (i < enteredPass.length) {
-                    dot.classList.add('filled');
+                    applyLoginState(data.user);
                 } else {
-                    dot.classList.remove('filled');
+                    showMsg(data.message || "無効なPINコードです", "error");
+                    loginBtn.disabled = false;
+                    pinInput.disabled = false;
                 }
+            } catch (err) {
+                console.error(err);
+                showMsg("通信エラーが発生しました", "error");
+                loginBtn.disabled = false;
+                pinInput.disabled = false;
             }
         }
 
-        function verifyPass() {
-            if (enteredPass === SECRET_PASS) {
-                isUnlocked = true;
-                localStorage.setItem('curry_portal_unlocked', 'true');
-                applyUnlockState();
-                closePassModal();
-            } else {
-                if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
-                alert("暗証番号が違います");
-                enteredPass = "";
-                updateDots();
+        function applyLoginState(user) {
+            document.getElementById('authOverlay').style.display = 'none';
+            const userPill = document.getElementById('userPill');
+            const userPillLabel = document.getElementById('userPillLabel');
+            
+            userPillLabel.innerText = `${user.label} (${user.role})`;
+            userPill.style.display = 'inline-flex';
+        }
+
+        function logout() {
+            if (confirm("認証を解除してログアウトしますか？")) {
+                sessionStorage.removeItem("event_user_pin");
+                sessionStorage.removeItem("event_user_info");
+                location.reload();
             }
         }
+
+        function showMsg(text, type) {
+            const msgEl = document.getElementById('authMsg');
+            msgEl.innerText = text;
+            msgEl.className = `auth-msg ${type}`;
+        }
+
+        document.getElementById('pinInput').addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') submitPin();
+        });
+
+        function handleMockLogin(pin) {
+            const mockMap = {
+                "1001": { label: "チームA", team: "A", role: "参加者" },
+                "1002": { label: "チームB", team: "B", role: "参加者" },
+                "1003": { label: "チームC", team: "C", role: "参加者" },
+                "1004": { label: "チームD", team: "D", role: "参加者" },
+                "9001": { label: "運営メイン", team: "ADMIN", role: "管理者" },
+                "9002": { label: "審査員", team: "ADMIN", role: "管理者" }
+            };
+
+            if (mockMap[pin]) {
+                const user = mockMap[pin];
+                sessionStorage.setItem("event_user_pin", pin);
+                sessionStorage.setItem("event_user_info", JSON.stringify(user));
+                applyLoginState(user);
+            } else {
+                showMsg("無効なPINコードです", "error");
+            }
+        }
+
+        window.onload = initAuth;
     </script>
 </body>
 </html>
