@@ -3,769 +3,339 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>アプリ取扱説明書 | カレーGP レトロカメラ</title>
+    <title>イベント取扱説明書 | カレー ＆ フォト グランプリ</title>
     <style>
         :root {
             --bg-color: #0b0d10;
-            --surface-bg: rgba(20, 24, 32, 0.85);
-            --surface-card: rgba(26, 31, 42, 0.75);
+            --surface-bg: rgba(20, 24, 32, 0.88);
+            --surface-card: rgba(26, 31, 42, 0.85);
             --surface-border: rgba(255, 255, 255, 0.08);
             --accent-color: #ff9f1a;
             --accent-glow: rgba(255, 159, 26, 0.35);
             --text-main: #f0f3f6;
-            --text-sub: #9aa4b2;
+            --text-sub: #8a94a6;
             --danger: #ff4757;
-            --free-color: #2ed573;
-            --free-glow: rgba(46, 213, 115, 0.35);
-        }
-        * {
-            box-sizing: border-box;
-            -webkit-tap-highlight-color: transparent;
+            --success: #2ed573;
+            --cyan: #00d2d3;
         }
 
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         body {
-            margin: 0;
-            padding: 0;
+            margin: 0; padding: 0;
             background-color: var(--bg-color);
             color: var(--text-main);
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Hiragino Kaku Gothic ProN", sans-serif;
             line-height: 1.6;
-            padding-bottom: calc(90px + env(safe-area-inset-bottom));
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
         }
 
-        /* 固定ヘッダー */
         header {
-            position: sticky;
-            top: 0;
-            background: rgba(11, 13, 16, 0.9);
+            position: sticky; top: 0;
+            background: rgba(11, 13, 16, 0.94);
             backdrop-filter: blur(16px);
             -webkit-backdrop-filter: blur(16px);
             border-bottom: 1px solid var(--surface-border);
             padding: 12px 16px;
-            padding-top: max(12px, env(safe-area-inset-top));
             display: flex;
             align-items: center;
             justify-content: space-between;
             z-index: 100;
         }
-
-        .header-title {
-            font-size: 13.5px;
-            font-weight: 800;
-            color: var(--accent-color);
-            letter-spacing: 0.5px;
-            display: flex;
-            align-items: center;
-            gap: 6px;
+        .header-title { font-size: 14px; font-weight: 900; color: var(--accent-color); }
+        .back-btn {
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid var(--surface-border);
+            color: var(--text-main);
+            padding: 5px 12px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-size: 12px;
+            font-weight: 700;
         }
 
-        .header-launch-btn {
-            background: var(--accent-color);
-            color: #000;
+        .container {
+            flex: 1;
+            max-width: 600px;
+            width: 100%;
+            margin: 0 auto;
+            padding: 16px 16px 48px 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .hero-banner {
+            text-align: center;
+            padding: 12px 0 4px 0;
+        }
+        .hero-subtitle {
             font-size: 11px;
             font-weight: 800;
-            text-decoration: none;
-            padding: 6px 14px;
-            border-radius: 20px;
-            box-shadow: 0 2px 10px var(--accent-glow);
-            white-space: nowrap;
-        }
-
-        /* メインコンテナ */
-        .container {
-            padding: 18px 16px;
-            max-width: 480px;
-            margin: 0 auto;
-        }
-
-        /* ヒーローセクション */
-        .hero {
-            text-align: left;
-            margin-bottom: 22px;
-        }
-        .hero-tag {
-            display: inline-block;
-            background: rgba(255, 159, 26, 0.12);
-            border: 1px solid rgba(255, 159, 26, 0.35);
             color: var(--accent-color);
-            font-size: 9.5px;
-            font-weight: 800;
-            padding: 3px 8px;
-            border-radius: 6px;
-            letter-spacing: 1px;
-            margin-bottom: 8px;
+            letter-spacing: 1.5px;
         }
-        h1 {
-            font-size: 1.45rem;
-            margin: 0 0 8px 0;
-            font-weight: 800;
-            line-height: 1.35;
-            letter-spacing: -0.5px;
-        }
-        .hero-desc {
-            font-size: 12px;
-            color: var(--text-sub);
-            line-height: 1.6;
-            margin: 0;
+        .hero-title {
+            font-size: 21px;
+            font-weight: 900;
+            margin: 6px 0 0 0;
+            background: linear-gradient(135deg, #fff 40%, var(--accent-color));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
         }
 
-        /* セクション共通カード */
         .card {
             background: var(--surface-card);
             border: 1px solid var(--surface-border);
             border-radius: 16px;
-            padding: 16px;
-            margin-bottom: 18px;
-            backdrop-filter: blur(8px);
+            padding: 18px 16px;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.3);
         }
 
-        .card-heading {
-            font-size: 13px;
-            font-weight: 800;
-            color: var(--accent-color);
-            margin: 0 0 14px 0;
+        .card-header {
             display: flex;
             align-items: center;
-            gap: 6px;
+            gap: 8px;
+            font-size: 15px;
+            font-weight: 900;
+            color: #fff;
+            margin-bottom: 12px;
             border-bottom: 1px solid var(--surface-border);
             padding-bottom: 8px;
-            letter-spacing: 0.5px;
         }
 
-        /* 基本仕様グリッド */
-        .spec-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 8px;
-        }
-        .spec-item {
-            background: rgba(0, 0, 0, 0.35);
-            border: 1px solid var(--surface-border);
-            border-radius: 10px;
-            padding: 10px;
-        }
-        .spec-label {
-            font-size: 9px;
-            color: var(--text-sub);
-            font-weight: 700;
-        }
-        .spec-value {
-            font-size: 12px;
-            font-weight: 800;
-            color: #fff;
-            margin-top: 3px;
-            line-height: 1.3;
-        }
-
-        /* サンプル画面（UIモックアップ） */
-        .sample-screen-wrap {
-            display: flex;
-            flex-direction: column;
-            gap: 14px;
-        }
-        .screen-mockup {
-            background: #040507;
-            border: 1.5px solid rgba(255, 255, 255, 0.15);
-            border-radius: 14px;
-            padding: 12px;
-            box-shadow: 0 12px 28px rgba(0,0,0,0.6);
-            position: relative;
-        }
-        .mockup-badge {
-            font-size: 9px;
-            font-weight: 800;
-            color: var(--accent-color);
-            letter-spacing: 1px;
-            margin-bottom: 8px;
+        .badge-rule {
             display: inline-block;
-        }
-        .mockup-preview-area {
-            width: 100%;
-            aspect-ratio: 3 / 2;
-            background: radial-gradient(circle at center, #1b222d, #090b0e);
-            border: 1px solid rgba(255,255,255,0.08);
-            border-radius: 8px;
-            position: relative;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-            padding: 8px;
-            overflow: hidden;
-        }
-        .mockup-banner {
-            background: rgba(11, 13, 16, 0.88);
-            border: 1px solid rgba(255, 159, 26, 0.4);
-            border-radius: 6px;
-            padding: 4px 8px;
-            text-align: center;
-        }
-        .mockup-banner-title {
-            font-size: 9.5px;
-            font-weight: 800;
-            color: #fff;
-        }
-        .mockup-banner-task {
-            font-size: 8px;
-            color: #cbd5e1;
-            margin-top: 2px;
-        }
-        .mockup-crosshair {
-            position: absolute;
-            inset: 0;
-            pointer-events: none;
-            background: 
-                linear-gradient(to right, transparent calc(50% - 0.5px), rgba(255,255,255,0.12) calc(50% - 0.5px), rgba(255,255,255,0.12) calc(50% + 0.5px), transparent calc(50% + 0.5px)),
-                linear-gradient(to bottom, transparent calc(50% - 0.5px), rgba(255,255,255,0.12) calc(50% - 0.5px), rgba(255,255,255,0.12) calc(50% + 0.5px), transparent calc(50% + 0.5px));
-        }
-        .mockup-zoom {
-            align-self: center;
-            background: rgba(15, 17, 23, 0.85);
-            border: 1px solid var(--surface-border);
-            border-radius: 12px;
-            padding: 2px 10px;
-            font-size: 8px;
+            background: rgba(255, 159, 26, 0.15);
+            border: 1px solid rgba(255, 159, 26, 0.3);
             color: var(--accent-color);
-            font-weight: 700;
-            display: flex;
-            gap: 6px;
-            align-items: center;
+            font-size: 11px;
+            font-weight: 800;
+            padding: 2px 8px;
+            border-radius: 6px;
+            margin-bottom: 8px;
         }
-        .mockup-controls {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 6px;
+
+        /* フィルムルール強調ボックス */
+        .film-box {
+            background: rgba(0, 0, 0, 0.45);
+            border: 1px solid rgba(255, 159, 26, 0.25);
+            border-radius: 12px;
+            padding: 14px;
             margin-top: 10px;
         }
-        .mockup-mini-card {
-            background: rgba(255,255,255,0.04);
-            border: 1px solid var(--surface-border);
-            border-radius: 6px;
-            padding: 6px 8px;
+        .film-stat-row {
             display: flex;
-            justify-content: space-between;
-            align-items: center;
-            font-size: 9px;
+            justify-content: space-around;
+            text-align: center;
+            margin-bottom: 12px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid rgba(255,255,255,0.08);
         }
-        .mockup-shutter-row {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            gap: 10px;
-            margin-top: 8px;
+        .film-stat-item .num {
+            font-size: 22px;
+            font-weight: 900;
+            color: var(--accent-color);
+            font-family: monospace;
         }
-        .mockup-shutter-circle {
-            width: 38px; height: 38px;
-            border-radius: 50%;
-            background: linear-gradient(135deg, #ff4757, #c0392b);
-            box-shadow: 0 2px 8px rgba(235, 47, 6, 0.4);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: #fff;
-            font-size: 8px;
-            font-weight: 800;
-        }
-        .mockup-annotations {
+        .film-stat-item .label {
             font-size: 10.5px;
             color: var(--text-sub);
-            line-height: 1.5;
-            margin-top: 8px;
-            padding-left: 14px;
-        }
-        .mockup-annotations li { margin-bottom: 2px; }
-
-        /* 仕上がり写真サンプル */
-        .photo-sample-card {
-            background: #000;
-            border: 1.5px solid rgba(255, 159, 26, 0.3);
-            border-radius: 10px;
-            padding: 8px;
-            position: relative;
-            overflow: hidden;
-        }
-        .photo-sample-inner {
-            aspect-ratio: 3 / 2;
-            background: radial-gradient(circle at 60% 40%, rgba(255, 140, 0, 0.35), rgba(15, 18, 24, 0.95)),
-                        repeating-radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.04) 0px, transparent 3px);
-            border-radius: 6px;
-            position: relative;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            box-shadow: inset 0 0 40px rgba(0,0,0,0.8);
-        }
-        .photo-sample-center-text {
-            font-size: 12px;
-            font-weight: 800;
-            color: rgba(255, 255, 255, 0.5);
-            letter-spacing: 2px;
-            text-shadow: 0 2px 8px rgba(0,0,0,0.8);
-        }
-        .photo-stamp-left {
-            position: absolute;
-            bottom: 6px;
-            left: 8px;
-            font-family: "Courier New", monospace;
-            font-size: 9.5px;
-            font-weight: 800;
-            color: #ff8c21;
-            text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
-        }
-        .photo-stamp-right {
-            position: absolute;
-            bottom: 6px;
-            right: 8px;
-            font-family: "Courier New", monospace;
-            font-size: 9.5px;
-            font-weight: 800;
-            color: #ff8c21;
-            text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
+            margin-top: 2px;
         }
 
-        /* ステップカード */
-        .step-row {
-            display: flex;
-            gap: 12px;
-            align-items: flex-start;
-            margin-bottom: 14px;
-        }
-        .step-row:last-child { margin-bottom: 0; }
-        .step-badge {
-            flex-shrink: 0;
-            width: 26px; height: 26px;
-            border-radius: 50%;
-            background: linear-gradient(135deg, var(--accent-color), #f39c12);
-            color: #000;
-            font-size: 12px;
-            font-weight: 900;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            box-shadow: 0 2px 8px var(--accent-glow);
-        }
-        .step-body h3 {
-            margin: 0 0 2px 0;
-            font-size: 12.5px;
-            font-weight: 800;
-            color: #fff;
-        }
-        .step-body p {
-            margin: 0;
-            font-size: 11px;
-            color: var(--text-sub);
-            line-height: 1.5;
-        }
-
-        /* タイムライン風ミッションリスト */
-        .timeline {
+        /* ミッションリスト */
+        .mission-step-list {
             display: flex;
             flex-direction: column;
             gap: 10px;
+            margin-top: 10px;
         }
-        .timeline-item {
-            background: rgba(0, 0, 0, 0.35);
-            border: 1px solid var(--surface-border);
-            border-radius: 12px;
-            padding: 12px;
-            position: relative;
+        .mission-step-item {
+            background: rgba(0, 0, 0, 0.3);
+            border-left: 3px solid var(--accent-color);
+            border-radius: 4px 10px 10px 4px;
+            padding: 10px 12px;
         }
-        .timeline-item.practice {
-            border: 1.5px solid var(--accent-color);
-            background: rgba(255, 159, 26, 0.06);
+        .mission-step-item.practice {
+            border-left-color: var(--cyan);
         }
-        .timeline-item.free {
-            border: 1.5px solid var(--free-color);
-            background: rgba(46, 213, 115, 0.06);
-        }
-        .timeline-header {
+        .mission-head {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 6px;
-        }
-        .timeline-title {
-            font-size: 12px;
+            font-size: 12.5px;
             font-weight: 800;
-            color: #fff;
         }
-        .timeline-tag {
-            font-size: 9px;
-            font-weight: 800;
-            padding: 2px 6px;
-            border-radius: 4px;
-            background: rgba(255, 255, 255, 0.08);
-            color: var(--accent-color);
-        }
-        .timeline-item.practice .timeline-tag {
-            background: var(--accent-color);
-            color: #000;
-        }
-        .timeline-item.free .timeline-tag {
-            background: var(--free-color);
-            color: #000;
-        }
-        .timeline-desc {
-            font-size: 11px;
-            color: #cfd6df;
-            margin: 0;
-            line-height: 1.45;
-        }
-
-        /* 操作ポイント */
-        .feature-item {
-            background: rgba(0, 0, 0, 0.35);
-            border-radius: 10px;
-            padding: 10px 12px;
-            margin-bottom: 8px;
-            border-left: 3px solid var(--accent-color);
-        }
-        .feature-item:last-child { margin-bottom: 0; }
-        .feature-name {
-            font-size: 12px;
-            font-weight: 800;
-            color: #fff;
-            margin-bottom: 3px;
-        }
-        .feature-detail {
+        .mission-desc {
             font-size: 11px;
             color: var(--text-sub);
-            margin: 0;
+            margin-top: 4px;
             line-height: 1.45;
         }
 
-        /* アコーディオンFAQ */
-        details.faq-accordion {
-            background: rgba(0, 0, 0, 0.35);
+        /* サンプル写真カード */
+        .sample-wrap {
+            margin-top: 12px;
+            background: #000;
             border: 1px solid var(--surface-border);
-            border-radius: 10px;
-            margin-bottom: 8px;
+            border-radius: 12px;
             overflow: hidden;
         }
-        details.faq-accordion:last-child { margin-bottom: 0; }
-        summary.faq-summary {
-            padding: 12px 14px;
-            font-size: 12px;
-            font-weight: 700;
-            color: #fff;
-            cursor: pointer;
-            list-style: none;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        summary.faq-summary::-webkit-details-marker { display: none; }
-        summary.faq-summary::after {
-            content: "＋";
-            color: var(--accent-color);
-            font-weight: 900;
-            font-size: 12px;
-        }
-        details[open] summary.faq-summary::after {
-            content: "−";
-        }
-        .faq-content {
-            padding: 0 14px 12px 14px;
-            font-size: 11px;
-            color: #cfd6df;
-            line-height: 1.5;
-            margin: 0;
-        }
-
-        /* 下部固定フロートバー */
-        .float-bar {
-            position: fixed;
-            bottom: 0; left: 0; right: 0;
-            background: rgba(11, 13, 16, 0.94);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border-top: 1px solid var(--surface-border);
-            padding: 10px 16px;
-            padding-bottom: max(12px, env(safe-area-inset-bottom));
-            display: flex;
-            justify-content: center;
-            z-index: 200;
-        }
-        .float-btn {
+        .sample-img {
             width: 100%;
-            max-width: 480px;
-            height: 48px;
-            background: linear-gradient(135deg, #ff4757, #eb2f06);
-            color: #fff;
-            text-align: center;
-            font-size: 14px;
-            font-weight: 800;
-            text-decoration: none;
-            border-radius: 12px;
-            box-shadow: 0 4px 18px rgba(235, 47, 6, 0.45);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-            transition: transform 0.1s ease;
+            display: block;
+            aspect-ratio: 3 / 2;
+            object-fit: cover;
         }
-        .float-btn:active { transform: scale(0.98); }
+        .sample-caption {
+            padding: 8px 12px;
+            font-size: 11px;
+            color: var(--text-sub);
+            background: rgba(20, 24, 32, 0.9);
+            border-top: 1px solid var(--surface-border);
+        }
     </style>
 </head>
 <body>
 
-    <!-- スティッキーヘッダー -->
     <header>
-        <div class="header-title">🍛 RETRO CAM GUIDE</div>
-        <a href="index.html" class="header-launch-btn">🏠️ HOMEへ</a>
+        <div class="header-title">📖 イベント取扱説明書</div>
+        <a href="index.html" class="back-btn">ポータルへ</a>
     </header>
 
     <div class="container">
-        <!-- ヒーロー -->
-        <div class="hero">
-            <span class="hero-tag">CURRY GP × PHOTO GP</span>
-            <h1>アプリ取扱説明書</h1>
-            <p class="hero-desc">
-                使い捨てカメラの「緊張感」と「現像するまでのワクワク感」を再現した専用Webカメラです。ミッションに挑みながら最高の瞬間を切り取ろう！
+        <!-- ヘッダー -->
+        <div class="hero-banner">
+            <div class="hero-subtitle">第73期第1回 支部研修会 in 奥多摩</div>
+            <h1 class="hero-title">カレー ＆ フォト グランプリ ガイド</h1>
+        </div>
+
+        <!-- 📷️ 1. カメラ仕様・フィルム共有ルール -->
+        <div class="card">
+            <div class="card-header">
+                <span>📸</span> 写ルンです風カメラの操作とルール
+            </div>
+            <span class="badge-rule">チーム内リアルタイム同期</span>
+            <p style="font-size: 12px; margin: 0 0 10px 0; color: var(--text-sub);">
+                本イベントのカメラは、昔懐かしい「写ルンです」の質感（温かみ・粒子感・周辺光量落ち・オレンジの日付スタンプ）を再現したWebカメラです。
             </p>
+
+            <div class="film-box">
+                <div class="film-stat-row">
+                    <div class="film-stat-item">
+                        <div class="num">20<span style="font-size:12px; font-weight:normal;"> 枚</span></div>
+                        <div class="label">ミッション規定枠（合算）</div>
+                    </div>
+                    <div class="film-stat-item">
+                        <div class="num" style="color:var(--cyan);">∞<span style="font-size:12px; font-weight:normal;"> 枚</span></div>
+                        <div class="label">フリーモード（使い切り後）</div>
+                    </div>
+                </div>
+
+                <ul style="margin: 0; padding-left: 18px; font-size: 11.5px; color: var(--text-main); line-height: 1.6;">
+                    <li><strong>チーム全員で20枚を共有：</strong> 同じチームの誰かが1枚撮影すると、チーム全員の画面で「残り枚数」がリアルタイムに減ります。</li>
+                    <li><strong>00〜06のミッション順に進行：</strong> 残り枚数に応じてカメラのお題（ミッション案内）が自動で次のステップへと切り替わります。</li>
+                    <li><strong>上限到達後はフリーモードへ：</strong> 20枚を使い切ると自動的に「フリー撮影モード」に切り替わり、何枚でも思い出スナップを撮影できます。</li>
+                    <li><strong>オフライン撮影対応：</strong> 電波が不安定な場所でも端末内に一時保存され、通信が回復した際に自動でクラウドへ送信されます。</li>
+                </ul>
+            </div>
+
+            <!-- サンプル写真プレビュー -->
+            <div class="sample-wrap">
+                <img src="sample_photo.jpeg" alt="仕上がり写真サンプル" class="sample-img">
+                <div class="sample-caption">
+                    📷️ 実際の仕上がりイメージ：チーム名、お題ミッション名、日時スタンプが刻印されます。
+                </div>
+            </div>
         </div>
 
-        <!-- サンプル画面モックアップ＆写真仕上がり -->
+        <!-- 🎯 2. ミッション一覧 -->
         <div class="card">
-            <div class="card-heading">📱 画面サンプル＆仕上がりイメージ</div>
-            <div class="sample-screen-wrap">
-                
-                <!-- 画面レイアウトサンプル -->
-                <div class="screen-mockup">
-                    <div class="mockup-badge">【カメラ撮影画面サンプル】</div>
-                    
-                    <div class="mockup-preview-area">
-                        <div class="mockup-crosshair"></div>
-                        <div class="mockup-banner">
-                            <div class="mockup-banner-title">0. 操作練習：【テスト撮影】</div>
-                            <div class="mockup-banner-task">フラッシュやタイマー、構図を試してみよう！</div>
-                        </div>
-                        <div class="mockup-zoom">
-                            <span>ZOOM</span>
-                            <span>──●──</span>
-                            <span style="color:#fff;">1.0x</span>
-                        </div>
-                    </div>
+            <div class="card-header">
+                <span>🎯</span> フォトGP ミッション一覧（全7種）
+            </div>
+            <p style="font-size: 12px; color: var(--text-sub); margin: 0 0 10px 0;">
+                カメラ画面上部の「お題」ボタンからも随時確認できます。
+            </p>
 
-                    <div class="mockup-controls">
-                        <div class="mockup-mini-card">
-                            <span style="color:var(--text-sub);">TEAM</span>
-                            <span style="color:var(--accent-color);font-weight:800;">チームA</span>
-                        </div>
-                        <div class="mockup-mini-card">
-                            <span style="color:var(--text-sub);">残り枚数</span>
-                            <span style="color:var(--accent-color);font-weight:800;font-size:13px;">20</span>
-                        </div>
+            <div class="mission-step-list">
+                <div class="mission-step-item practice">
+                    <div class="mission-head">
+                        <span style="color: var(--cyan);">MISSION 00：操作練習【テスト撮影】</span>
+                        <span style="font-size: 10px; color: var(--text-sub);">残り19〜20枚時</span>
                     </div>
-
-                    <div class="mockup-shutter-row">
-                        <div class="mockup-shutter-circle">PUSH</div>
-                        <span style="font-size:9px;color:var(--text-sub);letter-spacing:1px;font-weight:700;">READY</span>
+                    <div class="mission-desc">
+                        フラッシュやタイマー、ズームを試してみよう！撮影直後に確認画面が表示されます。
                     </div>
-
-                    <ul class="mockup-annotations">
-                        <li><strong>上部バナー:</strong> 現在のミッション名とタスクを常時表示</li>
-                        <li><strong>右側デッキ:</strong> チーム名、残り枚数、各種操作ボタン</li>
-                        <li><strong>赤丸ボタン:</strong> シャッター（撮影後3秒チャージ）</li>
-                    </ul>
                 </div>
 
-                <!-- 写真仕上がりサンプル -->
-                <div>
-                    <div style="font-size:10px;font-weight:800;color:var(--accent-color);letter-spacing:0.5px;margin-bottom:6px;">
-                        【写真仕上がりサンプル（左右スタンプ刻印）】
+                <div class="mission-step-item">
+                    <div class="mission-head">
+                        <span>MISSION 01：集合【決起集会】</span>
+                        <span style="font-size: 10px; color: var(--text-sub);">残り16〜18枚時</span>
                     </div>
-                    <div class="photo-sample-card">
-                        <div class="photo-sample-inner">
-                            <div class="photo-sample-center-text">RETRO AMBER + GRAIN</div>
-                            <div class="photo-stamp-left">チームA ミッション:01</div>
-                            <div class="photo-stamp-right">2026.10.29 12:30</div>
-                        </div>
-                    </div>
-                    <p style="font-size:10px;color:var(--text-sub);margin:6px 0 0 0;line-height:1.4;">
-                        ※オレンジ色のレトロ調エフェクトとフィルム粒子が自動適用され、左下にチームとお題、右下に日時が刻印されます。
-                    </p>
+                    <div class="mission-desc">優勝を誓うガッツポーズ集合写真！チームの結束を見せつけよう。</div>
                 </div>
 
+                <div class="mission-step-item">
+                    <div class="mission-head">
+                        <span>MISSION 02：買い出し【目利きの極意】</span>
+                        <span style="font-size: 10px; color: var(--text-sub);">残り13〜15枚時</span>
+                    </div>
+                    <div class="mission-desc">極上スパイスや隠し味を真剣に見極める表情や買い出し風景。</div>
+                </div>
+
+                <div class="mission-step-item">
+                    <div class="mission-head">
+                        <span>MISSION 03：会場散策①【放課後の記憶】</span>
+                        <span style="font-size: 10px; color: var(--text-sub);">残り10〜12枚時</span>
+                    </div>
+                    <div class="mission-desc">奥多摩の長い廊下や教室、黒板を背にしたノスタルジーな青春の1枚。</div>
+                </div>
+
+                <div class="mission-step-item">
+                    <div class="mission-head">
+                        <span>MISSION 04：会場散策②【偵察部隊】</span>
+                        <span style="font-size: 10px; color: var(--text-sub);">残り7〜9枚時</span>
+                    </div>
+                    <div class="mission-desc">ライバルチームの動向を遠巻きに観察・警戒する姿をドラマチックに。</div>
+                </div>
+
+                <div class="mission-step-item">
+                    <div class="mission-head">
+                        <span>MISSION 05：調理中【シェフの神業】</span>
+                        <span style="font-size: 10px; color: var(--text-sub);">残り4〜6枚時</span>
+                    </div>
+                    <div class="mission-desc">ルーを投入する瞬間や躍動感ある鍋振り、真剣な調理シーン。</div>
+                </div>
+
+                <div class="mission-step-item">
+                    <div class="mission-head">
+                        <span>MISSION 06：BBQ【完成の歓喜】</span>
+                        <span style="font-size: 10px; color: var(--text-sub);">残り1〜3枚時</span>
+                    </div>
+                    <div class="mission-desc">丹精込めて完成させた至高のカレーを全員で囲んだ最高の笑顔ショット！</div>
+                </div>
             </div>
         </div>
 
-        <!-- 基本スペック -->
+        <!-- 🍛 3. カレーGP 審査ルール -->
         <div class="card">
-            <div class="card-heading">⚙️ アプリの基本仕様</div>
-            <div class="spec-grid">
-                <div class="spec-item">
-                    <div class="spec-label">規定フィルム枚数</div>
-                    <div class="spec-value">全20枚<br><span style="font-size:9.5px;color:var(--text-sub);">練習2＋本番18</span></div>
-                </div>
-                <div class="spec-item">
-                    <div class="spec-label">完走後モード</div>
-                    <div class="spec-value" style="color:var(--free-color);">フリー撮影<br><span style="font-size:9.5px;color:var(--text-sub);">無制限撮り放題</span></div>
-                </div>
-                <div class="spec-item">
-                    <div class="spec-label">写真エフェクト</div>
-                    <div class="spec-value">レトロアンバー<br><span style="font-size:9.5px;color:var(--text-sub);">粒子グレイン加工</span></div>
-                </div>
-                <div class="spec-item">
-                    <div class="spec-label">写真スタンプ刻印</div>
-                    <div class="spec-value">左：チーム・ミッション<br><span style="font-size:9.5px;color:var(--text-sub);">右：YYYY.MM.DD HH:mm</span></div>
-                </div>
+            <div class="card-header">
+                <span>🍛</span> カレーGP 審査基準 ＆ 投票方法
             </div>
+            <p style="font-size: 12px; color: var(--text-sub); margin: 0 0 10px 0;">
+                調理完了後、他チームのカレーを実食・審査します。ポータルの「カレーGP 審査投票」フォームより投票してください。
+            </p>
+            <ul style="margin: 0; padding-left: 18px; font-size: 12px; color: var(--text-main); line-height: 1.6;">
+                <li><strong>味（Taste）：</strong> スパイスの調和、具材の旨味、全体の完成度。</li>
+                <li><strong>独自性（Originality）：</strong> 隠し味や盛り付けの工夫、チーム独自のこだわり。</li>
+                <li><strong>チームワーク（Teamwork）：</strong> 調理の手際の良さ、片付け、役割分担の一体感。</li>
+            </ul>
         </div>
-
-        <!-- はじめかた -->
-        <div class="card">
-            <div class="card-heading">🚀 最初の2ステップ</div>
-            <div class="step-row">
-                <div class="step-badge">1</div>
-                <div class="step-body">
-                    <h3>カメラへのアクセスを「許可」</h3>
-                    <p>アプリ起動時の確認ポップアップで「許可」をタップしてください。</p>
-                </div>
-            </div>
-            <div class="step-row">
-                <div class="step-badge">2</div>
-                <div class="step-body">
-                    <h3>大型プルダウンで「チーム」を選択</h3>
-                    <p>右上の「TEAM」で自チーム（A〜D）を選ぶと確定・ロックされます。</p>
-                </div>
-            </div>
-        </div>
-
-        <!-- ミッション配分表 -->
-        <div class="card">
-            <div class="card-heading">🎯 ミッション一覧（全20枚＋α）</div>
-            <div class="timeline">
-                
-                <div class="timeline-item practice">
-                    <div class="timeline-header">
-                        <span class="timeline-title" style="color:var(--accent-color);">0. 操作練習：【テスト撮影】</span>
-                        <span class="timeline-tag">2枚（残20〜19）</span>
-                    </div>
-                    <p class="timeline-desc">
-                        ★<strong>この2枚限定で撮影直後に「プレビュー確認（チェックOK）」ができます！</strong> フラッシュやタイマー、ズームを試しましょう。
-                    </p>
-                </div>
-
-                <div class="timeline-item">
-                    <div class="timeline-header">
-                        <span class="timeline-title">1. 集合：【決起集会】</span>
-                        <span class="timeline-tag">3枚（残18〜16）</span>
-                    </div>
-                    <p class="timeline-desc">優勝を誓うガッツポーズ集合写真！ここから先は現像まで見られません。</p>
-                </div>
-
-                <div class="timeline-item">
-                    <div class="timeline-header">
-                        <span class="timeline-title">2. 買い出し：【目利きの極意】</span>
-                        <span class="timeline-tag">3枚（残15〜13）</span>
-                    </div>
-                    <p class="timeline-desc">極上スパイスや隠し味の食材を真剣に見極める表情をパシャリ！</p>
-                </div>
-
-                <div class="timeline-item">
-                    <div class="timeline-header">
-                        <span class="timeline-title">3. 会場散策①：【放課後の記憶】</span>
-                        <span class="timeline-tag">3枚（残12〜10）</span>
-                    </div>
-                    <p class="timeline-desc">廃校の廊下や教室、黒板を背にしたノスタルジーな青春の1枚。</p>
-                </div>
-
-                <div class="timeline-item">
-                    <div class="timeline-header">
-                        <span class="timeline-title">4. 会場散策②：【偵察部隊】</span>
-                        <span class="timeline-tag">3枚（残9〜7）</span>
-                    </div>
-                    <p class="timeline-desc">ライバルチームの動向を遠巻きに観察・警戒する姿。</p>
-                </div>
-
-                <div class="timeline-item">
-                    <div class="timeline-header">
-                        <span class="timeline-title">5. 調理中：【シェフの神業】</span>
-                        <span class="timeline-tag">3枚（残6〜4）</span>
-                    </div>
-                    <p class="timeline-desc">ルー投入の瞬間や躍動感ある鍋振り！炎や湯気の臨場感を狙おう。</p>
-                </div>
-
-                <div class="timeline-item">
-                    <div class="timeline-header">
-                        <span class="timeline-title">6. BBQ：【完成の歓喜】</span>
-                        <span class="timeline-tag">3枚（残3〜1）</span>
-                    </div>
-                    <p class="timeline-desc">丹精込めて完成させたカレーを全員で囲んだ最高の笑顔ショット！</p>
-                </div>
-
-                <div class="timeline-item free">
-                    <div class="timeline-header">
-                        <span class="timeline-title" style="color:var(--free-color);">🚀 フリー撮影モード</span>
-                        <span class="timeline-tag">無制限（残0枚〜）</span>
-                    </div>
-                    <p class="timeline-desc">
-                        20枚撮りきると突入！カウンターが「撮影枚数」に変わり、BBQの歓談や表彰式、片付けまで何枚でも撮影を継続できます。
-                    </p>
-                </div>
-
-            </div>
-        </div>
-
-        <!-- 覚えておきたい機能 -->
-        <div class="card">
-            <div class="card-heading">🕹️ 撮影時の便利機能</div>
-
-            <div class="feature-item">
-                <div class="feature-name">🔴 3秒チャージ（CHARGING...）</div>
-                <p class="feature-detail">フィルム巻き上げを再現しているため、撮影後3秒間はボタンがロックされます。READYに戻れば次の写真が撮れます。</p>
-            </div>
-
-            <div class="feature-item">
-                <div class="feature-name">🔍 ZOOM（倍率リアルタイム表示）</div>
-                <p class="feature-detail">スライダーで <code>1.0x</code> 〜 <code>3.0x</code> まで自在に拡大できます。</p>
-            </div>
-
-            <div class="feature-item">
-                <div class="feature-name">⚡️ FLASH（スマホ背面ライト点灯）</div>
-                <p class="feature-detail">暗い屋内や夕暮れのBBQでライトを常時点灯し、味のある写真に仕上げます。</p>
-            </div>
-
-            <div class="feature-item">
-                <div class="feature-name">⌛️ 5秒タイマー</div>
-                <p class="feature-detail">画面中央に5秒のカウントダウンが大きく表示されます。全員での集合写真に。</p>
-            </div>
-        </div>
-
-        <!-- よくある質問（アコーディオン） -->
-        <div class="card">
-            <div class="card-heading">💡 よくある質問（FAQ）</div>
-
-            <details class="faq-accordion">
-                <summary class="faq-summary">撮った写真がすぐに見られないのはなぜ？</summary>
-                <div class="faq-content">
-                    使い捨てカメラならではのドキドキ感を味わうため、<strong>ミッション00（練習2枚）を除いてプレビューはありません</strong>。イベント後のスライドショー現像まで楽しみにお待ちください！
-                </div>
-            </details>
-
-            <details class="faq-accordion">
-                <summary class="faq-summary">電波（Wi-Fi / 4G）が悪い場所でも平気？</summary>
-                <div class="faq-content">
-                    <strong>問題なく撮影できます。</strong> 写真データはスマホ内部に安全に保存され、通信が復活した際に自動でクラウド（Firebase）へアップロードされます。
-                </div>
-            </details>
-
-            <details class="faq-accordion">
-                <summary class="faq-summary">チームを間違えて選んでしまった！</summary>
-                <div class="faq-content">
-                    右上の「残り枚数」バッジを<strong>すばやく5回連続タップ</strong>してください。確認画面が出るので「リセット実行」を押すと選び直せます。
-                </div>
-            </details>
-        </div>
-    </div>
-
-    <!-- 画面下部固定フロートバー -->
-    <div class="float-bar">
-        <a href="camera.html" class="float-btn">
-            📷 カメラアプリを起動する
-        </a>
     </div>
 
 </body>
 </html>
-
