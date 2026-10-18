@@ -379,7 +379,7 @@
         let currentFilter = "ALL";
 
 // ★ 追加：GASのURL（ご自身のURLに差し替え） ★
-        const GAS_API_URL = "https://script.google.com/macros/s/YOUR_DEPLOYMENT_ID/exec";
+        const GAS_API_URL = "https://script.google.com/macros/s/AKfycbxdc51YIhCJS3WE-6qJXNC8jPpeTazBYDTkflCYSBJeU3zN1jTU3ry2mGYYGLpXjiX8Iw/exec";
         
         // 🔒 認証チェック & 初期化関数
         async function initGalleryWithAuth() {
@@ -425,8 +425,9 @@
                 });
         
             } catch (err) {
-                console.error("Gallery Auth Error:", err);
-                showGalleryBlocked("認証サーバーとの通信に失敗しました。");
+            console.error("Gallery Auth Error:", err);
+            // デモ読み込みを一切行わず、確実にブロック画面を表示して停止
+            showGalleryBlocked("認証サーバーとの通信に失敗しました。ポータルからログインしてください。");
             }
         }
         
